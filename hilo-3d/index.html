@@ -187,6 +187,7 @@ body { background:#181917; }
 body::before { content:''; position:fixed; inset:0; opacity:.2; pointer-events:none; background-image:var(--grain); background-size:180px;mix-blend-mode:soft-light; }
 #tableSurface { position:fixed; left:12px; right:25%; top:96px; bottom:12px; border:3px solid #ccb98c; border-radius:24px 12px; background-color:#16452d; background-image:var(--grain),radial-gradient(ellipse,#224d30,#113720); box-shadow:0 0 0 5px #131914,0 0 0 7px #87764d,inset 0 0 0 6px #14341f,inset 0 0 0 8px #ae9f65; }
 #tableSurface { background-blend-mode:soft-light,normal;background-size:160px,cover; }
+#tableSurface { filter:brightness(var(--table-light,1));transition:filter .2s; }
 #tableSurface::after { content:'♠'; position:absolute; left:3%; top:32%; font:clamp(70px,13vw,240px) Georgia; color:#aab86d24; }
 .shade { display:none; }
 header { height:84px; padding:8px 22px; border-bottom:4px double #a7967355; align-items:center; }
@@ -675,6 +676,7 @@ function animateCasino(now,dt) {
  casino.heat=THREE.MathUtils.damp(casino.heat,target,2.5,dt);
  const joker=now<casino.jokerUntil;
  warmLight.intensity=casino.heat*36;
+ $('tableSurface').style.setProperty('--table-light',joker?.83:1+casino.heat*.15);
  spot.color.copy(baseSpot).lerp(fireSpot,casino.heat);
  spot.intensity=THREE.MathUtils.damp(spot.intensity,joker?65:140,7,dt);
  jokerMesh.visible=joker;
@@ -889,7 +891,7 @@ function refresh(){
  $('shield').title=G.protected[G.selected]?'Blocks one miss on this card. Push bypasses shields.':'Protect this card from one miss. Push bypasses shields.';
  $('peek').textContent='Peek '+G.peeks;
  $('swap').textContent='Swap '+G.swaps;
- for(let i=0;i<9;i++){pads[i].material.emissive.setHex(i===G.selected&&ready?0x537c36:G.locked[i]?0x58212a:0x000000);pads[i].material.emissiveIntensity=i===G.selected&&ready?.9:G.locked[i]?.8:0;const m=cardMeshes[i];if(m)m.userData.targetY=i===G.selected&&ready?1.02:.75}
+ for(let i=0;i<9;i++){pads[i].material.emissive.setHex(i===G.selected&&ready?0x537c36:G.locked[i]?0x58212a:0x000000);pads[i].material.emissiveIntensity=i===G.selected&&ready?.18:G.locked[i]?.8:0;const m=cardMeshes[i];if(m)m.userData.targetY=i===G.selected&&ready?1.02:.75}
  
 }
 let audioContext, audioBus, roomTone, noiseBuffer, ambientLevel, ambientFilter;
@@ -1030,7 +1032,7 @@ function guess(dir){
  const run=G;
  const i=G.selected,old=G.board[i],p=chance(old,dir),c=draw();
  if(!c){finishStage();return}
- G.phase='busy';refresh();G.turns++;const good=dir==='higher'?c.v>old.v:c.v<old.v;
+ G.phase='busy';G.message='Revealing…';refresh();G.turns++;const good=dir==='higher'?c.v>old.v:c.v<old.v;
  const resolve=()=>{
   if(G!==run)return;
   let info='';
@@ -1134,7 +1136,7 @@ function animate(now){
   const fx=highlights[i],alive=fx&&now<fx.end,selected=G?.selected===i&&G?.phase==='playing';
   const pad=pads[i];
   pad.material.emissive.setHex(alive?(fx.kind==='negative'?0xa83223:fx.kind==='positive'?0x83a33a:0x3279ac):G?.locked[i]?0x58212a:selected?0x537c36:0);
-  pad.material.emissiveIntensity=alive?.8*(fx.end-now)/520:G?.locked[i]?.8:selected?.75:0;
+  pad.material.emissiveIntensity=alive?.8*(fx.end-now)/520:G?.locked[i]?.8:selected?.18:0;
  }
  animateCasino(now,dt);
  renderer.render(scene,camera);
