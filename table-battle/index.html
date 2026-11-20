@@ -6,8 +6,8 @@
   <meta name="room-server" content="">
   <meta name="theme-color" content="#121511">
   <title>HiLo · Table Battle</title>
-  <link rel="stylesheet" href="./battle.css">
-  <script type="module" src="./battle.mjs"></script>
+  <link rel="stylesheet" href="./battle.css?v=shared1">
+  <script type="module" src="./battle.mjs?v=shared1"></script>
 </head>
 <body>
   <header><a class="brand" href="https://mathgod619.github.io/hilogame/hilo-3d/">♠ HILO</a><span>TABLE BATTLE</span><a href="https://mathgod619.github.io/hilogame/hilo-3d/">Solo run</a></header>
@@ -16,8 +16,9 @@
   <template id="home">
     <section class="lobby">
       <h1>Table Battle</h1>
-      <p>Four players. One deck. Twelve turns each.</p>
-      <button id="local" class="primary">Pass &amp; Play</button>
+      <p>Four players. One board. One deck.</p>
+      <button id="practice" class="primary">Playtest vs. 3 bots</button>
+      <button id="local">Pass &amp; Play</button>
       <div class="online">
         <label>Your name <input id="name" maxlength="18" autocomplete="nickname" placeholder="Player name"></label>
         <button id="host">Create room</button>
@@ -26,7 +27,7 @@
           <button>Join room</button>
         </form>
       </div>
-      <details><summary>How to play</summary><p>Guess against your own card. Aces are low and ties miss. Every draw replaces your card. Hits in a streak score 1, 2, then 3 points each. Most points wins, with longest streak breaking ties. Each ability works once per match.</p></details>
+      <details><summary>How to play</summary><p>Pick any card on the shared board. Aces are low and ties miss. Hits replace cards. Misses clear slots. If the board wipes, the drawn card restarts it. Your third straight hit fills an empty slot when available. Streak hits score 1, 2, then 3 each. Play ends when the deck runs out. Most points wins, with longest streak breaking ties.</p></details>
     </section>
   </template>
 </body>

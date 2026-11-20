@@ -53,3 +53,12 @@ details p {margin-top:.5rem}
 .control-row {display:flex;gap:.5rem;flex-wrap:wrap}
 .moves {min-height:1.4em;font-size:.88rem}
 @media(max-width:540px) { .players {grid-template-columns:repeat(2,minmax(0,1fr))} .card {width:50%;max-width:68px;float:left;margin:0 .45rem .25rem 0} .player {display:flow-root} .player h2{min-height:1.2em} }
+
+.board {display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:.4rem;width:min(100%,280px);margin:.9rem auto 0}
+.board-card,.empty-slot {aspect-ratio:5/6;min-width:0;border-radius:6%;border:1px solid #bbad7a66;display:grid;place-content:center;text-align:center}
+.empty-slot {background:#102a1e99}
+.board-card {background:#f0e4c6;color:#1d211c;box-shadow:0 3px 0 #9e8c66,0 5px 9px #0004;font:bold clamp(1.55rem,6vw,2.5rem)/1 Georgia,serif}
+.board-card.red {color:#a33031}
+.board-card span {font-size:.72em}
+.board-card.selected {outline:2px solid #ffdb7d;outline-offset:1px}
+@media(max-width:540px) {.board {width:min(100%,224px)} .player p {font-size:.78rem}}

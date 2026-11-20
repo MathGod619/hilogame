@@ -1,4 +1,4 @@
-import { abilities, ranks, newMatch, play, view } from './rules.mjs';
+import { abilities, ranks, newMatch, play, view } from './rules.mjs?v=shared1';
 
 const labels = { shield: 'Shield', peek: 'Peek', swap: 'Swap', double: 'Double Down' };
 const screen = document.getElementById('screen');
@@ -12,6 +12,10 @@ let mode = 'home';
 let room = null;
 let token = '';
 let localMatch = null;
+let practice = false;
+let botTimer;
+let selectedSlot = null;
+let selectionTurn = -1;
 let busy = false;
 let polling = false;
 let failures = 0;
@@ -76,9 +80,17 @@ async function perform(action, waitingText = '') {
 }
 function showHome() {
   mode = 'home';
+  clearTimeout(botTimer);
   screen.replaceChildren(document.getElementById('home').content.cloneNode(true));
   const local = document.getElementById('local');
   local.onclick = localSetup;
+  document.getElementById('practice').onclick = () => {
+    if (busy) return;
+    startLocal([
+      {name: 'You', ability: 'shield'}, {name: 'Mara', ability: 'peek'},
+      {name: 'Jules', ability: 'swap'}, {name: 'Vic', ability: 'double'}
+    ], true);
+  };
   if (room && token) local.before(button('Resume ' + room.code, () => {
     mode = 'online';
     renderRoom();
@@ -109,6 +121,7 @@ function connect(code, name) {
     token = response.token;
     delete response.token;
     room = response;
+    selectionTurn = -1;
     stash();
     mode = 'online';
     failures = 0;
@@ -152,10 +165,7 @@ function localSetup() {
       notice.textContent = 'Give each player a different ability.';
       return;
     }
-    notice.textContent = '';
-    mode = 'local';
-    localMatch = newMatch(players);
-    renderLocal();
+    startLocal(players, false);
   }, 'primary'), button('Back', showHome));
 }
 
@@ -177,7 +187,7 @@ function leave() {
 }
 function renderRoom() {
   if (room.match) {
-    renderMatch(room.match, room.seat, onlineMove, room.seat === 0 ? () => onlineMove('rematch') : null);
+    renderMatch(room.match, room.seat, onlineMove, room.seat === 0 ? () => onlineMove('rematch') : null, renderRoom);
     return;
   }
   const panel = lobby('Waiting for players');
@@ -222,23 +232,67 @@ function renderRoom() {
   }));
 }
 
+function startLocal(players, againstBots) {
+  notice.textContent = '';
+  mode = 'local';
+  practice = againstBots;
+  localMatch = newMatch(players);
+  selectionTurn = -1;
+  renderLocal();
+}
 function renderLocal() {
+  clearTimeout(botTimer);
   const seat = localMatch.active;
-  renderMatch(view(localMatch, seat), seat, (action, value) => {
+  renderMatch(view(localMatch, practice ? 0 : seat), practice ? 0 : seat, (action, value) => {
     try {
       play(localMatch, seat, action, value);
+      notice.textContent = '';
       renderLocal();
     } catch (error) { notice.textContent = error.message; }
-  }, () => {
-    localMatch = newMatch(localMatch.players);
-    renderLocal();
-  });
+  }, () => startLocal(localMatch.players, practice), renderLocal);
+  if (practice && seat !== 0 && !localMatch.winners) {
+    const match = localMatch;
+    botTimer = setTimeout(() => {
+      if (mode !== 'local' || match !== localMatch) return;
+      botTurn(match, seat);
+      renderLocal();
+    }, 550);
+  }
+}
+
+function cardOdds(card) {
+  return Math.max(card.rank, 12 - card.rank) / 13;
+}
+
+function botTurn(match, seat) {
+  const player = match.players[seat];
+  const slots = match.board.flatMap((card, slot) => card ? [{card, slot}] : []);
+  slots.sort((a, b) => cardOdds(b.card) - cardOdds(a.card));
+  let {card, slot} = slots[0];
+  if (!player.used) {
+    const odds = cardOdds(card);
+    if ((player.ability === 'peek' && odds < .86) ||
+        (player.ability === 'double' && (odds >= .85 || match.deck.length <= 4))) {
+      play(match, seat, 'ability');
+    } else if (player.ability === 'swap' && match.discard && cardOdds(match.discard) > odds) {
+      play(match, seat, 'ability', slot);
+      card = match.board[slot];
+    }
+  }
+  const peek = view(match, seat).peek;
+  if (peek) {
+    const choice = slots.find(candidate => candidate.card.rank !== peek.rank);
+    if (choice) ({card, slot} = choice);
+  }
+  const direction = peek ? (peek.rank > card.rank ? 'higher' : 'lower')
+    : card.rank < 6 ? 'higher' : 'lower';
+  play(match, seat, 'guess', {slot, direction});
 }
 
 function cardName(card) {
   return ranks[card.rank] + card.suit;
 }
-function renderMatch(match, seat, move, rematch) {
+function renderMatch(match, seat, move, rematch, redraw) {
   const table = el('section', null, 'table');
   const title = el('div', null, 'table-title');
   const winner = match.winners;
@@ -247,51 +301,73 @@ function renderMatch(match, seat, move, rematch) {
     ? match.winners.map(i => match.players[i].name).join(' & ') + (winner.length === 1 ? ' wins' : ' tie')
     : player.name + '’s turn';
   title.append(el('h1', heading), el('span', match.remaining + ' in deck'));
+  const canPlay = !winner && match.active === seat;
+  if (selectionTurn !== match.turn) {
+    selectionTurn = match.turn;
+    selectedSlot = null;
+  }
+  const occupied = match.board.flatMap((card, i) => card ? [i] : []);
+  if (!match.board[selectedSlot]) selectedSlot = occupied.length === 1 ? occupied[0] : null;
   const players = el('div', null, 'players');
   match.players.forEach((p,i) => {
     const highlight = winner ? winner.includes(i) : i === match.active;
     const tile = el('article', null, highlight ? 'player active' : 'player');
-    const card = el('div', ranks[p.card.rank], 'card' + ('♥♦'.includes(p.card.suit) ? ' red' : ''));
-    card.append(el('span', p.card.suit));
-    tile.append(el('h2', p.name + (mode === 'online' && i === seat ? ' (you)' : '')), card,
+    tile.append(el('h2', p.name + (mode === 'online' && i === seat ? ' (you)' : '')),
       el('p', p.score + ' pts'), el('p', 'Streak ' + p.streak + ' · Best ' + p.best),
       el('small', labels[p.ability] + (p.used ? ' · used' : '')));
     players.append(tile);
   });
+  const board = el('div', null, 'board');
+  board.setAttribute('role', 'group');
+  board.setAttribute('aria-label', 'Shared board');
+  match.board.forEach((card, slot) => {
+    const tile = card && canPlay
+      ? button(null, () => {
+        selectedSlot = slot;
+        redraw();
+        screen.querySelector('.board-card[aria-pressed="true"]')?.focus();
+      }, 'board-card')
+      : el('div', null, card ? 'board-card' : 'empty-slot');
+    if (card) {
+      tile.append(el('strong', ranks[card.rank]), el('span', card.suit));
+      tile.classList.toggle('red', '♥♦'.includes(card.suit));
+      if (slot === selectedSlot && canPlay) tile.classList.add('selected');
+      if (canPlay) {
+        tile.setAttribute('aria-label', cardName(card) + ' · slot ' + (slot + 1));
+        tile.setAttribute('aria-pressed', String(slot === selectedSlot));
+      }
+    } else tile.setAttribute('aria-label', 'Empty slot ' + (slot + 1));
+    board.append(tile);
+  });
   const controls = el('div', null, 'controls');
   let last = '';
   if (match.last) {
-    const {seat: played, swap, old, card, hit, points, shielded} = match.last;
+    const {seat: played, type, old, card, hit, points, shielded, rebuilt, wiped} = match.last;
     const name = match.players[played].name;
-    last = swap == null
-      ? name + ' · ' + cardName(old) + ' → ' + cardName(card) + ' · ' +
-        (hit ? '+' + points + ' pts' : shielded ? 'Shield saved streak' : points < 0 ? 'Miss · −2 pts' : 'Miss')
-      : name + ' swapped with ' + match.players[swap].name;
+    const change = name + ' · ' + cardName(old) + ' → ' + cardName(card);
+    if (type === 'swap') last = change + ' · swapped with discard';
+    else if (hit) last = change + ' · +' + points + ' pts' + (rebuilt ? ' · slot rebuilt' : '');
+    else {
+      last = change + ' · miss' + (points < 0 ? ' · −2 pts' : '') +
+        (shielded ? ' · streak saved' : '') + (wiped ? ' · board wiped' : ' · slot cleared');
+    }
   }
   controls.append(el('p', last, 'moves'));
   if (winner) {
     if (rematch) controls.append(button('Rematch', rematch, 'primary'));
     else controls.append(el('p', 'Waiting for the host to start a rematch.'));
-  } else if (match.active === seat) {
+  } else if (canPlay) {
     if (match.peek) controls.append(el('p', 'Peek · ' + cardName(match.peek)));
     else if (match.armed) controls.append(el('p', labels[match.armed] + ' ready'));
     const guesses = el('div', null, 'guesses');
-    guesses.append(button('▲ Higher', () => move('guess', 'higher'), 'primary'),
-      button('▼ Lower', () => move('guess', 'lower'), 'lower'));
+    guesses.append(button('▲ Higher', () => move('guess', {slot: selectedSlot, direction: 'higher'}), 'primary', selectedSlot === null),
+      button('▼ Lower', () => move('guess', {slot: selectedSlot, direction: 'lower'}), 'lower', selectedSlot === null));
+    if (selectedSlot === null) controls.append(el('p', 'Pick a face-up card.'));
     controls.append(guesses);
     if (!player.used) {
       if (player.ability === 'swap') {
-        const select = el('select');
-        select.setAttribute('aria-label', 'Swap with player');
-        match.players.forEach((p,i) => {
-          if (i === seat) return;
-          const option = el('option', p.name + ' · ' + cardName(p.card));
-          option.value = i;
-          select.append(option);
-        });
-        const row = el('div', null, 'control-row');
-        row.append(select, button('Use Swap', () => move('ability', Number(select.value))));
-        controls.append(row);
+        const label = match.discard ? 'Swap with discard · ' + cardName(match.discard) : 'Swap · no discard yet';
+        controls.append(button(label, () => move('ability', selectedSlot), '', !match.discard || selectedSlot === null));
       } else controls.append(button('Use ' + labels[player.ability], () => move('ability')));
     }
   } else controls.append(el('p', 'Waiting for ' + player.name + '…'));
@@ -301,7 +377,7 @@ function renderMatch(match, seat, move, rematch) {
       showHome();
     } else leave();
   }));
-  table.append(title, players, controls);
+  table.append(title, players, board, controls);
   screen.replaceChildren(table);
 }
 
