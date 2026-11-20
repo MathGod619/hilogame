@@ -803,8 +803,8 @@ function beginDraw(card,resolve){
 const dealerHands = [-1,1].map(side=>{
  const hand=new THREE.Group();
  const glove=mat(0x353b36,.62);
- const forearm=new THREE.Mesh(new THREE.BoxGeometry(.43,.13,1.6),suit);
- forearm.position.z=-.83;hand.add(forearm);
+ const forearm=new THREE.Mesh(new THREE.BoxGeometry(.43,.13,.65),suit);
+ forearm.position.z=-.37;hand.add(forearm);
  const cuff=new THREE.Mesh(new THREE.BoxGeometry(.47,.145,.15),shirt);
  cuff.position.z=-.18;hand.add(cuff);
  const palm=new THREE.Mesh(new THREE.SphereGeometry(1,12,8),glove);
