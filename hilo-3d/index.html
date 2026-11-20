@@ -284,9 +284,36 @@ body[data-boss="3"] .bossStamp {color:#d78774;transform:rotate(6deg);}
 .modal[data-screen="settings"] .settingRow input:focus-visible { outline:2px solid #fff1b3; outline-offset:3px; }
 .modal[data-screen="settings"] #modalAction { position:absolute; top:12px; right:12px; width:36px; min-height:36px; margin:0; padding:0; border:0; background:none; color:#d9d1bd; font:24px system-ui,sans-serif; }
 
+
+#tableSurface { transition:box-shadow .4s,filter .4s; }
+#tableSurface::after { content:'';position:absolute;inset:0;pointer-events:none;opacity:var(--heat,0);background:radial-gradient(ellipse at 50% 110%,#ff762c55,transparent 65%);box-shadow:inset 0 0 65px #ff8e2855; }
+body[data-joker="true"] #tableSurface {box-shadow:inset 0 0 100px #ac55f077,0 0 60px #ac55f044;}
+#heatBadge { position:absolute;bottom:28px;left:30px;color:#ffd886;font:clamp(20px,3vw,44px)/.9 Impact,sans-serif;transform:rotate(-7deg);opacity:0;transition:opacity .25s;z-index:2;text-shadow:0 2px #54260d,0 0 25px #ff7e3d;pointer-events:none; }
+#heatBadge small {display:block;font:700 10px system-ui;letter-spacing:.2em;margin-top:9px;}
+#fxLayer {position:fixed;inset:0;pointer-events:none;z-index:8;overflow:hidden;}
+.scoreFly {position:absolute;color:var(--fx-color,#ffe6a2);font:clamp(22px,3vw,42px) Impact,sans-serif;text-shadow:0 3px 0 #141714,0 0 18px #000;transform:translate(-50%,-50%);animation:scoreFlight 1.05s ease-out forwards;white-space:nowrap;}
+.scoreFly.minor {font:700 13px system-ui;letter-spacing:.05em;}
+@keyframes scoreFlight {0%{opacity:0;transform:translate(-50%,0) scale(.7)}15%{opacity:1;transform:translate(-50%,-30%) scale(1.12)}65%{opacity:1}100%{opacity:0;transform:translate(-50%,-130%) scale(1)}}
+#lesson {position:fixed;z-index:16;left:24px;bottom:24px;width:min(390px,calc(100vw - 48px));background:#111812f5;border-left:4px solid #ffe13b;padding:18px 20px;box-shadow:0 12px 45px #0009;}
+#lesson[hidden] {display:none;}#lesson small{font:700 10px system-ui;letter-spacing:.15em;color:#d0bb80;}
+#lesson h3 {font:26px Impact,sans-serif;margin:7px 0;color:#f8e7c0;}#lesson p {font:14px/1.45 system-ui;margin:8px 0 14px;color:#e0ddcf;}
+#lesson button {background:none;border:0;border-bottom:1px solid #a29472;padding:6px 0;color:#efe1ba;font:600 13px system-ui;margin-right:18px;}
+.lessonTarget {outline:3px solid #ffe13b!important;outline-offset:5px;}
+.modal[data-screen="welcome"] .modalbox {width:min(620px,100%);background:radial-gradient(ellipse at top,#34412c,#101813 70%);padding:42px 30px;border:1px solid #bba374;}
+.modal[data-screen="welcome"] h2 {font:italic clamp(72px,13vw,126px)/1 Impact,sans-serif;letter-spacing:.02em;margin:20px 0;color:#f6e2b4;}
+.modal[data-screen="welcome"] h2::before {content:'♠';display:block;font:70px Georgia;color:#d34c3b;text-shadow:12px 4px #0006;}
+.modal[data-screen="welcome"] #modalText {font:16px system-ui;letter-spacing:.04em;}
+.modal[data-screen="welcome"] .modalChoices {display:flex;justify-content:center;margin:28px 0 10px;}
+.modal[data-screen="welcome"] .modalChoices button {min-height:50px;padding:16px 24px;background:#b3352b;border:0;border-radius:2px;}
+.modal[data-screen="welcome"] #modalAction {background:none;border:0;color:#bdbaa9;font:13px system-ui;}
+#replayTutorial {display:block;margin:16px 0 0;padding:10px 0;border:0;border-bottom:1px solid #a89c77;background:none;color:#ebdbae;font:500 14px system-ui;}
+@media(max-width:700px){#lesson{left:12px;bottom:205px;width:calc(100vw - 24px);padding:12px 16px;}#lesson h3{font-size:22px;}#lesson p{font-size:12px;}#heatBadge{left:14px;bottom:16px;} }
+body[data-reduced="true"] .scoreFly {animation:none;opacity:1;}
+@media(prefers-reduced-motion:reduce){.scoreFly{animation:none;}#tableSurface{transition:none;}}
+
 </style>
 <script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.1/build/three.module.js"}}</script>
-</head><body><div id="tableSurface" aria-hidden="true" data-mark="♠"><span id="bossName">The Tollkeeper</span></div><canvas id="scene" aria-label="Interactive three-dimensional casino table"></canvas><div class="shade"></div>
+</head><body><div id="tableSurface" aria-hidden="true" data-mark="♠"><span id="bossName">The Tollkeeper</span><div id="heatBadge">ON FIRE<small>3 CONSECUTIVE WINS</small></div></div><canvas id="scene" aria-label="Interactive three-dimensional casino table"></canvas><div class="shade"></div>
 <header>
   <div><div class="eyebrow">Midnight Table</div><div class="brand">HI<span>LO</span> </div><div class="sub" id="bossrule">The Tollkeeper</div></div>
   <div class="stats">
@@ -301,7 +328,7 @@ body[data-boss="3"] .bossStamp {color:#d78774;transform:rotate(6deg);}
   <div class="menu"><button id="runInfo" aria-label="Run details and rules">i</button><button id="settings" aria-label="Settings">⚙</button><button id="restart" aria-label="Restart">↻</button></div>
 </header>
 <div class="bottom"><div class="controls"><div class="ribbon"><span id="ticketName"> Ticket</span><span id="artifactCount">Artifacts 0/4</span><span id="shields"> 0</span><span id="stageProgress">Deck 1</span></div><div class="message" id="message" aria-live="polite">Choose your card</div><div class="detail" id="detail">Tap an occupied card on the 3D table.</div><div class="actions"><button class="guess" id="higher">Higher</button><button class="guess lower" id="lower">Lower</button></div><div class="tools"><button id="push"> Push</button><button id="shield"> Shield</button><button id="peek"> Peek</button><button id="swap">⇄ Swap</button><button id="cashout"> Cash Out</button></div></div></div>
-<div id="casinoEvent" aria-live="polite"></div><div id="toast" aria-live="polite"></div><div id="loading">Preparing the midnight table…<small>Loading the Three.js renderer</small></div>
+<div id="fxLayer" aria-hidden="true"></div><aside id="lesson" hidden aria-live="polite"><small id="lessonStep"></small><h3 id="lessonTitle"></h3><p id="lessonCopy"></p><button id="lessonNext">Continue</button><button id="lessonSkip">Skip tutorial</button></aside><div id="casinoEvent" aria-live="polite"></div><div id="toast" aria-live="polite"></div><div id="loading">Preparing the midnight table…<small>Loading the Three.js renderer</small></div>
 <div id="modal" class="modal hidden"><div class="modalbox" role="dialog" aria-modal="true" aria-labelledby="modalTitle" aria-describedby="modalText"><div class="eyebrow" id="modalKick">THE MIDNIGHT TABLE</div><h2 id="modalTitle">Settings</h2><p id="modalText"></p><div id="modalChoices" class="modalChoices"></div><div id="modalSettings"><label><input type="checkbox" id="motion"> Reduced motion / instant cards</label><label><input type="checkbox" id="sound" checked> Sound effects</label></div><button id="modalAction">Close</button></div></div>
 <script type="module">
 import * as THREE from 'three';
@@ -680,6 +707,33 @@ const BOSSES=[
 const LINES=[[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0,4,8],[2,4,6]];
 // Reusable presentation objects never draw from the gameplay random source.
 const casino = {heat:0, jokerUntil:0, dealerUntil:0, shieldUntil:Array(9).fill(0), lineUntil:Array(8).fill(0)};
+// Fixed-size effect pool; cosmetic variation never consumes gameplay randomness.
+const sparks=Array.from({length:56},()=>{
+ const mesh=new THREE.Mesh(new THREE.PlaneGeometry(.045,.095),new THREE.MeshBasicMaterial({color:0xffd16b,transparent:true,opacity:0,depthWrite:false,toneMapped:false,side:THREE.DoubleSide}));
+ mesh.rotation.x=-Math.PI/2;mesh.visible=false;scene.add(mesh);return {mesh,end:0,start:0,x:0,z:0,vx:0,vz:0};
+});
+let sparkCursor=0;
+function burst(index,color=0xffd16b,count=18){
+ if(reduced)return;const p=slots[index]||{x:deckX,z:deckZ},now=performance.now();
+ for(let j=0;j<count;j++){
+  const item=sparks[sparkCursor++%sparks.length],angle=j*2.39996+sparkCursor*.17,speed=.65+(j%5)*.21;
+  Object.assign(item,{start:now,end:now+850+(j%4)*100,x:p.x,z:p.z,vx:Math.cos(angle)*speed,vz:Math.sin(angle)*speed});
+  item.mesh.material.color.setHex(color);item.mesh.visible=true;
+ }
+}
+function floatLabel(text,index,color='#ffe3a1',minor=false){
+ const p=slots[index]||{x:deckX,z:deckZ};
+ const projected=new THREE.Vector3(p.x,1.5,p.z-.45).project(camera);
+ const node=document.createElement('div');node.className='scoreFly'+(minor?' minor':'');node.textContent=text;
+ node.style.left=((projected.x+1)*innerWidth/2)+'px';node.style.top=((-projected.y+1)*innerHeight/2+(minor?32:0))+'px';node.style.setProperty('--fx-color',color);
+ $('fxLayer').append(node);setTimeout(()=>node.remove(),reduced?650:1100);
+}
+function upgradeTrigger(id,index){const up=UPGRADES.find(u=>u.id===id);if(!up)return;burst(index,UPGRADE_COLORS[id],12);floatLabel(up.name.toUpperCase(),index,'#'+UPGRADE_COLORS[id].toString(16),true);}
+function animateSparks(now){
+ for(const p of sparks){if(now>=p.end){p.mesh.visible=false;continue}const t=(now-p.start)/1000;
+  p.mesh.position.set(p.x+p.vx*t,1.1+Math.sin(t*2.8)*.45,p.z+p.vz*t);p.mesh.rotation.z=t*3;p.mesh.material.opacity=Math.max(0,(p.end-now)/900);
+ }
+}
 const warmLight = new THREE.PointLight(0xff853c, 0, 12);
 warmLight.position.set(-3, 3, 1);
 scene.add(warmLight);
@@ -727,29 +781,39 @@ const dealerHands = [-1,1].map(side=>{
 });
 const baseSpot = new THREE.Color(0xffd1a0), fireSpot = new THREE.Color(0xffa16a);
 function revealJoker(count) {
- casino.jokerUntil=performance.now()+(reduced?500:950);
+ casino.jokerUntil=performance.now()+(reduced?650:1350);
+ burst(-1,0xc58aff,36);floatLabel('JOKER  +'+count*5,-1,'#dfb5ff');
  casino.dealerUntil=performance.now()+650;
  $('casinoEvent').textContent='Joker · +'+(count*5)+' cards';
 }
 function resetCasino() {
  casino.jokerUntil=0;
+ for(const p of sparks){p.end=0;p.mesh.visible=false}
+ $('fxLayer').replaceChildren();
  casino.dealerUntil=0;
  casino.shieldUntil.fill(0);
  casino.lineUntil.fill(0);
  $('casinoEvent').textContent='';
 }
 function animateCasino(now,dt) {
+ animateSparks(now);document.body.dataset.reduced=String(reduced);
  const active=G?.phase==='playing'||G?.phase==='busy';
  const target=active?Math.min(1,Math.floor(G.streak/3)/3):0;
  casino.heat=THREE.MathUtils.damp(casino.heat,target,2.5,dt);
  const joker=now<casino.jokerUntil;
+ document.body.dataset.joker=String(joker);
+ $('tableSurface').style.setProperty('--heat',casino.heat);
+ $('heatBadge').style.opacity=target>0?'1':'0';
+ $('heatBadge').innerHTML=(G?.streak>=9?'INFERNO':G?.streak>=6?'SUPER FIRE':'ON FIRE')+'<small>'+G.streak+' CONSECUTIVE WINS</small>';
  warmLight.intensity=casino.heat*36;
  $('tableSurface').style.setProperty('--table-light',joker?.83:1+casino.heat*.15);
  spot.color.copy(baseSpot).lerp(fireSpot,casino.heat);
  spot.intensity=THREE.MathUtils.damp(spot.intensity,joker?65:140,7,dt);
  jokerMesh.visible=joker;
  if(joker){
-  const progress=Math.max(0,1-(casino.jokerUntil-now)/(reduced?500:950));
+  const progress=Math.max(0,1-(casino.jokerUntil-now)/(reduced?650:1350));
+  jokerMesh.scale.setScalar(reduced?1.2:1.7);
+  jokerMesh.rotation.z=reduced?0:Math.sin(progress*Math.PI)*.18;
   jokerMesh.rotation.x=reduced?0:Math.PI*(1-Math.min(1,progress*3));
   jokerMesh.position.y=reduced?1.04:1.04+Math.sin(progress*Math.PI)*.65;
  }else $('casinoEvent').textContent=target>0?'On fire · '+G.streak:'';
@@ -874,6 +938,7 @@ function flash(kind,index=-1,msg=''){
  feedbackTimeout=setTimeout(()=>panel.classList.remove('positive','negative','ability'),400);
  if(index>=0)highlights[index]={kind,end:performance.now()+520};
  if(kind==='ability'&&index>=0)casino.shieldUntil[index]=performance.now()+700;
+ if(index>=0)burst(index,kind==='negative'?0xef7055:kind==='ability'?0x86ddff:0xffd16b,kind==='negative'?12:20);
  if(kind==='positive'||kind==='negative')casino.dealerUntil=performance.now()+650;
  if(msg)pop(msg);
 }
@@ -900,7 +965,7 @@ function draw(){let jokers=0;while(G.deck.length){const c=G.deck.pop();if(c.joke
 function grantTokens(n){const give=Math.max(0,Math.min(n,100-G.stageEarned));G.credits+=give;G.stageEarned+=give}
 function bonusShield(){G.shields++;G.message=' +1 Shield token'}
 function lineState(){return LINES.map(l=>l.every(i=>G.board[i]))}
-function scoreLines(before){for(let j=0;j<LINES.length;j++)if(!before[j]&&LINES[j].every(i=>G.board[i])){let pts=(j<3?250:j<6?300:400)+(G.ticket==='builder'?150:0);if(has('twin'))pts*=2;casino.lineUntil[j]=performance.now()+1100;G.score+=pts;G.shields++;grantTokens(6+(has('collector')?6:0));pop('✦ LINE COMPLETE · +'+pts+' PTS!');sound('line')}}
+function scoreLines(before){for(let j=0;j<LINES.length;j++)if(!before[j]&&LINES[j].every(i=>G.board[i])){let pts=(j<3?250:j<6?300:400)+(G.ticket==='builder'?150:0);if(has('twin'))pts*=2;casino.lineUntil[j]=performance.now()+1100;for(const index of LINES[j])burst(index,0xffd16b,12);floatLabel('LINE +'+pts,LINES[j][1]);G.score+=pts;G.shields++;grantTokens(6+(has('collector')?6:0));pop('✦ LINE COMPLETE · +'+pts+' PTS!');sound('line')}}
 function refill(){const i=G.board.findIndex((c,k)=>!c&&!G.locked[k]);if(i<0)return;const before=lineState(),c=draw();if(c){G.board[i]=c;meshCard(c,i,true);scoreLines(before)}}
 const brief = {
  'Lucky Ticket':'2 shields · +1 each stage',
@@ -929,7 +994,7 @@ const brief = {
 function showDialog(k,title,body,buttons,action=null){
  $('modal').dataset.screen='';
  $('modalAction').removeAttribute('aria-label');
- $('modal').querySelectorAll('.bossStamp,.resultScore,.resultCaption,.resultDetail').forEach(node=>node.remove());
+ $('modal').querySelectorAll('.bossStamp,.resultScore,.resultCaption,.resultDetail,#replayTutorial').forEach(node=>node.remove());
  const host = $('modalChoices');
  $('modalKick').textContent = k;
  $('modalTitle').textContent = title;
@@ -1037,6 +1102,52 @@ function endRun(win,reason){
  G.detail=reason||'Run completed.';refresh();const bestKey='hilo-3d-rogue-best';let prior=0;try{prior=Number(localStorage.getItem(bestKey))||0;if(G.score>prior)localStorage.setItem(bestKey,String(G.score))}catch(e){}
  showRunResult(win,reason,Math.max(prior,G.score));
 }
+let lesson=null;
+function firstVisit(){
+ let seen=false;try{seen=localStorage.getItem('hilo-tutorial-v1')==='done'}catch(e){}
+ if(seen)return;
+ showDialog('','HILO','Beat the deck. Break the house.',[{title:'Learn to play',click:startLesson}],{label:'Skip — play now',click:()=>{rememberLesson();chooseTicket()}});
+ $('modal').dataset.screen='welcome';
+}
+function rememberLesson(){try{localStorage.setItem('hilo-tutorial-v1','done')}catch(e){}}
+function startLesson(){
+ if(lesson||G.phase==='busy')return;
+ lesson={saved:G,step:0};hideDialog();cancelBossEntry();resetCasino();animations=[];
+ G={...G,board:[{v:3,s:'♥'},null,null,null,null,null,null,null,null],deck:[{v:12,s:'♠'},{v:8,s:'♦'}],selected:0,phase:'playing',score:0,streak:0,credits:0,shields:1,protected:Array(9).fill(false),upgrades:Array(9).fill(null),locked:Array(9).fill(false),artifacts:[],push:0,message:'Practice table',detail:''};
+ for(let i=0;i<9;i++)meshCard(G.board[i],i);refresh();$('lesson').hidden=false;renderLesson();
+}
+function renderLesson(){
+ if(!lesson)return;
+ const steps=[
+ ['Pick your card','Tap the 4 of hearts. Yellow marks the card you are playing.'],
+ ['Higher or lower?','Will the next card beat 4? Press Higher. Aces are low; ties lose.'],
+ ['Protect your position','The 9 replaced your card. Press Shield to protect it from one miss.'],
+ ['Try a protected miss','Press Lower. This practice draw is a King, so your shield will block the miss.'],
+ ['You’re ready','Without protection, a miss removes that position. Clear three decks to win; keep two cards for the final boss. Streaks refill slots. Spend tokens between bosses.']
+ ];
+ const [title,copy]=steps[lesson.step];$('lessonStep').textContent='PRACTICE · '+(lesson.step+1)+' / 5';$('lessonTitle').textContent=title;$('lessonCopy').textContent=copy;
+ $('lessonNext').hidden=lesson.step!==4;$('lessonNext').textContent='Play';
+ for(const id of ['higher','lower','shield'])$(id).classList.remove('lessonTarget');
+ const target=[null,'higher','shield','lower',null][lesson.step];if(target)$(target).classList.add('lessonTarget');
+ for(const id of ['push','peek','swap','cashout','restart','settings','runInfo'])$(id).disabled=true;
+ $('higher').disabled=lesson.step!==1;$('lower').disabled=lesson.step!==3;$('shield').disabled=lesson.step!==2;
+}
+function finishLesson(){
+ if(!lesson)return;const saved=lesson.saved;lesson=null;G=saved;animations=[];resetCasino();
+ $('lesson').hidden=true;for(const id of ['higher','lower','shield'])$(id).classList.remove('lessonTarget');
+ for(const id of ['restart','settings','runInfo'])$(id).disabled=false;
+ for(let i=0;i<9;i++)meshCard(G.board[i],i);refresh();rememberLesson();
+ if(G.phase==='ticket')chooseTicket();else hideDialog();
+}
+function lessonGuess(dir){
+ if(lesson.step===1&&dir==='higher'){
+  G.board[0]={v:8,s:'♦'};meshCard(G.board[0],0,true);G.score=100;G.deck.pop();floatLabel('+100',0);sound('good');flash('positive',0);lesson.step=2;
+ }else if(lesson.step===3&&dir==='lower'){
+  G.protected[0]=false;G.deck.pop();sound('shield');flash('ability',0,'SHIELD BLOCK');lesson.step=4;
+ }else return;
+ refresh();renderLesson();
+}
+$('lessonSkip').onclick=finishLesson;$('lessonNext').onclick=finishLesson;
 function newRun(){
  cancelBossEntry();
  applyBossStyle(1);
@@ -1211,6 +1322,7 @@ function meshCard(c,i,animate=false){
  else { m.position.set(p.x,m.userData.targetY,p.z); m.rotation.x=0; }
 }
 function guess(dir){
+ if(lesson){lessonGuess(dir);return}
  if(G.phase!=='playing'||!G.board[G.selected])return;
  const run=G;
  const i=G.selected,old=G.board[i],p=chance(old,dir),c=draw();
@@ -1235,7 +1347,8 @@ function guess(dir){
    if(has('compass')&&G.turns%5===0)G.peeks++;
    if(up==='seed'){G.slotHits[i]++;if(G.slotHits[i]%3===0)refill()}
    if(up==='scout'){G.slotHits[i]++;if(G.slotHits[i]%4===0)G.peeks++}
-   grantTokens(2);G.score+=pts;
+   grantTokens(2);G.score+=pts;floatLabel('+'+pts,i);
+   if(up==='amp'||up==='mint'||up==='kindle'||up==='seed'&&G.slotHits[i]%3===0||up==='scout'&&G.slotHits[i]%4===0)upgradeTrigger(up,i);
    if(G.push===1){G.push=2;G.pushScore=pts;info=' · Push 1/2: stay on this position'}
    else if(G.push===2){G.score+=2*(G.pushScore+pts);G.push=0;info=' ·  PUSH COMPLETE 3×'}
    if(G.streak%3===0){G.shields++;refill();if(has('phoenix'))refill();info+=' ·  ON FIRE +1 shield and card';if(G.streak===6){G.peeks++;info+=' · SUPER FIRE +Peek'}}
@@ -1245,7 +1358,7 @@ function guess(dir){
    G.streak=0;if(G.stage===1)G.score=Math.max(0,G.score-75);
    const up=G.upgrades[i],pushing=G.push>0;
    if(!pushing&&has('mirror')&&!G.mirrorUsed){G.mirrorUsed=true;info=' Mirror saved card';sound('shield');flash('ability',i,' MIRROR SAVED')}
-   else if(!pushing&&up==='ward'&&!G.wardUsed[i]){G.wardUsed[i]=true;info=' Ward saved card';sound('shield');flash('ability',i,' WARD BLOCK')}
+   else if(!pushing&&up==='ward'&&!G.wardUsed[i]){G.wardUsed[i]=true;upgradeTrigger('ward',i);info=' Ward saved card';sound('shield');flash('ability',i,' WARD BLOCK')}
    else if(!pushing&&G.protected[i]){G.protected[i]=false;info='Shield used · card saved';sound('shield');flash('ability',i,' SHIELD BLOCK')}
    else{G.board[i]=null;discardCard(i);info='Position lost';if(G.stage===2&&G.locked.filter(Boolean).length<3){G.locked[i]=true;info+=' ·  Collector locked it'}if(has('salvage')&&!G.salvageUsed){G.salvageUsed=true;refill()}}
    G.push=0;
@@ -1263,7 +1376,7 @@ function guess(dir){
 $('higher').onclick=()=>guess('higher');$('lower').onclick=()=>guess('lower');
 $('restart').onclick=()=>showDialog('RESTART','Start a new run?','Your current Roguelike progress will be lost.',[],{label:'Restart',click:()=>{hideDialog();newRun()}});
 $('push').onclick=()=>{if(G.phase!=='playing'||G.push)return;G.push=1;G.message=' Push Your Luck: win two guesses on this card for triple points';sound('push');flash('ability',G.selected,' PUSH YOUR LUCK');refresh()};
-$('shield').onclick=()=>{if(!G.shields||G.phase!=='playing'||!G.board[G.selected]||G.protected[G.selected])return;G.shields--;G.protected[G.selected]=true;G.message=rank(G.board[G.selected])+' protected · one miss';sound('shield');flash('ability',G.selected,' PROTECTED');refresh()};
+$('shield').onclick=()=>{if(lesson){if(lesson.step!==2)return;G.shields=0;G.protected[0]=true;lesson.step=3;refresh();sound('shield');flash('ability',0);renderLesson();return}if(!G.shields||G.phase!=='playing'||!G.board[G.selected]||G.protected[G.selected])return;G.shields--;G.protected[G.selected]=true;G.message=rank(G.board[G.selected])+' protected · one miss';sound('shield');flash('ability',G.selected,' PROTECTED');refresh()};
 $('peek').onclick=()=>{if(!G.peeks||G.phase!=='playing')return;G.peeks--;const c=[...G.deck].reverse().find(x=>!x.joker);G.message=c?' Next regular card: '+rank(c):'No regular card left';sound('peek');flash('ability',G.selected,c?' NEXT: '+rank(c):'NO REGULAR CARD');refresh()};
 $('swap').onclick=()=>{if(!G.swaps||G.phase!=='playing')return;swapFrom=G.selected;G.message='⇄ Select another occupied card to swap';sound('swap');flash('ability',G.selected,'⇄ SELECT SECOND CARD');refresh()};
 $('cashout').onclick=()=>{if(G.phase!=='playing'||G.streak<3)return;G.streak=0;G.shields++;G.message=' Streak cashed out · +1 Shield';sound('cashout');flash('ability',G.selected,' STREAK CASHED OUT');refresh()};
@@ -1275,6 +1388,7 @@ $('scene').addEventListener('click',e=>{
  if(G.phase!=='playing'||G.push===2)return;const i=hitCard(e);if(i<0)return;
  if(swapFrom!==null){if(i!==swapFrom){[G.board[i],G.board[swapFrom]]=[G.board[swapFrom],G.board[i]];[G.protected[i],G.protected[swapFrom]]=[G.protected[swapFrom],G.protected[i]];meshCard(G.board[i],i);meshCard(G.board[swapFrom],swapFrom);G.swaps--;G.message='⇄ Swapped two cards';sound('swap');flash('ability',i,'⇄ SWAPPED')}swapFrom=null}
  G.selected=i;refresh();sound('select');flash('ability',i);
+ if(lesson){if(lesson.step===0)lesson.step=1;renderLesson()}
 });
 
 $('runInfo').onclick=()=>showDialog('',BOSSES[G.stage-1].name,
@@ -1288,6 +1402,7 @@ $('settings').onclick=()=>{
  showDialog('','Settings','',[],{label:'×',click:hideDialog});
  $('modal').dataset.screen='settings';
  $('modalAction').setAttribute('aria-label','Close settings');
+ const replay=document.createElement('button');replay.id='replayTutorial';replay.textContent='Practice tutorial';replay.onclick=startLesson;replay.disabled=G.phase==='busy';$('modal').querySelector('.modalbox').append(replay);
  for(const [label,checked,change] of [
   ['Sound',soundOn,()=>toggleSound()],
   ['Music',musicOn,()=>{musicOn=!musicOn}],
@@ -1337,5 +1452,5 @@ function animate(now){
  animateCasino(now,dt);
  renderer.render(scene,camera);
 }
-requestAnimationFrame(animate);newRun();$('loading').classList.add('hidden');
+requestAnimationFrame(animate);newRun();firstVisit();$('loading').classList.add('hidden');
 </script></body></html>
