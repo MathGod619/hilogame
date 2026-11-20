@@ -70,6 +70,21 @@
  .power{padding:6px 8px}
 }
 
+
+/* High contrast shop: override general modal button styling */
+.modal .shopchoice{display:flex;flex-direction:column;align-items:stretch;justify-content:flex-start;gap:6px;width:100%;min-height:115px;margin:0;background:#172831!important;color:#f6faf8!important;border:1.5px solid #55717a!important;border-radius:12px;padding:14px 13px!important;text-align:left!important}
+.modal .shopchoice strong{display:block;color:#f9dc8a!important;font-size:15px;line-height:1.3}
+.modal .shopchoice small{display:block;color:#e4eef0!important;font-size:13px;line-height:1.45;font-weight:500;margin:0;overflow-wrap:anywhere}
+.modal .shopchoice em{display:block;color:#c9f18f!important;font-size:13px;font-weight:900;font-style:normal;margin-top:auto;padding-top:5px}
+.modal .shopchoice:disabled{opacity:1!important;background:#27333c!important;border-color:#45535d!important;cursor:not-allowed}
+.modal .shopchoice:disabled strong{color:#f1dcab!important}
+.modal .shopchoice:disabled small{color:#bfcbce!important}
+.modal .shopchoice:disabled em{color:#a7b2b5!important}
+.modal .shopchoice:not(:disabled):hover{background:#254339!important;border-color:#d4f57b!important}
+.modal .shopchoice:focus-visible{outline:3px solid #d6f57d;outline-offset:2px}
+.modal.modalscroll{width:min(790px,calc(100vw - 28px));max-width:790px;max-height:88dvh;overflow-y:auto;padding:22px}
+.modal .shopchoices{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+@media(max-width:520px){.modal.modalscroll{padding:15px;max-height:90dvh}.modal .shopchoices{grid-template-columns:1fr}.modal .shopchoice{min-height:0;padding:12px!important}}
 </style></head><body>
 <main class="app"><header class="top"><div><div class="kicker">RIDE THE BUS • SURVIVE THE DECK</div><div class="brand">HI<span>LO</span> <span style="font-size:13px;letter-spacing:0;color:#9cb4b3">ARCADE</span></div></div><div class="topcontrols"><label class="small" for="mode">MODE</label><select id="mode"><option value="arcade">Arcade Run · 3 Stages</option><option value="classic">Classic · 1 Deck</option><option value="endless">Endless · High Score</option><option value="rogue">Roguelike · Build a Run</option><option value="casino">Casino · Free Chips</option></select><button class="secondary" id="reset">↻ New game</button></div></header>
 <section id="casino" class="casino" aria-label="HiLo Casino Mode">
@@ -103,28 +118,28 @@ const ARTIFACTS=[
 {id:'anchor',icon:'⚓',name:'Iron Anchor',desc:'Start every stage with two shield tokens.',cost:60},
 {id:'salvage',icon:'🛠️',name:'Salvage Kit',desc:'First unshielded miss per stage repairs an empty position.',cost:55},
 {id:'ember',icon:'🔥',name:'Ember Engine',desc:'Every correct guess gains 20 points per streak level, capped at 10.',cost:65},
-{id:'collector',icon:'💎',name:'Treasure Map',desc:'Completing a new line awards 12 additional tokens.',cost:65},
-{id:'diamond',icon:'♦️',name:'Diamond Eye',desc:'Successful risky guesses grant 12 extra shop tokens.',cost:55},
+{id:'collector',icon:'💎',name:'Treasure Map',desc:'Completing a new line awards 6 additional tokens.',cost:65},
+{id:'diamond',icon:'♦️',name:'Diamond Eye',desc:'Successful risky guesses grant 5 extra shop tokens.',cost:55},
 {id:'twin',icon:'♊',name:'Twin Signals',desc:'Doubles score bonuses for completed board lines.',cost:70}
 ];
 const SLOT_UPGRADES=[
 {id:'ward',icon:'🛡️',name:'Ward',desc:'First miss on this position is blocked each stage.',cost:35},
 {id:'amp',icon:'⚡',name:'Amplifier',desc:'Correct guesses here score 1.5× points.',cost:35},
 {id:'kindle',icon:'🔥',name:'Kindling',desc:'Correct guesses here add 1 to the streak (once per turn).',cost:45},
-{id:'mint',icon:'🪙',name:'Mint',desc:'Correct guesses here award 8 shop tokens.',cost:35},
+{id:'mint',icon:'🪙',name:'Mint',desc:'Correct guesses here award 3 shop tokens.',cost:35},
 {id:'seed',icon:'🌱',name:'Seedbed',desc:'Every third success here restores one empty position.',cost:40},
 {id:'scout',icon:'👁️',name:'Watchtower',desc:'Every fourth success here earns one Peek token.',cost:40}
 ];
 const TICKETS=[
 {id:'lucky',icon:'🍀',name:'Lucky Ticket',desc:'Begin with two shields, plus one at each new stage.'},
 {id:'fire',icon:'🔥',name:'Fire Ticket',desc:'Fire milestones give +200 bonus points and one extra Peek.'},
-{id:'risk',icon:'🎲',name:'Risk Ticket',desc:'Guesses with ≤40% odds earn 2.5× points and 18 tokens on success. Three such wins earn a shield.'},
+{id:'risk',icon:'🎲',name:'Risk Ticket',desc:'Guesses with ≤40% odds earn 2.5× points and 6 tokens on success. Three such wins earn a shield.'},
 {id:'builder',icon:'🏗️',name:'Builder Ticket',desc:'Earn +150 extra points for each completed row, column or diagonal. No extra starting card.'}
 ];
 const BOSSES=[{name:'The Tollkeeper',description:'Each miss costs 75 points, but riskier guesses still pay big.'},{name:'The Collector',description:'The first three unprotected misses each lock an empty slot until the next stage.'},{name:'The Final Driver',description:'Clear the deck while keeping at least two occupied positions. Extra Jokers await.'}];
 const has=id=>G&&G.mode==='rogue'&&G.rogue?.artifacts.includes(id);
 const rogue=()=>G&&G.mode==='rogue'&&G.rogue;
-function grantCredits(n){if(rogue())G.rogue.credits+=n}
+function grantCredits(n){if(!rogue())return;const r=G.rogue;const amount=Math.max(0,Math.min(n,100-(r.stageEarned||0)));r.stageEarned=(r.stageEarned||0)+amount;r.credits+=amount}
 function rogueRefill(){if(!rogue())return;const r=G.rogue;let i=G.board.findIndex((x,j)=>!x&&!r.locked[j]);if(i<0)return;let n=G.deck.findLastIndex(c=>!c.joker);if(n<0)return;const before=lineState();G.board[i]=G.deck.splice(n,1)[0];G.extraNotes.push('🌱 Refilled slot '+(i+1));updateLines(before)}
 function rogueRender(){const active=!!rogue();$('roguehud').classList.toggle('hidden',!active);if(!active)return;let r=G.rogue;
 $('rogue-ticket').textContent=(TICKETS.find(t=>t.id===r.ticket)||TICKETS[0]).icon+' '+(TICKETS.find(t=>t.id===r.ticket)||TICKETS[0]).name;
@@ -134,7 +149,7 @@ $('rogue-slots').innerHTML=r.upgrades.some(Boolean)?r.upgrades.map((id,i)=>id?'<
 }
 function chooseTicket(){G.phase='dialog';render();$('overlay').classList.remove('hidden');$('modalkicker').textContent='YOUR RUN STARTS HERE';$('modaltitle').textContent='🎟️ Choose your Ticket';$('modaldesc').textContent='Each Ticket changes how you build and survive. You can unlock four artifacts and upgrade all nine positions during your run.';const b=$('modalbuttons');b.replaceChildren();for(const t of TICKETS){let x=document.createElement('button');x.className='ticketchoice';x.innerHTML='<strong>'+t.icon+' '+t.name+'</strong><small>'+t.desc+'</small>';x.onclick=()=>{G.rogue.ticket=t.id;hideModal();G.rogue.credits=65;pitStop(1)};b.appendChild(x)}}
 function pitStop(next){if(!rogue())return;G.phase='shop';const r=G.rogue;r.offers=shuffle(ARTIFACTS.filter(a=>!r.artifacts.includes(a.id))).slice(0,5).map(a=>a.id);render();shopRender(next)}
-function shopRender(next){const r=G.rogue;$('overlay').classList.remove('hidden');$('modalkicker').textContent='PIT STOP · BEFORE STAGE '+next;$('modaltitle').textContent='🚌 Build Your Run';$('modaldesc').textContent='🪙 '+r.credits+' tokens · '+r.artifacts.length+'/4 artifacts equipped. Buy permanent abilities or position upgrades. Artifact prices rise by 15 tokens per equipped Artifact, and board upgrades rise by 10 per installed slot. Your upgrades carry into the next stage.';const box=$('modalbuttons');box.replaceChildren();
+function shopRender(next){const r=G.rogue;$('overlay').classList.remove('hidden');$('modalkicker').textContent='PIT STOP · BEFORE STAGE '+next;$('modaltitle').textContent='🚌 Build Your Run';$('modaldesc').textContent='🪙 '+r.credits+' tokens · '+r.artifacts.length+'/4 artifacts equipped. Buy permanent abilities or position upgrades. Earn up to 100 tokens from gameplay per stage, plus 50 for each defeated boss. Artifact prices rise by 15 per equipped Artifact; board upgrades rise by 10 per installed position.';const box=$('modalbuttons');box.replaceChildren();
 const grid=document.createElement('div');grid.className='shopchoices';
 for(const id of r.offers){const a=ARTIFACTS.find(x=>x.id===id);if(!a)continue;const b=document.createElement('button');b.className='shopchoice';const price=a.cost+15*r.artifacts.length;b.disabled=r.credits<price||r.artifacts.length>=4;b.innerHTML='<strong>'+a.icon+' '+a.name+'</strong><small>'+a.desc+'</small><em>🪙 '+price+' tokens</em>';b.onclick=()=>{r.credits-=price;r.artifacts.push(id);r.offers=r.offers.filter(x=>x!==id);shopRender(next)};grid.appendChild(b)}
 const t=document.createElement('div');t.style='grid-column:1/-1;color:#d9c3fa;font-weight:900;font-size:13px;margin-top:5px';t.textContent='UPGRADE A BOARD POSITION';grid.appendChild(t);
@@ -194,7 +209,7 @@ function render(){let active=selectedIndex();if(active===-1)active=null;G.select
  $('cashout').disabled=G.phase!=='ready'||G.streak<3||G.pushStage===1;
  $('powerinfo').textContent=G.swapFrom!==null?'Swap mode: tap the destination card. Tap Swap again to cancel.':G.peeked?'👁️ Scouted next regular card: '+name(G.peeked)+'. Joker shuffles may change it.':G.pushStage===1?'Push stage 2: hit another correct guess on the same position, or lose the card.':G.pushArmed?'Push is armed. Your next two guesses must both succeed for 3× combined points.':'Select cards, place shields, build streaks, and score line bonuses.';
  $('log').innerHTML=G.log.slice(0,30).map(x=>{let d=document.createElement('div');d.textContent=x;return d.outerHTML}).join('')}
-function updateLines(previous){if(G.mode==='classic')return;let fresh=[];lines.forEach((line,i)=>{if(!previous[i]&&line.every(p=>G.board[p]!==null))fresh.push(i)});for(let i of fresh){let score=i<3?250:i<6?300:400;if(rogue()){if(has('twin'))score*=2;if(G.rogue.ticket==='builder')score+=150;grantCredits(25+(has('collector')?12:0))}G.score+=score;G.shields++;addLog('▦ '+(i<3?'Row':i<6?'Column':'Diagonal')+' complete: +'+score+' points and 1 shield');G.extraNotes.push('Line complete! +'+score+' points +1 shield')}}
+function updateLines(previous){if(G.mode==='classic')return;let fresh=[];lines.forEach((line,i)=>{if(!previous[i]&&line.every(p=>G.board[p]!==null))fresh.push(i)});for(let i of fresh){let score=i<3?250:i<6?300:400;if(rogue()){if(has('twin'))score*=2;if(G.rogue.ticket==='builder')score+=150;grantCredits(6+(has('collector')?6:0))}G.score+=score;G.shields++;addLog('▦ '+(i<3?'Row':i<6?'Column':'Diagonal')+' complete: +'+score+' points and 1 shield');G.extraNotes.push('Line complete! +'+score+' points +1 shield')}}
 function lineState(){return lines.map(l=>l.every(i=>G.board[i]!==null))}
 function addBoardCard(continuation){let i=G.board.findIndex((c,j)=>c===null&&(!rogue()||!G.rogue.locked[j]));if(i<0){G.extraNotes.push('Board full, no refill needed');continuation();return}const was=lineState();drawCard(c=>{if(c){G.board[i]=c;G.extraNotes.push('Added '+name(c)+' at position '+(i+1));updateLines(was)}continuation()})}
 function bestScore(mode){try{return Number(localStorage.getItem('hilo-v2-best-'+mode))||0}catch(e){return 0}}
@@ -203,7 +218,7 @@ function showResults(){const record=saveBest();const title=G.result==='win'?'�
  $('modalkicker').textContent='HI LO · '+G.mode.toUpperCase();$('modaltitle').textContent=title;$('modaldesc').innerHTML='Final results — '+G.turns+' turns across '+G.stage+' '+(G.stage===1?'deck':'decks')+'.'+box;
  const buttons=$('modalbuttons');buttons.replaceChildren();const again=document.createElement('button');again.textContent='↻ Play again';again.onclick=begin;buttons.appendChild(again);const close=document.createElement('button');close.className='alt';close.textContent='View final board';close.onclick=hideModal;buttons.appendChild(close);$('overlay').classList.remove('hidden');}
 function endRun(result){G.phase='end';G.result=result;tell(result==='win'?'🏆 Bus Driver defeated!':'💀 All board cards lost.','Final score: '+G.score.toLocaleString()+' · Correct: '+G.correct+' · Turns: '+G.turns);addLog((result==='win'?'VICTORY':'GAME OVER')+' · '+G.mode+' · stage '+G.stage);render();showResults()}
-function beginNextStage(){G.phase='dialog';const next=G.stage+1;if(rogue()){grantCredits(75+G.stage*35);pitStop(next);return}const labels=['','Warm Up','Hot Seat','Bus Driver'];const message=G.mode==='endless'?'Deck '+G.stage+' cleared! The next deck gets tougher.':'Stage '+G.stage+' cleared! Next up: '+labels[next]+'.';addLog('🏆 '+message);render();showModal('🏆 STAGE CLEAR',G.mode==='endless'?'DECK '+G.stage+' SURVIVED':'STAGE '+G.stage+' COMPLETE',message+' Your score carries forward. The board resets; banked power-ups carry forward.',[{label:G.mode==='endless'?'▶ Next endless deck':'▶ Start Stage '+next,action:()=>{setupStage(next);render()}}])}
+function beginNextStage(){G.phase='dialog';const next=G.stage+1;if(rogue()){G.rogue.credits+=50;addLog('🏆 Boss defeated: +50 Pit Stop tokens');pitStop(next);return}const labels=['','Warm Up','Hot Seat','Bus Driver'];const message=G.mode==='endless'?'Deck '+G.stage+' cleared! The next deck gets tougher.':'Stage '+G.stage+' cleared! Next up: '+labels[next]+'.';addLog('🏆 '+message);render();showModal('🏆 STAGE CLEAR',G.mode==='endless'?'DECK '+G.stage+' SURVIVED':'STAGE '+G.stage+' COMPLETE',message+' Your score carries forward. The board resets; banked power-ups carry forward.',[{label:G.mode==='endless'?'▶ Next endless deck':'▶ Start Stage '+next,action:()=>{setupStage(next);render()}}])}
 function finishCheck(){if(G.board.every(c=>c===null)){endRun('lose');return true}
  // A deck containing only Jokers has no guessable cards. Resolve those events now
  // so the run cannot get stuck behind a 0% / 0% Higher-Lower choice.
@@ -214,7 +229,7 @@ function finishCheck(){if(G.board.every(c=>c===null)){endRun('lose');return true
   G.phase='ready';render();return true;
  }
  if(!G.deck.length){if(G.mode==='rogue'&&G.stage===3&&G.board.filter(Boolean).length<2){endRun('lose')}else if(G.mode==='classic'||(G.mode==='arcade'||G.mode==='rogue')&&G.stage===3){endRun('win')}else{beginNextStage()}return true}return false}
-function setupStage(stage){G.stage=stage;G.stageTotal=0;if(rogue()){G.rogue.mirrorUsed=false;G.rogue.salvageUsed=false;G.rogue.locked=Array(9).fill(false);G.rogue.wardUsed=Array(9).fill(false);G.rogue.slotHits=Array(9).fill(0);G.rogue.correctStage=0;G.rogue.riskHits=0;}G.deck=shuffle([...normalDeck(),...Array.from({length:G.mode==='endless'?Math.min(5,stage+1):(G.mode==='arcade'||G.mode==='rogue')&&stage===3?4:2},()=>({joker:true}))]);G.stageTotal=G.deck.length;
+function setupStage(stage){G.stage=stage;G.stageTotal=0;if(rogue()){G.rogue.mirrorUsed=false;G.rogue.salvageUsed=false;G.rogue.locked=Array(9).fill(false);G.rogue.wardUsed=Array(9).fill(false);G.rogue.slotHits=Array(9).fill(0);G.rogue.correctStage=0;G.rogue.riskHits=0;G.rogue.stageEarned=0;}G.deck=shuffle([...normalDeck(),...Array.from({length:G.mode==='endless'?Math.min(5,stage+1):(G.mode==='arcade'||G.mode==='rogue')&&stage===3?4:2},()=>({joker:true}))]);G.stageTotal=G.deck.length;
  G.board=Array(9).fill(null);G.protected=Array(9).fill(false);G.selected=0;G.cursor=0;G.streak=0;G.pushArmed=false;G.pushStage=0;G.pushIndex=null;G.pushPoints=0;G.bonusRefill=false;G.pendingSix=false;G.extraNotes=[];G.peeked=null;G.swapFrom=null;G.phase='ready';G.result=null;
  const startCards=G.mode==='classic'?1:G.mode==='endless'?Math.max(1,4-stage):[3,2,1][Math.min(stage-1,2)];let added=0;
  while(added<startCards&&G.deck.length){const c=G.deck.pop();if(c.joker){insertFive();continue}G.board[added++]=c}
@@ -227,7 +242,7 @@ function applyGuess(guess){if(G.phase!=='ready'||G.swapFrom!==null)return;const 
  // Probability is computed from the deck before drawing, approximated by the current revealed draw plus other regular cards.
  const base=good?Math.max(10,Math.round(100*mult)):0;let points=good?base*(G.streak>=9?3:1):0;const r=rogue();const up=r?r.upgrades[idx]:null;if(good&&r){if(r.ticket==='risk'&&p<=.4)points=Math.round(points*2.5);else if(has('clover')&&p<=.35)points*=2;if(up==='amp')points=Math.round(points*1.5)}
  G.turns++;let event='Turn '+G.turns+': '+name(old)+' → '+name(c)+' ('+guess+')';
- if(good){G.board[idx]=c;G.correct++;G.streak++;if(r){r.correctStage++;grantCredits(4);if(p<=.35){grantCredits((has('diamond')?12:0))}if(r.ticket==='risk'&&p<=.4){grantCredits(18);r.riskHits++;if(r.riskHits%3===0){G.shields++;G.extraNotes.push('🎲 Risk Ticket: three tough wins earn +1 shield')}}if(old.v>=4&&old.v<=8){points+=Math.round(base*0.35);grantCredits(5);G.extraNotes.push('🎯 Middle-card courage: +35% base points and 5 tokens')}if(up==='mint')grantCredits(8);if(up==='kindle')G.streak++;if(has('ember'))points+=20*Math.min(10,G.streak);if(up==='seed'){r.slotHits[idx]++;if(r.slotHits[idx]%3===0)rogueRefill()}if(up==='scout'){r.slotHits[idx]++;if(r.slotHits[idx]%4===0)G.peeks++}if(has('timekeeper')&&G.correct%10===0)G.peeks++;if(has('compass')&&G.turns%5===0)G.peeks++;}G.bestStreak=Math.max(G.bestStreak,G.streak);G.score+=points;tell('✅ Correct! '+name(old)+' → '+name(c),'+'+points+' points · '+mult.toFixed(1)+'× risk reward');
+ if(good){G.board[idx]=c;G.correct++;G.streak++;if(r){r.correctStage++;grantCredits(2);if(p<=.35){grantCredits((has('diamond')?5:0))}if(r.ticket==='risk'&&p<=.4){grantCredits(6);r.riskHits++;if(r.riskHits%3===0){G.shields++;G.extraNotes.push('🎲 Risk Ticket: three tough wins earn +1 shield')}}if(old.v>=4&&old.v<=8){points+=Math.round(base*0.35);grantCredits(2);G.extraNotes.push('🎯 Middle-card courage: +35% base points and 2 tokens')}if(up==='mint')grantCredits(3);if(up==='kindle')G.streak++;if(has('ember'))points+=20*Math.min(10,G.streak);if(up==='seed'){r.slotHits[idx]++;if(r.slotHits[idx]%3===0)rogueRefill()}if(up==='scout'){r.slotHits[idx]++;if(r.slotHits[idx]%4===0)G.peeks++}if(has('timekeeper')&&G.correct%10===0)G.peeks++;if(has('compass')&&G.turns%5===0)G.peeks++;}G.bestStreak=Math.max(G.bestStreak,G.streak);G.score+=points;tell('✅ Correct! '+name(old)+' → '+name(c),'+'+points+' points · '+mult.toFixed(1)+'× risk reward');
  if(G.pushArmed){G.pushArmed=false;G.pushStage=1;G.pushPoints=points;G.pushIndex=idx;G.extraNotes.push('Push 1/2 complete — stay on this card')}
  else if(G.pushStage===1){let extra=2*(G.pushPoints+points);G.score+=extra;G.extraNotes.push('🎲 PUSH SUCCESS: +'+extra+' bonus points (3× total)');G.pushStage=0;G.pushIndex=null;G.pushPoints=0}
  G.bonusRefill=false;
@@ -244,7 +259,7 @@ function applyGuess(guess){if(G.phase!=='ready'||G.swapFrom!==null)return;const 
 function chancesFor(old,guess,drawn){let count=1,win=guess==='higher'?drawn.v>old.v:drawn.v<old.v;for(const d of G.deck)if(!d.joker){count++;if(guess==='higher'?d.v>old.v:d.v<old.v)win++}return win/count}
 function chooseCard(i){if(!G.board[i])return;if(G.swapFrom!==null){if(G.swapFrom===i){G.swapFrom=null;render();return}let from=G.swapFrom;[G.board[from],G.board[i]]=[G.board[i],G.board[from]];[G.protected[from],G.protected[i]]=[G.protected[i],G.protected[from]];G.swaps--;G.swapFrom=null;G.selected=i;addLog('⇄ Swapped positions '+(from+1)+' and '+(i+1));tell('⇄ Cards swapped.','Swaps move shields along with their cards.');render();return}if(G.phase!=='ready'||G.pushStage===1||G.mode==='classic')return;G.selected=i;render()}
 function begin(){hideModal();G={mode:$('mode').value,stage:1,stageTotal:54,deck:[],board:Array(9).fill(null),protected:Array(9).fill(false),selected:0,cursor:0,correct:0,streak:0,bestStreak:0,turns:0,score:0,shields:0,peeks:0,swaps:0,peeked:null,swapFrom:null,pushArmed:false,pushStage:0,pushIndex:null,pushPoints:0,bonusRefill:false,pendingSix:false,extraNotes:[],rogue:null,phase:'ready',result:null,log:[],message:'Choose Higher or Lower.',detail:'Arcade: tap any occupied card. Ace is low; ties lose.'};
- if(G.mode==='rogue'){G.rogue={ticket:'lucky',artifacts:[],credits:0,upgrades:Array(9).fill(null),locked:Array(9).fill(false),wardUsed:Array(9).fill(false),slotHits:Array(9).fill(0),mirrorUsed:false,salvageUsed:false,correctStage:0,offers:[]};chooseTicket();return}setupStage(1);addLog('New '+G.mode+' game started');finishCheck();render()}
+ if(G.mode==='rogue'){G.rogue={ticket:'lucky',artifacts:[],credits:0,upgrades:Array(9).fill(null),locked:Array(9).fill(false),wardUsed:Array(9).fill(false),slotHits:Array(9).fill(0),mirrorUsed:false,salvageUsed:false,correctStage:0,stageEarned:0,offers:[]};chooseTicket();return}setupStage(1);addLog('New '+G.mode+' game started');finishCheck();render()}
 $('higher').onclick=()=>applyGuess('higher');$('lower').onclick=()=>applyGuess('lower');$('reset').onclick=begin;$('mode').onchange=begin;$('playagain').onclick=begin;
 $('push').onclick=()=>{if(G.phase!=='ready'||G.pushStage===1)return;G.pushArmed=!G.pushArmed;G.swapFrom=null;render()};
 $('shield').onclick=()=>{if(!G.shields||G.phase!=='ready'||G.pushStage===1||G.selected===null||G.protected[G.selected])return;G.shields--;G.protected[G.selected]=true;addLog('🛡️ Shield applied to position '+(G.selected+1));tell('Shield placed!','This position survives one normal incorrect guess.');render()};
