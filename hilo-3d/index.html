@@ -243,9 +243,36 @@ header { height:84px; padding:8px 22px; border-bottom:4px double #a7967355; alig
  #toast {bottom:193px;right:10px;max-width:90%;}
 }
 
+
+#tableSurface { background-image:var(--grain),radial-gradient(ellipse,var(--boss-felt,#244b30),var(--boss-edge,#102e20));border-color:var(--boss-accent,#c7a86b); transition:filter .25s,background-color .8s,border-color .8s; }
+#tableSurface::after { content:attr(data-mark); }
+#bossName { position:absolute;top:12px;left:22px;font:14px Impact,'Arial Narrow',sans-serif;letter-spacing:.06em;color:var(--boss-accent,#c7a86b);opacity:.8; }
+body[data-boss="2"] #tableSurface { border-radius:7px;box-shadow:0 0 0 5px #101b1d,0 0 0 7px #749b9b,inset 0 0 0 6px #142e30,inset 0 0 0 8px #6e8f8a; }
+body[data-boss="3"] #tableSurface { border-radius:24px 4px;box-shadow:0 0 0 5px #211118,0 0 0 7px #a56b61,inset 0 0 0 6px #301c27,inset 0 0 0 8px #8f6562; }
+body[data-boss="3"] .brand::before {background:#b13b4a;}
+.modal[data-screen="entrance"] { background:#070a08e8; }
+.modal[data-screen="entrance"] .modalbox { width:min(560px,94%);padding:30px 22px 24px;background:#141b16; }
+.modal[data-screen="entrance"] h2 { font-size:clamp(34px,5vw,56px); }
+.modal[data-screen="entrance"] #modalText { font-size:16px;line-height:1.5; }
+.bossStamp { margin:0 auto 15px;width:92px;height:92px;display:grid;place-items:center;border:2px solid currentColor;color:#dfc995;transform:rotate(-6deg);font:68px Georgia;box-shadow:inset 0 0 0 6px #141b16,inset 0 0 0 7px currentColor; }
+body[data-boss="2"] .bossStamp {color:#a9c9c5;transform:rotate(0);}
+body[data-boss="3"] .bossStamp {color:#d78774;transform:rotate(6deg);}
+.modal[data-screen="entrance"]:not(.still) .bossStamp {animation:stampIn .45s ease-out both;}
+@keyframes stampIn {from{opacity:0;scale:1.3;}to{opacity:1;scale:1;}}
+.resultScore {font:clamp(55px,12vw,96px)/1.1 Impact,'Arial Narrow',sans-serif;color:#f0d7a6;}
+.resultCaption {font:12px system-ui;letter-spacing:.18em;color:#bfb19b;margin-bottom:15px;}
+.modal[data-screen="victory"] {background:radial-gradient(ellipse,#34281bbf,#080b09ed);}
+.modal[data-screen="victory"] .modalbox {border-color:#e4c276;}
+.modal[data-screen="defeat"] .modalbox {border-color:#8b6e64;}
+.modal[data-screen="defeat"] .resultScore {color:#c6b7a7;}
+.modal[data-screen="victory"]:not(.still) .resultScore {animation:scoreIn .6s ease-out both;}
+@keyframes scoreIn {from{opacity:0;transform:translateY(12px);}to{opacity:1;transform:none;}}
+@media(prefers-reduced-motion:reduce){.bossStamp,.resultScore{animation:none!important;}#tableSurface{transition:none;}}
+@media(max-width:760px){#bossName{font-size:12px;top:9px;left:16px;}.bossStamp{width:70px;height:70px;font-size:49px;}}
+
 </style>
 <script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.1/build/three.module.js"}}</script>
-</head><body><div id="tableSurface" aria-hidden="true"></div><canvas id="scene" aria-label="Interactive three-dimensional casino table"></canvas><div class="shade"></div>
+</head><body><div id="tableSurface" aria-hidden="true" data-mark="♠"><span id="bossName">The Tollkeeper</span></div><canvas id="scene" aria-label="Interactive three-dimensional casino table"></canvas><div class="shade"></div>
 <header>
   <div><div class="eyebrow">Midnight Table</div><div class="brand">HI<span>LO</span> </div><div class="sub" id="bossrule">The Tollkeeper</div></div>
   <div class="stats">
@@ -699,10 +726,103 @@ function animateCasino(now,dt) {
  lineGlows.forEach((line,i)=>{
   line.material.opacity=Math.max(0,(casino.lineUntil[i]-now)/1100)*.9;
  });
+ if(musicGain){
+  const pulse=reduced?1:.85+Math.sin(now*.0018)*.15;
+  const volume=musicOn&&active&&!joker?.045*pulse+casino.heat*.025:0;
+  musicGain.gain.setTargetAtTime(volume,audioContext.currentTime,.2);
+ }
  if(ambientLevel){
   ambientLevel.gain.setTargetAtTime(joker?.006:.05+casino.heat*.025,audioContext.currentTime,.15);
   ambientFilter.frequency.setTargetAtTime(275+casino.heat*180,audioContext.currentTime,.3);
  }
+}
+
+const BOSS_PRESENTATION = [
+ {mark:'♠',name:'The Tollkeeper',rule:'Every miss costs 75 points.',color:'#c7a86b',felt:'#244b30',edge:'#102e20',notes:[110,164.81,220]},
+ {mark:'♦',name:'The Collector',rule:'Lost positions lock. Up to three.',color:'#a9c9c5',felt:'#21454a',edge:'#112b33',notes:[98,146.83,207.65]},
+ {mark:'♣',name:'The Final Driver',rule:'Finish with at least two cards. Four Jokers.',color:'#d78774',felt:'#4d2730',edge:'#221923',notes:[82.41,123.47,174.61]}
+];
+let bossEntryTimer, pendingBoss=null, entryGeneration=0;
+let musicOn=true, musicGain, musicVoices=[];
+function applyBossStyle(stage) {
+ const theme=BOSS_PRESENTATION[stage-1];
+ document.body.dataset.boss=String(stage);
+ const surface=$('tableSurface');
+ surface.style.setProperty('--boss-felt',theme.felt);
+ surface.style.setProperty('--boss-edge',theme.edge);
+ surface.style.setProperty('--boss-accent',theme.color);
+ surface.dataset.mark=theme.mark;
+ $('bossName').textContent=theme.name;
+ tuneBossMusic(stage);
+}
+function tuneBossMusic(stage) {
+ if(!audioContext)return;
+ const notes=BOSS_PRESENTATION[stage-1].notes;
+ musicVoices.forEach((voice,i)=>voice.frequency.setTargetAtTime(notes[i],audioContext.currentTime,.3));
+}
+function startBossMusic() {
+ if(musicGain)return;
+ musicGain=audioContext.createGain();
+ musicGain.gain.value=0;
+ musicGain.connect(audioBus);
+ for(let i=0;i<3;i++){
+  const voice=audioContext.createOscillator();
+  const level=audioContext.createGain();
+  voice.type=i===0?'sine':'triangle';
+  level.gain.value=i===0?.45:.13;
+  voice.connect(level).connect(musicGain);
+  voice.start();
+  musicVoices.push(voice);
+ }
+ tuneBossMusic(G?.stage||1);
+}
+function cancelBossEntry() {
+ clearTimeout(bossEntryTimer);
+ pendingBoss=null;
+ entryGeneration++;
+}
+function enterBoss(stage) {
+ cancelBossEntry();
+ const generation=entryGeneration;
+ pendingBoss=stage;
+ applyBossStyle(stage);
+ const theme=BOSS_PRESENTATION[stage-1];
+ const begin=()=>{
+  if(generation!==entryGeneration||pendingBoss!==stage)return;
+  cancelBossEntry();
+  hideDialog();
+  setupStage(stage);
+ };
+ showDialog('',theme.name,theme.rule,[],{label:'Deal',click:begin});
+ $('modal').dataset.screen='entrance';
+ $('modal').classList.toggle('still',reduced);
+ const stamp=document.createElement('div');
+ stamp.className='bossStamp';
+ stamp.setAttribute('aria-hidden','true');
+ stamp.textContent=theme.mark;
+ $('modalTitle').before(stamp);
+ sound('entrance'+stage);
+ // The entrance can always be skipped with Deal, Enter or Space.
+ bossEntryTimer=setTimeout(begin,reduced?1800:3000);
+}
+function showRunResult(win,reason,best) {
+ showDialog('',win?'House beaten':'Run over',reason,[],{
+  label:'Play again',click:()=>{hideDialog();newRun();}
+ });
+ $('modal').dataset.screen=win?'victory':'defeat';
+ $('modal').classList.toggle('still',reduced);
+ const score=document.createElement('div');
+ score.className='resultScore';
+ score.textContent=G.score.toLocaleString();
+ const caption=document.createElement('div');
+ caption.className='resultCaption';
+ caption.textContent='POINTS';
+ const detail=document.createElement('p');
+ detail.className='resultDetail';
+ detail.textContent=G.correct+' correct · Best '+best.toLocaleString();
+ $('modalText').before(score,caption);
+ $('modalText').after(detail);
+ sound(win?'victory':'defeat');
 }
 
 let G=null,animations=[],reduced=matchMedia('(prefers-reduced-motion: reduce)').matches,soundOn=true,shopOffers=null,hovered=-1,swapFrom=null;
@@ -764,6 +884,8 @@ const brief = {
  'Watchtower':'4 correct here → Peek'
 };
 function showDialog(k,title,body,buttons,action=null){
+ $('modal').dataset.screen='';
+ $('modal').querySelectorAll('.bossStamp,.resultScore,.resultCaption,.resultDetail').forEach(node=>node.remove());
  const host = $('modalChoices');
  $('modalKick').textContent = k;
  $('modalTitle').textContent = title;
@@ -844,13 +966,15 @@ function shop(stage,fresh=false){
  });
  showDialog('Pit Stop · Stage '+stage,'Pit stop',
   G.credits+' tokens',
-  opts,{label:'Play '+BOSSES[stage-1].name,click:()=>{hideDialog();setupStage(stage)}});
+  opts,{label:'Play '+BOSSES[stage-1].name,click:()=>enterBoss(stage)});
 }
 function chooseSlot(stage,up){
  const price=up.cost+10*G.upgrades.filter(Boolean).length;
  showDialog('BOARD UPGRADE',up.icon+' '+up.name,'Choose a position. Cost: '+price+' tokens. Each slot supports one permanent upgrade.',Array.from({length:9},(_,i)=>({title:'Position '+(i+1),desc:G.upgrades[i]?'Already upgraded':'Apply '+up.name,disabled:!!G.upgrades[i]||G.credits<price,click:()=>{sound('purchase');G.credits-=price;G.upgrades[i]=up.id;shopOffers.upgrades=shopOffers.upgrades.filter(x=>x!==up.id);shop(stage)}})),{label:'← Back to Pit Stop',click:()=>shop(stage)});
 }
 function setupStage(stage){
+ cancelBossEntry();
+ applyBossStyle(stage);
  resetCasino();
  G.stage=stage;G.stageEarned=0;G.streak=0;G.phase='playing';G.locked=Array(9).fill(false);G.wardUsed=Array(9).fill(false);G.slotHits=Array(9).fill(0);G.mirrorUsed=false;G.salvageUsed=false;G.riskHits=0;G.protected=Array(9).fill(false);G.board=Array(9).fill(null);G.selected=0;G.deck=shuffle([...normalDeck(),...Array.from({length:stage===3?4:2},()=>({joker:true}))]);G.stageTotal=G.deck.length;G.push=0;G.pushScore=0;G.swapFrom=null;
  if(G.ticket==='lucky')G.shields+=stage===1?2:1;if(has('anchor'))G.shields+=2;
@@ -867,9 +991,11 @@ function finishStage(){
 function endRun(win,reason){
  G.phase='ended';G.message=win?' THE FINAL DRIVER DEFEATED!':' END OF THE ROAD';
  G.detail=reason||'Run completed.';refresh();const bestKey='hilo-3d-rogue-best';let prior=0;try{prior=Number(localStorage.getItem(bestKey))||0;if(G.score>prior)localStorage.setItem(bestKey,String(G.score))}catch(e){}
- showDialog(win?'VICTORY':'GAME OVER',G.message,reason+'  Score: '+G.score.toLocaleString()+' · Correct: '+G.correct+' / '+G.turns+' · Best: '+Math.max(prior,G.score).toLocaleString(),[],{label:'↻ New Roguelike Run',click:()=>{hideDialog();newRun()}});
+ showRunResult(win,reason,Math.max(prior,G.score));
 }
 function newRun(){
+ cancelBossEntry();
+ applyBossStyle(1);
  resetCasino();
  G={deck:[],board:Array(9).fill(null),selected:0,correct:0,streak:0,best:0,turns:0,score:0,stage:1,stageTotal:54,credits:65,stageEarned:0,shields:0,peeks:0,swaps:0,protected:Array(9).fill(false),locked:Array(9).fill(false),wardUsed:Array(9).fill(false),slotHits:Array(9).fill(0),artifacts:[],upgrades:Array(9).fill(null),ticket:'',riskHits:0,phase:'ticket',message:'Choose your Ticket',detail:'',push:0,pushScore:0};
  for(let i=0;i<9;i++)meshCard(null,i);
@@ -904,6 +1030,7 @@ function openAudio() {
   audioBus = audioContext.createGain();
   audioBus.gain.value = .76;
   audioBus.connect(audioContext.destination);
+ startBossMusic();
   noiseBuffer = audioContext.createBuffer(1, audioContext.sampleRate * 2, audioContext.sampleRate);
   const samples = noiseBuffer.getChannelData(0);
   let seed = 193;
@@ -961,6 +1088,17 @@ function sound(kind) {
 const lastFoley = {deal: -1, land: -1};
 function playSound(kind) {
  const t = audioContext.currentTime;
+ if(kind.startsWith('entrance')||kind==='victory'||kind==='defeat'){
+  const notes=kind==='victory'?[220,277.18,329.63,440]:kind==='defeat'?[146.83,110,82.41]:BOSS_PRESENTATION[Number(kind.slice(-1))-1].notes;
+  for(let i=0;i<notes.length;i++){
+   const voice=audioContext.createOscillator(),gain=audioContext.createGain();
+   const start=t+i*.12;
+   voice.type='sine';voice.frequency.value=notes[i];
+   gain.gain.setValueAtTime(.0001,start);gain.gain.linearRampToValueAtTime(.09,start+.025);gain.gain.exponentialRampToValueAtTime(.0001,start+.8);
+   voice.connect(gain).connect(audioBus);voice.start(start);voice.stop(start+.85);
+  }
+  return;
+ }
  if (kind in lastFoley) {
   if (t - lastFoley[kind] < .037) return;
   lastFoley[kind] = t;
@@ -1105,9 +1243,12 @@ $('settings').onclick=()=>{
  showDialog('SETTINGS','Visual & Audio Settings','Change animations or sound without affecting the run.',[
  {title:' Animations: '+(reduced?'OFF':'ON'),desc:'Skip card movement and use instant draws.',click:()=>{reduced=!reduced;$('settings').click()}},
  {title:' Sound: '+(soundOn?'ON':'OFF'),desc:'Toggle all game sound effects.',click:()=>{toggleSound();$('settings').click()}}
+ ,{title:'Music: '+(musicOn?'ON':'OFF'),desc:'Quiet ambient tones for each boss.',click:()=>{musicOn=!musicOn;$('settings').click()}}
  ],{label:'Return to Table',click:hideDialog});
 };
-document.addEventListener('keydown',e=>{if(!$('modal').classList.contains('hidden'))return;if(e.key.toLowerCase()==='h')guess('higher');if(e.key.toLowerCase()==='l')guess('lower')});
+document.addEventListener('keydown',e=>{
+ if(pendingBoss!==null&&(e.key==='Enter'||e.key===' ')){e.preventDefault();$('modalAction').click();return}
+ if(!$('modal').classList.contains('hidden'))return;if(e.key.toLowerCase()==='h')guess('higher');if(e.key.toLowerCase()==='l')guess('lower')});
 let lastTime=0;
 function animate(now){
  requestAnimationFrame(animate);
