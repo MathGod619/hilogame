@@ -496,14 +496,8 @@ const rim = new THREE.PointLight(0xf7ab65, 35, 13);
 rim.position.set(-4.6, 2.8, -1.7);
 scene.add(rim);
 
-// The dealer's sleeves establish the far seat without occupying a card slot.
+// Dealer sleeves and hands stay outside the playable nine-card grid.
 const suit = mat(0x171a1b), shirt = mat(0xc7b69c, .85);
-for (const side of [-1, 1]) {
- const sleeve = addMesh(new THREE.CapsuleGeometry(.25, .75, 5, 10), suit, side * 2.8, .88, -4.04);
- sleeve.rotation.set(Math.PI / 2, 0, side * .14);
- const cuff = box(.38, .13, .33, shirt, side * 2.72, .94, -3.48);
- cuff.rotation.y = side * .14;
-}
 box(1.19, .13, 1.62, brass, deckX, .77, deckZ);
 box(1.13, .12, 1.56, mat(0xc7b89b, .9), deckX, .88, deckZ);
 
@@ -808,7 +802,7 @@ function beginDraw(card,resolve){
 }
 const dealerHands = [-1,1].map(side=>{
  const hand=new THREE.Group();
- const glove=mat(0xb4ac91,.9);
+ const glove=mat(0x353b36,.62);
  const forearm=new THREE.Mesh(new THREE.BoxGeometry(.43,.13,1.6),suit);
  forearm.position.z=-.83;hand.add(forearm);
  const cuff=new THREE.Mesh(new THREE.BoxGeometry(.47,.145,.15),shirt);
