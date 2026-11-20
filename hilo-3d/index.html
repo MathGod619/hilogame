@@ -793,9 +793,12 @@ function refresh(){
  $('message').textContent=G.message||((G.board[G.selected]?'Selected: '+rank(G.board[G.selected]):'Select a card')+'');$('detail').textContent=G.detail;
  const ready=G.phase==='playing'&&!!G.board[G.selected];$('higher').disabled=!ready;$('lower').disabled=!ready;
  for(const [id,active] of [['push',ready&&G.push===0],['shield',ready&&G.shields>0&&!G.protected[G.selected]],['peek',ready&&G.peeks>0],['swap',ready&&G.swaps>0],['cashout',ready&&G.streak>=3]])$(id).disabled=!active;
- $('push').textContent=G.push===1?' PUSH 2/2':' Push';
+ $('push').textContent=G.push===1?'Push 2/2':'Push';
+ $('shield').textContent='Shield '+G.shields;
+ $('peek').textContent='Peek '+G.peeks;
+ $('swap').textContent='Swap '+G.swaps;
  for(let i=0;i<9;i++){pads[i].material.emissive.setHex(i===G.selected&&ready?0x537c36:G.locked[i]?0x58212a:0x000000);pads[i].material.emissiveIntensity=i===G.selected&&ready?.9:G.locked[i]?.8:0;const m=cardMeshes[i];if(m)m.userData.targetY=i===G.selected&&ready?1.02:.75}
- spot.color.setHex(G.streak>=9?0xff7c51:G.streak>=3?0xffb477:0xffd1a0);
+ 
 }
 let audioContext, audioBus, roomTone, noiseBuffer, ambientLevel, ambientFilter;
 function openAudio() {
