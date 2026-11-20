@@ -299,7 +299,7 @@ function renderMatch(match, seat, move, rematch, redraw) {
   const player = match.players[match.active];
   const heading = winner
     ? match.winners.map(i => match.players[i].name).join(' & ') + (winner.length === 1 ? ' wins' : ' tie')
-    : player.name + '’s turn';
+    : mode === 'local' && practice && seat === match.active ? 'Your turn' : player.name + '’s turn';
   title.append(el('h1', heading), el('span', match.remaining + ' in deck'));
   const canPlay = !winner && match.active === seat;
   if (selectionTurn !== match.turn) {
