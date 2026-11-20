@@ -101,6 +101,8 @@ button:not(:disabled):hover { filter: brightness(1.16); }
   pointer-events: none; opacity: 0; transition: opacity .15s;
 }
 #toast.show { opacity: 1; }
+#toast { top:60px; }
+@media(min-width:1000px){#toast{left:auto;right:18px;top:auto;bottom:20px;transform:none;max-width:232px;}}
 #toast img { width: 26px; height: auto; vertical-align: middle; margin-right: 7px; }
 #loading { position: fixed; inset: 0; display: grid; place-content: center; background: #0c100d; z-index: 30; text-align: center; font: 22px var(--serif); }
 #loading small { display: block; color: var(--muted); font: 12px system-ui, sans-serif; margin-top: 8px; }
@@ -641,7 +643,7 @@ const cardsLeft=()=>G?.board.filter(Boolean).length||0;
 const rank=c=>c?R[c.v]+c.s:'empty';
 function shuffle(a){for(let i=a.length-1;i>0;i--){let j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a}
 const normalDeck=()=>S.flatMap(s=>R.map((_,v)=>({v,s})));
-function draw(){let jokers=0;while(G.deck.length){const c=G.deck.pop();if(c.joker){G.deck.push(...shuffle(normalDeck()).slice(0,5));shuffle(G.deck);G.stageTotal+=5;jokers++;continue}if(jokers){revealJoker(jokers);pop('JOKER! +'+(5*jokers)+' CARDS', jokerArt);sound('joker');flash('negative');}return c}return null}
+function draw(){let jokers=0;while(G.deck.length){const c=G.deck.pop();if(c.joker){G.deck.push(...shuffle(normalDeck()).slice(0,5));shuffle(G.deck);G.stageTotal+=5;jokers++;continue}if(jokers){revealJoker(jokers);sound('joker');flash('negative');}return c}return null}
 function grantTokens(n){const give=Math.max(0,Math.min(n,100-G.stageEarned));G.credits+=give;G.stageEarned+=give}
 function bonusShield(){G.shields++;G.message=' +1 Shield token'}
 function lineState(){return LINES.map(l=>l.every(i=>G.board[i]))}
