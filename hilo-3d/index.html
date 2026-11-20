@@ -528,6 +528,37 @@ function medallion(g, x, y, radius, color) {
  }
  g.restore();
 }
+// Original two-headed court artwork in the deck's limited screen-print palette.
+function paintCourt(g,card,ink){
+ const queen=card.v===11,jack=card.v===10,joker=!!card.joker;
+ const gold='#c69743',red=joker?'#70468d':'#a03930',black='#202a24',paper='#f2dfb5';
+ const polygon=(points,color)=>{g.beginPath();points.forEach(([x,y],i)=>i?g.lineTo(x,y):g.moveTo(x,y));g.closePath();g.fillStyle=color;g.fill();g.strokeStyle=black;g.lineWidth=4;g.stroke()};
+ g.save();g.beginPath();g.rect(100,145,312,426);g.clip();
+ g.fillStyle=gold;g.fillRect(100,145,312,426);
+ g.strokeStyle=paper;g.lineWidth=2;for(let x=80;x<440;x+=24){g.beginPath();g.moveTo(x,145);g.lineTo(x+160,571);g.stroke()}
+ for(const flipped of [false,true]){
+  g.save();if(flipped){g.translate(512,716);g.rotate(Math.PI)}
+  polygon([[112,358],[140,304],[205,286],[305,286],[372,310],[402,358]],red);
+  polygon([[192,291],[257,317],[320,291],[343,358],[170,358]],black);
+  g.strokeStyle=gold;g.lineWidth=8;for(let x=190;x<=320;x+=27){g.beginPath();g.moveTo(x,315);g.lineTo(x-16,357);g.stroke()}
+  polygon([[202,198],[300,198],[307,247],[286,292],[250,309],[215,283],[197,241]],paper);
+  polygon([[192,210],[204,186],[302,186],[316,218],[296,210],[288,229],[280,209],[218,217],[210,260],[193,248]],black);
+  g.strokeStyle=black;g.lineWidth=5;g.beginPath();g.moveTo(218,235);g.lineTo(241,232);g.moveTo(267,232);g.lineTo(289,235);g.moveTo(254,237);g.lineTo(248,261);g.lineTo(260,263);g.stroke();
+  g.fillStyle=black;g.fillRect(227,238,6,6);g.fillRect(277,238,6,6);
+  g.strokeStyle=red;g.lineWidth=4;g.beginPath();g.moveTo(241,277);g.lineTo(269,277);g.stroke();
+  if(!queen&&!jack&&!joker)polygon([[214,264],[238,286],[254,280],[275,286],[298,261],[289,299],[255,321],[221,298]],black);
+  if(queen){polygon([[199,219],[188,257],[204,291],[215,268]],gold);polygon([[306,217],[318,261],[303,290],[295,266]],gold)}
+  if(joker){polygon([[188,210],[166,166],[215,184],[252,143],[281,184],[337,163],[314,211]],red)}
+  else if(jack){polygon([[188,205],[196,176],[295,165],[322,202]],red);polygon([[283,175],[310,138],[317,179]],paper)}
+  else polygon([[195,204],[182,164],[218,178],[251,148],[281,178],[316,162],[303,204]],gold);
+  g.fillStyle=red;g.beginPath();g.arc(251,188,7,0,Math.PI*2);g.fill();
+  // Scepter and suit crest establish the silhouette at small card sizes.
+  g.strokeStyle=gold;g.lineWidth=11;g.beginPath();g.moveTo(357,352);g.lineTo(357,246);g.stroke();
+  g.fillStyle=paper;g.font='bold 40px Georgia';g.fillText(joker?'✦':card.s,357,244);
+  g.restore();
+ }
+ g.restore();g.strokeStyle=ink;g.lineWidth=5;g.strokeRect(100,145,312,426);
+}
 function cardFace(g, card) {
  const joker = card.joker;
  const paper = g.createLinearGradient(0, 0, 512, 716);
@@ -549,12 +580,7 @@ function cardFace(g, card) {
  g.textBaseline = 'middle';
  g.textAlign = 'center';
  if (court) {
-  medallion(g, 256, 365, 139, '#a17b4c');
-  g.fillStyle = ink;
-  g.font = 'bold 150px Georgia';
-  g.fillText(joker ? '☾' : index, 256, 365);
-  g.font = 'bold 24px Georgia';
-  g.fillText(joker ? 'J O K E R' : suit, 256, 540);
+  paintCourt(g,card,ink);
  } else {
   g.fillStyle = ink;
   const count=card.v+1;
