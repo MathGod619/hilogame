@@ -106,7 +106,21 @@ const suit=mat(0x151a1c,.95),shirt=mat(0xd7d0c1,.9),skin=mat(0x55453a,.9);let to
 // Decorative card deck and discard area.
 box(1.1,.14,1.57,gold,3.18,.76,-.28);box(1.02,.1,1.49,mat(0x23364b,.35),3.18,.9,-.28);
 const S=['♠','♥','♦','♣'],R=['A','2','3','4','5','6','7','8','9','10','J','Q','K'];
-function tex(card){const c=document.createElement('canvas');c.width=400;c.height=560;const g=c.getContext('2d');g.fillStyle='#faf7ec';g.fillRect(0,0,400,560);g.strokeStyle='#d4cbb8';g.lineWidth=9;g.strokeRect(13,13,374,534);const red=card.s==='♥'||card.s==='♦';g.fillStyle=red?'#b3313b':'#1f2a2c';g.font='bold 66px Georgia';g.textAlign='left';g.fillText(R[card.v],30,79);g.font='50px Georgia';g.fillText(card.s,28,135);g.font='200px Georgia';g.textAlign='center';g.fillText(card.s,200,347);g.save();g.translate(400,560);g.rotate(Math.PI);g.textAlign='left';g.font='bold 60px Georgia';g.fillText(R[card.v],30,79);g.restore();let t=new THREE.CanvasTexture(c);t.colorSpace=THREE.SRGBColorSpace;t.anisotropy=Math.min(renderer.capabilities.getMaxAnisotropy(),8);return t}
+function tex(card){
+ // High-resolution, high-contrast printing. Unlit card faces retain their real ink colors.
+ const c=document.createElement('canvas');c.width=512;c.height=716;
+ const g=c.getContext('2d');g.fillStyle='#ffffff';g.fillRect(0,0,512,716);
+ g.strokeStyle='#2c3838';g.lineWidth=7;g.strokeRect(12,12,488,692);
+ const red=card.s==='♥'||card.s==='♦',ink=red?'#b10e25':'#101820';
+ g.fillStyle=ink;g.textBaseline='top';
+ g.font='900 112px Georgia, serif';g.textAlign='left';g.fillText(R[card.v],28,20);
+ g.font='bold 88px Georgia, serif';g.fillText(card.s,34,136);
+ g.font='bold 300px Georgia, serif';g.textAlign='center';g.textBaseline='middle';g.fillText(card.s,256,387);
+ g.save();g.translate(512,716);g.rotate(Math.PI);g.textBaseline='top';g.textAlign='left';
+ g.font='900 99px Georgia, serif';g.fillText(R[card.v],28,17);g.font='bold 72px Georgia, serif';g.fillText(card.s,32,123);g.restore();
+ const t=new THREE.CanvasTexture(c);t.colorSpace=THREE.SRGBColorSpace;t.anisotropy=Math.min(renderer.capabilities.getMaxAnisotropy(),8);
+ t.minFilter=THREE.LinearMipmapLinearFilter;t.magFilter=THREE.LinearFilter;t.generateMipmaps=true;return t;
+}
 const backCanvas=document.createElement('canvas');backCanvas.width=256;backCanvas.height=350;let b=backCanvas.getContext('2d');b.fillStyle='#172a38';b.fillRect(0,0,256,350);b.strokeStyle='#c9a46e';b.lineWidth=12;b.strokeRect(18,18,220,314);b.strokeRect(34,34,188,282);b.fillStyle='#d0ac74';b.font='bold 58px Georgia';b.textAlign='center';b.fillText('H',128,195);let backTex=new THREE.CanvasTexture(backCanvas);backTex.colorSpace=THREE.SRGBColorSpace;
 const slots=Array.from({length:9},(_,i)=>({x:(i%3-1)*1.54,z:Math.floor(i/3)*1.9-1.76}));const pads=[];const cardMeshes=Array(9).fill(null);
 for(let i=0;i<9;i++){const p=slots[i];const o=box(1.26,.012,1.75,mat(0x0f4035,.98),p.x,.701,p.z,false);o.material=new THREE.MeshStandardMaterial({color:0x0f4035,roughness:1,emissive:0x000000});pads.push(o);const e=new THREE.LineSegments(new THREE.EdgesGeometry(new THREE.BoxGeometry(1.3,.013,1.79)),new THREE.LineBasicMaterial({color:0xa28750,transparent:true,opacity:.35}));e.position.copy(o.position);scene.add(e)}
@@ -222,7 +236,7 @@ function pop(msg){const t=$('toast');t.textContent=msg;t.classList.add('show');s
 function meshCard(c,i,animate=false){
  if(cardMeshes[i]){scene.remove(cardMeshes[i]);cardMeshes[i].geometry.dispose();for(const m of cardMeshes[i].material){if(m.map&&m.map!==backTex)m.map.dispose();m.dispose()}}
  if(!c){cardMeshes[i]=null;return}
- const p=slots[i],face=new THREE.MeshStandardMaterial({map:tex(c),roughness:.8}),back=new THREE.MeshStandardMaterial({map:backTex,roughness:.86}),side=mat(0xe5dece,.9);
+ const p=slots[i],face=new THREE.MeshBasicMaterial({map:tex(c),toneMapped:false}),back=new THREE.MeshBasicMaterial({map:backTex,toneMapped:false}),side=mat(0xe5dece,.9);
  const m=new THREE.Mesh(new THREE.BoxGeometry(1.17,.045,1.65),[side,side,face,back,side,side]);m.position.set(animate?3.18:p.x,animate?1.1:.75,animate?-.28:p.z);m.rotation.x=animate?Math.PI:0;m.castShadow=true;m.userData.index=i;m.userData.targetY=i===G?.selected?1.02:.75;scene.add(m);cardMeshes[i]=m;
  if(animate&&!reduced)animations.push({m,p,start:performance.now(),duration:460});
  else{m.position.set(p.x,m.userData.targetY,p.z);m.rotation.x=0}
