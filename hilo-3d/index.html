@@ -125,11 +125,66 @@ button:not(:disabled):hover { filter: brightness(1.16); }
   .tools button { min-height: 30px; }
 }
 @media (prefers-reduced-motion: reduce) { .controls, #toast { transition: none; } }
+
+.sub, .ribbon, .hint { display: none; }
+.stats .stat:nth-child(1), .stats .stat:nth-child(5), .stats .stat:nth-child(6), .stats .stat:nth-child(7) { display: none; }
+.stats { display: flex; gap: 20px; }
+.stat { border: 0; padding: 0; }
+.stat strong { font: 500 21px system-ui, sans-serif; }
+.stat small { font-size: 10px; }
+header { background: none; }
+.eyebrow { display: none; }
+.brand { font-size: 27px; }
+.controls { background: #0b100ce8; border: 0; box-shadow: none; padding: 10px; }
+.message { min-height: 0; font: 500 14px system-ui,sans-serif; margin-bottom: 6px; }
+.detail { display: none; }
+.guess { font: 600 16px system-ui,sans-serif; letter-spacing: 0; }
+.tools button { background: transparent; border-color: #ffffff18; font: 12px system-ui,sans-serif; }
+.modal { background: #050a07b8; }
+.modalbox { border: 0; background: #111a14f7; box-shadow: 0 20px 80px #0008; border-radius: 12px; padding: 22px; width: min(680px,100%); }
+.modalbox h2 { font: 500 27px system-ui,sans-serif; margin: 0 0 18px; }
+.modalbox p:empty { display: none; }
+.modalChoices button strong { font: 600 16px system-ui,sans-serif; }
+.modalChoices button small { font-size: 12px; color: #b8c2b9; }
+.modalChoices button[data-kind] { min-height: 96px; padding: 15px; }
+.modalChoices button[data-kind]::before { display:none; }
+.modalChoices button { border: 1px solid #ffffff19; border-radius: 7px; background: #1b271e; }
+.modalChoices button em { color: #e5cb91; font: 600 13px system-ui,sans-serif; }
+.offer { position:relative; }
+.offer > button { width:100%; height:100%; padding-right:34px!important; }
+.offer details { position:absolute; top:8px; right:8px; z-index:2; }
+.offer summary { cursor:pointer; list-style:none; width:24px; height:24px; border:1px solid #ffffff33; border-radius:50%; text-align:center; font:14px/22px Georgia,serif; color:#b8c2b9; }
+.offer details[open] { left:8px; background:#0a100cf5; padding:9px; border:1px solid #857349; border-radius:6px; }
+.offer details[open] summary { margin-left:auto; }
+.offer details p { margin:8px 0 0; font:13px/1.4 system-ui,sans-serif; text-align:left; color:#ede9db; }
+#modalAction { font:600 15px system-ui,sans-serif; }
+@media (min-width:1000px) {
+ .bottom { left:auto; right:18px; top:50%; bottom:auto; width:232px; transform:translateY(-50%); padding:0; }
+ .controls { width:100%; padding:16px; border-radius:10px; }
+ .actions { grid-template-columns:1fr; gap:9px; }
+ .guess { min-height:56px; }
+ .tools { grid-template-columns:1fr 1fr; margin-top:22px; gap:7px; }
+ .tools button { min-height:42px; }
+ .tools button:last-child { grid-column:1/-1; }
+}
+@media (max-width:760px) {
+ header { display:flex; gap:9px; }
+ .stats { display:flex; gap:12px; }
+ .stat strong { font-size:17px; }
+ .stat small { font-size:8px; }
+ .menu { gap:3px; }
+ .menu button { width:29px; height:32px; }
+ .brand { font-size:22px; }
+ .modalbox { padding:16px; }
+ .modalChoices button[data-kind] { min-height:106px; }
+}
+
+#casinoEvent { position:fixed; top:70px; left:50%; transform:translateX(-50%); color:#e8c994; font:500 14px system-ui,sans-serif; pointer-events:none; z-index:4; }
 </style>
 <script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.1/build/three.module.js"}}</script>
 </head><body><canvas id="scene" aria-label="Interactive three-dimensional casino table"></canvas><div class="shade"></div>
 <header>
-  <div><div class="eyebrow">Midnight Table</div><div class="brand">HI<span>LO</span> <small>3D</small></div><div class="sub" id="bossrule">The Tollkeeper</div></div>
+  <div><div class="eyebrow">Midnight Table</div><div class="brand">HI<span>LO</span> </div><div class="sub" id="bossrule">The Tollkeeper</div></div>
   <div class="stats">
     <div class="stat"><small>STAGE</small><strong id="stage">1/3</strong></div>
     <div class="stat"><small>SCORE</small><strong id="score">0</strong></div>
@@ -139,10 +194,10 @@ button:not(:disabled):hover { filter: brightness(1.16); }
     <div class="stat"><small>STREAK</small><strong id="streak">0</strong></div>
     <div class="stat"><small>BOARD</small><strong id="boardCount">1/9</strong></div>
   </div>
-  <div class="menu"><button id="settings" aria-label="Settings">⚙</button><button id="restart" aria-label="Restart">↻</button></div>
+  <div class="menu"><button id="runInfo" aria-label="Run details and rules">i</button><button id="settings" aria-label="Settings">⚙</button><button id="restart" aria-label="Restart">↻</button></div>
 </header>
-<div class="bottom"><div class="controls"><div class="ribbon"><span id="ticketName">🎟️ Ticket</span><span id="artifactCount">Artifacts 0/4</span><span id="shields">🛡️ 0</span><span id="stageProgress">Deck 1</span></div><div class="message" id="message" aria-live="polite">Choose your card</div><div class="detail" id="detail">Tap an occupied card on the 3D table.</div><div class="actions"><button class="guess" id="higher">↑ HIGHER</button><button class="guess lower" id="lower">↓ LOWER</button></div><div class="tools"><button id="push">🎲 Push</button><button id="shield">🛡️ Shield</button><button id="peek">👁️ Peek</button><button id="swap">⇄ Swap</button><button id="cashout">🔥 Cash Out</button></div><div class="hint">Tap any card • Ace low • Ties lose • Joker automatically adds 5 cards</div></div></div>
-<div id="toast" aria-live="polite"></div><div id="loading">Preparing the midnight table…<small>Loading the Three.js renderer</small></div>
+<div class="bottom"><div class="controls"><div class="ribbon"><span id="ticketName"> Ticket</span><span id="artifactCount">Artifacts 0/4</span><span id="shields"> 0</span><span id="stageProgress">Deck 1</span></div><div class="message" id="message" aria-live="polite">Choose your card</div><div class="detail" id="detail">Tap an occupied card on the 3D table.</div><div class="actions"><button class="guess" id="higher">Higher</button><button class="guess lower" id="lower">Lower</button></div><div class="tools"><button id="push"> Push</button><button id="shield"> Shield</button><button id="peek"> Peek</button><button id="swap">⇄ Swap</button><button id="cashout"> Cash Out</button></div></div></div>
+<div id="casinoEvent" aria-live="polite"></div><div id="toast" aria-live="polite"></div><div id="loading">Preparing the midnight table…<small>Loading the Three.js renderer</small></div>
 <div id="modal" class="modal hidden"><div class="modalbox" role="dialog" aria-modal="true" aria-labelledby="modalTitle" aria-describedby="modalText"><div class="eyebrow" id="modalKick">THE MIDNIGHT TABLE</div><h2 id="modalTitle">Settings</h2><p id="modalText"></p><div id="modalChoices" class="modalChoices"></div><div id="modalSettings"><label><input type="checkbox" id="motion"> Reduced motion / instant cards</label><label><input type="checkbox" id="sound" checked> Sound effects</label></div><button id="modalAction">Close</button></div></div>
 <script type="module">
 import * as THREE from 'three';
@@ -158,12 +213,13 @@ const deckX = 3.12, deckZ = -.58, discardX = 3.12, discardZ = 2.05;
 function positionCamera() {
  const width = innerWidth, height = innerHeight;
  const top = document.querySelector('header').getBoundingClientRect().bottom + 8;
- const bottom = document.querySelector('.controls').getBoundingClientRect().top - 10;
+ const desktop = width >= 1000;
+ const bottom = desktop ? height - 12 : document.querySelector('.controls').getBoundingClientRect().top - 10;
  const short = height < 570;
- const horizontal = width >= 900 ? 10.1 : short ? 7.9 : 7.65;
+ const horizontal = desktop ? 9.5 * width / (width - 260) : short ? 7.9 : 7.65;
  const viewHeight = Math.max((short ? 5.5 : 6.5) * height / Math.max(1, bottom - top), horizontal * height / width);
  const half = viewHeight / 2, aspect = width / height;
- const offsetX = width < 900 ? .53 : 0;
+ const offsetX = desktop ? 130 * viewHeight / height : .53;
  const offsetY = ((top + bottom) / 2 - height / 2) * viewHeight / height;
  camera.left = -half * aspect + offsetX;
  camera.right = half * aspect + offsetX;
@@ -431,32 +487,32 @@ for (const p of slots) {
 }
 
 const ARTIFACTS=[
-{id:'compass',icon:'🧭',name:'The Compass',desc:'Every fifth guess grants a Peek.',cost:45},
-{id:'phoenix',icon:'🪶',name:'Phoenix Feather',desc:'Every third consecutive success refills an empty board slot.',cost:65},
-{id:'mirror',icon:'🪞',name:'Mirror Trick',desc:'Once each stage, a normal missed guess leaves its card intact.',cost:75},
-{id:'clover',icon:'🍀',name:'Lucky Clover',desc:'Double scoring for successful predictions with odds of 35% or less.',cost:55},
+{id:'compass',icon:'',name:'The Compass',desc:'Every fifth guess grants a Peek.',cost:45},
+{id:'phoenix',icon:'',name:'Phoenix Feather',desc:'Every third consecutive success refills an empty board slot.',cost:65},
+{id:'mirror',icon:'',name:'Mirror Trick',desc:'Once each stage, a normal missed guess leaves its card intact.',cost:75},
+{id:'clover',icon:'',name:'Lucky Clover',desc:'Double scoring for successful predictions with odds of 35% or less.',cost:55},
 {id:'timekeeper',icon:'⌛',name:'Timekeeper',desc:'Every tenth correct guess gives a Peek token.',cost:50},
-{id:'storm',icon:'🏮',name:'Storm Lantern',desc:'Fire milestones score 40 points per occupied slot.',cost:55},
+{id:'storm',icon:'',name:'Storm Lantern',desc:'Fire milestones score 40 points per occupied slot.',cost:55},
 {id:'anchor',icon:'⚓',name:'Iron Anchor',desc:'Begin each stage with two additional shields.',cost:60},
-{id:'salvage',icon:'🛠️',name:'Salvage Kit',desc:'Your first unsaved miss per stage restores one empty slot.',cost:55},
-{id:'ember',icon:'🔥',name:'Ember Engine',desc:'Earn 20 points per streak level on each correct guess.',cost:65},
-{id:'collector',icon:'💎',name:'Treasure Map',desc:'New completed lines grant 6 additional Pit Stop tokens.',cost:65},
-{id:'diamond',icon:'♦️',name:'Diamond Eye',desc:'Successful predictions at 35% odds or less earn 5 extra tokens.',cost:55},
+{id:'salvage',icon:'',name:'Salvage Kit',desc:'Your first unsaved miss per stage restores one empty slot.',cost:55},
+{id:'ember',icon:'',name:'Ember Engine',desc:'Earn 20 points per streak level on each correct guess.',cost:65},
+{id:'collector',icon:'',name:'Treasure Map',desc:'New completed lines grant 6 additional Pit Stop tokens.',cost:65},
+{id:'diamond',icon:'♦',name:'Diamond Eye',desc:'Successful predictions at 35% odds or less earn 5 extra tokens.',cost:55},
 {id:'twin',icon:'♊',name:'Twin Signals',desc:'Double the points from completed board lines.',cost:70}
 ];
 const UPGRADES=[
-{id:'ward',icon:'🛡️',name:'Ward',desc:'First miss on this position per stage is blocked.',cost:35},
+{id:'ward',icon:'',name:'Ward',desc:'First miss on this position per stage is blocked.',cost:35},
 {id:'amp',icon:'⚡',name:'Amplifier',desc:'Correct guesses here earn 1.5× points.',cost:35},
-{id:'kindle',icon:'🔥',name:'Kindling',desc:'Correct guesses here grant an extra streak step.',cost:45},
-{id:'mint',icon:'🪙',name:'Mint',desc:'Correct guesses here earn 3 extra Pit Stop tokens.',cost:35},
-{id:'seed',icon:'🌱',name:'Seedbed',desc:'Every third successful guess here refills a board slot.',cost:40},
-{id:'scout',icon:'👁️',name:'Watchtower',desc:'Every fourth successful guess here earns a Peek.',cost:40}
+{id:'kindle',icon:'',name:'Kindling',desc:'Correct guesses here grant an extra streak step.',cost:45},
+{id:'mint',icon:'',name:'Mint',desc:'Correct guesses here earn 3 extra Pit Stop tokens.',cost:35},
+{id:'seed',icon:'',name:'Seedbed',desc:'Every third successful guess here refills a board slot.',cost:40},
+{id:'scout',icon:'',name:'Watchtower',desc:'Every fourth successful guess here earns a Peek.',cost:40}
 ];
 const TICKETS=[
-{id:'lucky',icon:'🍀',name:'Lucky Ticket',desc:'Two starting shields, plus one each subsequent stage.'},
-{id:'fire',icon:'🔥',name:'Fire Ticket',desc:'Fire milestones award 200 bonus points and a Peek.'},
-{id:'risk',icon:'🎲',name:'Risk Ticket',desc:'Successful predictions at 40% odds or less award 2.5× points and 6 tokens; three such wins grant a shield.'},
-{id:'builder',icon:'🏗️',name:'Builder Ticket',desc:'Each completed line awards 150 bonus points, without extra starting cards.'}
+{id:'lucky',icon:'',name:'Lucky Ticket',desc:'Two starting shields, plus one each subsequent stage.'},
+{id:'fire',icon:'',name:'Fire Ticket',desc:'Fire milestones award 200 bonus points and a Peek.'},
+{id:'risk',icon:'',name:'Risk Ticket',desc:'Successful predictions at 40% odds or less award 2.5× points and 6 tokens; three such wins grant a shield.'},
+{id:'builder',icon:'',name:'Builder Ticket',desc:'Each completed line awards 150 bonus points, without extra starting cards.'}
 ];
 const BOSSES=[
 {name:'The Tollkeeper',desc:'Each incorrect prediction costs 75 score points.'},
@@ -464,6 +520,99 @@ const BOSSES=[
 {name:'The Final Driver',desc:'Finish the deck with at least two occupied cards. Four Jokers await.'}
 ];
 const LINES=[[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0,4,8],[2,4,6]];
+// Reusable presentation objects never draw from the gameplay random source.
+const casino = {heat:0, jokerUntil:0, dealerUntil:0, shieldUntil:Array(9).fill(0), lineUntil:Array(8).fill(0)};
+const warmLight = new THREE.PointLight(0xff853c, 0, 12);
+warmLight.position.set(-3, 3, 1);
+scene.add(warmLight);
+const lineGlows = LINES.map(indices => {
+ const points = indices.map(i => new THREE.Vector3(slots[i].x,.72,slots[i].z));
+ const material = new THREE.LineBasicMaterial({color:0xf0cc76,transparent:true,opacity:0,depthWrite:false});
+ const line = new THREE.Line(new THREE.BufferGeometry().setFromPoints(points),material);
+ scene.add(line);
+ return line;
+});
+const shieldGlows = slots.map(p => {
+ const path = roundedPath(new THREE.Shape(),1.38,1.88,.15);
+ const glow = new THREE.LineLoop(new THREE.BufferGeometry().setFromPoints(path.getPoints(12)),
+  new THREE.LineBasicMaterial({color:0xa8ded9,transparent:true,opacity:0,depthWrite:false}));
+ glow.rotation.x = -Math.PI/2;
+ glow.position.set(p.x,.74,p.z);
+ scene.add(glow);
+ return glow;
+});
+const jokerMesh = addMesh(new THREE.BoxGeometry(.98,.025,1.38),[
+ mat(0xd1bc90),mat(0xd1bc90),new THREE.MeshBasicMaterial({map:tex({joker:true}),toneMapped:false}),
+ new THREE.MeshBasicMaterial({map:backTex,toneMapped:false}),mat(0xd1bc90),mat(0xd1bc90)
+],deckX,1.02,deckZ);
+jokerMesh.visible=false;
+const dealerHands = [-1,1].map(side=>{
+ const hand=new THREE.Group();
+ const glove=mat(0xb4ac91,.9);
+ const palm=new THREE.Mesh(new THREE.SphereGeometry(1,12,8),glove);
+ palm.scale.set(.17,.065,.23);
+ hand.add(palm);
+ for(let i=0;i<4;i++){
+  const finger=new THREE.Mesh(new THREE.CapsuleGeometry(.035,.17,3,6),glove);
+  finger.rotation.x=Math.PI/2;
+  finger.position.set((i-1.5)*.075,-.008,.22);
+  hand.add(finger);
+ }
+ const thumb=new THREE.Mesh(new THREE.CapsuleGeometry(.045,.1,3,6),glove);
+ thumb.rotation.set(Math.PI/2,0,side*.7);
+ thumb.position.set(-side*.18,0,.06);
+ hand.add(thumb);
+ hand.position.set(side*2.72,.9,-3.12);
+ scene.add(hand);
+ return hand;
+});
+const baseSpot = new THREE.Color(0xffd1a0), fireSpot = new THREE.Color(0xffa16a);
+function revealJoker(count) {
+ casino.jokerUntil=performance.now()+(reduced?500:950);
+ casino.dealerUntil=performance.now()+650;
+ $('casinoEvent').textContent='Joker · +'+(count*5)+' cards';
+}
+function resetCasino() {
+ casino.jokerUntil=0;
+ casino.dealerUntil=0;
+ casino.shieldUntil.fill(0);
+ casino.lineUntil.fill(0);
+ $('casinoEvent').textContent='';
+}
+function animateCasino(now,dt) {
+ const active=G?.phase==='playing'||G?.phase==='busy';
+ const target=active?Math.min(1,Math.floor(G.streak/3)/3):0;
+ casino.heat=THREE.MathUtils.damp(casino.heat,target,2.5,dt);
+ const joker=now<casino.jokerUntil;
+ warmLight.intensity=casino.heat*36;
+ spot.color.copy(baseSpot).lerp(fireSpot,casino.heat);
+ spot.intensity=THREE.MathUtils.damp(spot.intensity,joker?65:140,7,dt);
+ jokerMesh.visible=joker;
+ if(joker){
+  const progress=Math.max(0,1-(casino.jokerUntil-now)/(reduced?500:950));
+  jokerMesh.rotation.x=reduced?0:Math.PI*(1-Math.min(1,progress*3));
+  jokerMesh.position.y=reduced?1.04:1.04+Math.sin(progress*Math.PI)*.65;
+ }else $('casinoEvent').textContent=target>0?'On fire · '+G.streak:'';
+ dealerHands.forEach((hand,i)=>{
+  const reaction=now<casino.dealerUntil?Math.sin((casino.dealerUntil-now)/650*Math.PI):0;
+  hand.position.y=.9+(reduced?0:reaction*.1+Math.sin(now*.00065+i)*.008);
+  hand.rotation.x=reduced?0:reaction*-.15;
+ });
+ shieldGlows.forEach((glow,i)=>{
+  const impact=Math.max(0,(casino.shieldUntil[i]-now)/700);
+  const protectedSlot=G?.protected[i]&&G.board[i];
+  glow.material.opacity=impact?Math.min(1,impact):protectedSlot?.55:0;
+  glow.scale.setScalar(reduced?1:1+(impact?1-impact:0)*.16);
+ });
+ lineGlows.forEach((line,i)=>{
+  line.material.opacity=Math.max(0,(casino.lineUntil[i]-now)/1100)*.9;
+ });
+ if(ambientLevel){
+  ambientLevel.gain.setTargetAtTime(joker?.006:.05+casino.heat*.025,audioContext.currentTime,.15);
+  ambientFilter.frequency.setTargetAtTime(275+casino.heat*180,audioContext.currentTime,.3);
+ }
+}
+
 let G=null,animations=[],reduced=matchMedia('(prefers-reduced-motion: reduce)').matches,soundOn=true,shopOffers=null,hovered=-1,swapFrom=null;
 let discards=[],highlights=Array(9).fill(null),feedbackTimeout;
 function flash(kind,index=-1,msg=''){
@@ -471,6 +620,8 @@ function flash(kind,index=-1,msg=''){
  void panel.offsetWidth;panel.classList.add(kind);clearTimeout(feedbackTimeout);
  feedbackTimeout=setTimeout(()=>panel.classList.remove('positive','negative','ability'),400);
  if(index>=0)highlights[index]={kind,end:performance.now()+520};
+ if(kind==='ability'&&index>=0)casino.shieldUntil[index]=performance.now()+700;
+ if(kind==='positive'||kind==='negative')casino.dealerUntil=performance.now()+650;
  if(msg)pop(msg);
 }
 function disposeCard(m){
@@ -490,12 +641,36 @@ const cardsLeft=()=>G?.board.filter(Boolean).length||0;
 const rank=c=>c?R[c.v]+c.s:'empty';
 function shuffle(a){for(let i=a.length-1;i>0;i--){let j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a}
 const normalDeck=()=>S.flatMap(s=>R.map((_,v)=>({v,s})));
-function draw(){let jokers=0;while(G.deck.length){const c=G.deck.pop();if(c.joker){G.deck.push(...shuffle(normalDeck()).slice(0,5));shuffle(G.deck);G.stageTotal+=5;jokers++;continue}if(jokers){pop('JOKER! +'+(5*jokers)+' CARDS', jokerArt);sound('joker');flash('negative');}return c}return null}
+function draw(){let jokers=0;while(G.deck.length){const c=G.deck.pop();if(c.joker){G.deck.push(...shuffle(normalDeck()).slice(0,5));shuffle(G.deck);G.stageTotal+=5;jokers++;continue}if(jokers){revealJoker(jokers);pop('JOKER! +'+(5*jokers)+' CARDS', jokerArt);sound('joker');flash('negative');}return c}return null}
 function grantTokens(n){const give=Math.max(0,Math.min(n,100-G.stageEarned));G.credits+=give;G.stageEarned+=give}
-function bonusShield(){G.shields++;G.message='🛡️ +1 Shield token'}
+function bonusShield(){G.shields++;G.message=' +1 Shield token'}
 function lineState(){return LINES.map(l=>l.every(i=>G.board[i]))}
-function scoreLines(before){for(let j=0;j<LINES.length;j++)if(!before[j]&&LINES[j].every(i=>G.board[i])){let pts=(j<3?250:j<6?300:400)+(G.ticket==='builder'?150:0);if(has('twin'))pts*=2;G.score+=pts;G.shields++;grantTokens(6+(has('collector')?6:0));pop('✦ LINE COMPLETE · +'+pts+' PTS!');sound('line')}}
+function scoreLines(before){for(let j=0;j<LINES.length;j++)if(!before[j]&&LINES[j].every(i=>G.board[i])){let pts=(j<3?250:j<6?300:400)+(G.ticket==='builder'?150:0);if(has('twin'))pts*=2;casino.lineUntil[j]=performance.now()+1100;G.score+=pts;G.shields++;grantTokens(6+(has('collector')?6:0));pop('✦ LINE COMPLETE · +'+pts+' PTS!');sound('line')}}
 function refill(){const i=G.board.findIndex((c,k)=>!c&&!G.locked[k]);if(i<0)return;const before=lineState(),c=draw();if(c){G.board[i]=c;meshCard(c,i,true);scoreLines(before)}}
+const brief = {
+ 'Lucky Ticket':'2 shields · +1 each stage',
+ 'Fire Ticket':'Fire → +200 points + Peek',
+ 'Risk Ticket':'Low odds → 2.5× points',
+ 'Builder Ticket':'Completed line → +150 points',
+ 'The Compass':'Every 5 guesses → Peek',
+ 'Phoenix Feather':'3-win streak → refill',
+ 'Mirror Trick':'First miss saved each stage',
+ 'Lucky Clover':'Low odds → double points',
+ 'Timekeeper':'10 correct → Peek',
+ 'Storm Lantern':'Fire → bonus per occupied slot',
+ 'Iron Anchor':'+2 shields each stage',
+ 'Salvage Kit':'First lost card → refill',
+ 'Ember Engine':'+20 points per streak level',
+ 'Treasure Map':'Completed line → +6 tokens',
+ 'Diamond Eye':'Low odds → +5 tokens',
+ 'Twin Signals':'Double line points',
+ 'Ward':'Blocks the first miss here',
+ 'Amplifier':'1.5× points here',
+ 'Kindling':'Extra streak step here',
+ 'Mint':'+3 tokens per correct guess',
+ 'Seedbed':'3 correct here → refill',
+ 'Watchtower':'4 correct here → Peek'
+};
 function showDialog(k,title,body,buttons,action=null){
  const host = $('modalChoices');
  $('modalKick').textContent = k;
@@ -513,11 +688,23 @@ function showDialog(k,title,body,buttons,action=null){
   for (const [tag, value] of [['strong', opt.title], ['small', opt.desc], ['em', opt.price == null ? '' : opt.price + ' tokens']]) {
    if (!value) continue;
    const label = document.createElement(tag);
-   label.textContent = value;
+   label.textContent = tag === 'small' && opt.kind ? (brief[opt.title.replace(/^(Artifact|Board) · /,'')] || value) : value;
    button.append(label);
   }
   button.onclick = opt.click;
-  host.append(button);
+  if (opt.kind && opt.desc) {
+   const wrapper = document.createElement('div');
+   wrapper.className = 'offer';
+   const details = document.createElement('details');
+   const summary = document.createElement('summary');
+   summary.textContent = 'i';
+   summary.setAttribute('aria-label', opt.title + ' rules');
+   const explanation = document.createElement('p');
+   explanation.textContent = opt.desc;
+   details.append(summary, explanation);
+   wrapper.append(button, details);
+   host.append(wrapper);
+  } else host.append(button);
  }
  $('modalAction').style.display = action ? 'block' : 'none';
  if (action) {
@@ -529,7 +716,7 @@ function showDialog(k,title,body,buttons,action=null){
 }
 function hideDialog(){$('modal').classList.add('hidden')}
 function chooseTicket(){
- showDialog('HiLo 3D · Midnight Table','Choose Your Ticket','Pick a starting advantage for your run.',TICKETS.map((t,i)=>({
+ showDialog('HiLo 3D · Midnight Table','Your ticket','',TICKETS.map((t,i)=>({
   title:t.name, desc:t.desc, kind:'ticket', mark:S[i], click:()=>{sound('purchase');G.ticket=t.id;shop(1,true)}
  })));
 }
@@ -560,23 +747,24 @@ function shop(stage,fresh=false){
    click:()=>chooseSlot(stage,up)
   });
  }
- opts.push({title:'Reroll All Four Offers',price:15,wide:true,
+ opts.push({title:'Reroll',price:15,wide:true,
   disabled:G.credits<15,click:()=>{if(G.credits<15)return;sound('purchase');G.credits-=15;shop(stage,true)}
  });
- showDialog('Pit Stop · Stage '+stage,'Choose Your Upgrades',
-  G.credits+' tokens available · '+G.artifacts.length+'/4 artifacts · '+G.upgrades.filter(Boolean).length+'/9 upgraded slots',
-  opts,{label:'Face '+BOSSES[stage-1].name,click:()=>{hideDialog();setupStage(stage)}});
+ showDialog('Pit Stop · Stage '+stage,'Pit stop',
+  G.credits+' tokens',
+  opts,{label:'Play '+BOSSES[stage-1].name,click:()=>{hideDialog();setupStage(stage)}});
 }
 function chooseSlot(stage,up){
  const price=up.cost+10*G.upgrades.filter(Boolean).length;
  showDialog('BOARD UPGRADE',up.icon+' '+up.name,'Choose a position. Cost: '+price+' tokens. Each slot supports one permanent upgrade.',Array.from({length:9},(_,i)=>({title:'Position '+(i+1),desc:G.upgrades[i]?'Already upgraded':'Apply '+up.name,disabled:!!G.upgrades[i]||G.credits<price,click:()=>{sound('purchase');G.credits-=price;G.upgrades[i]=up.id;shopOffers.upgrades=shopOffers.upgrades.filter(x=>x!==up.id);shop(stage)}})),{label:'← Back to Pit Stop',click:()=>shop(stage)});
 }
 function setupStage(stage){
+ resetCasino();
  G.stage=stage;G.stageEarned=0;G.streak=0;G.phase='playing';G.locked=Array(9).fill(false);G.wardUsed=Array(9).fill(false);G.slotHits=Array(9).fill(0);G.mirrorUsed=false;G.salvageUsed=false;G.riskHits=0;G.protected=Array(9).fill(false);G.board=Array(9).fill(null);G.selected=0;G.deck=shuffle([...normalDeck(),...Array.from({length:stage===3?4:2},()=>({joker:true}))]);G.stageTotal=G.deck.length;G.push=0;G.pushScore=0;G.swapFrom=null;
  if(G.ticket==='lucky')G.shields+=stage===1?2:1;if(has('anchor'))G.shields+=2;
  animations=[];for(let i=0;i<9;i++)meshCard(null,i);
  for(let i=0;i<4-stage;i++){const c=draw();if(c){G.board[i]=c;meshCard(c,i,true)}}
- G.message='Choose a card and guess Higher or Lower';G.detail=BOSSES[stage-1].name+' · '+BOSSES[stage-1].desc;refresh();
+ G.message='Choose a card';G.detail=BOSSES[stage-1].name+' · '+BOSSES[stage-1].desc;refresh();
 }
 function finishStage(){
  if(cardsLeft()===0){endRun(false,'You lost every card on the board.');return}
@@ -585,11 +773,12 @@ function finishStage(){
  const cleared=G.stage;G.credits+=50;G.score+=500*cleared;G.phase='shop';shop(cleared+1,true);
 }
 function endRun(win,reason){
- G.phase='ended';G.message=win?'🏆 THE FINAL DRIVER DEFEATED!':'💀 END OF THE ROAD';
+ G.phase='ended';G.message=win?' THE FINAL DRIVER DEFEATED!':' END OF THE ROAD';
  G.detail=reason||'Run completed.';refresh();const bestKey='hilo-3d-rogue-best';let prior=0;try{prior=Number(localStorage.getItem(bestKey))||0;if(G.score>prior)localStorage.setItem(bestKey,String(G.score))}catch(e){}
  showDialog(win?'VICTORY':'GAME OVER',G.message,reason+'  Score: '+G.score.toLocaleString()+' · Correct: '+G.correct+' / '+G.turns+' · Best: '+Math.max(prior,G.score).toLocaleString(),[],{label:'↻ New Roguelike Run',click:()=>{hideDialog();newRun()}});
 }
 function newRun(){
+ resetCasino();
  G={deck:[],board:Array(9).fill(null),selected:0,correct:0,streak:0,best:0,turns:0,score:0,stage:1,stageTotal:54,credits:65,stageEarned:0,shields:0,peeks:0,swaps:0,protected:Array(9).fill(false),locked:Array(9).fill(false),wardUsed:Array(9).fill(false),slotHits:Array(9).fill(0),artifacts:[],upgrades:Array(9).fill(null),ticket:'',riskHits:0,phase:'ticket',message:'Choose your Ticket',detail:'',push:0,pushScore:0};
  for(let i=0;i<9;i++)meshCard(null,i);
  refresh();chooseTicket();
@@ -599,16 +788,16 @@ function refresh(){
  if(!G)return;if(!G.board[G.selected])G.selected=G.board.findIndex(Boolean);
  $('stage').textContent=G.stage+'/3';$('score').textContent=G.score.toLocaleString();$('tokens').textContent=G.credits;
  $('deck').textContent=G.deck.length;$('correct').textContent=G.correct;$('streak').textContent=G.streak;$('boardCount').textContent=cardsLeft()+'/9';
- $('ticketName').textContent='🎟️ '+(TICKETS.find(x=>x.id===G.ticket)?.name||'Choose Ticket');$('artifactCount').textContent='✨ Artifacts '+G.artifacts.length+'/4';$('shields').textContent='🛡️ '+G.shields;$('stageProgress').textContent=G.deck.length+' left';
+ $('ticketName').textContent=' '+(TICKETS.find(x=>x.id===G.ticket)?.name||'Choose Ticket');$('artifactCount').textContent='✨ Artifacts '+G.artifacts.length+'/4';$('shields').textContent=' '+G.shields;$('stageProgress').textContent=G.deck.length+' left';
  $('bossrule').textContent=BOSSES[G.stage-1].name+' · '+BOSSES[G.stage-1].desc;
- $('message').textContent=G.message||((G.board[G.selected]?'Selected: '+rank(G.board[G.selected]):'Select a card')+' · Higher or Lower?');$('detail').textContent=G.detail;
+ $('message').textContent=G.message||((G.board[G.selected]?'Selected: '+rank(G.board[G.selected]):'Select a card')+'');$('detail').textContent=G.detail;
  const ready=G.phase==='playing'&&!!G.board[G.selected];$('higher').disabled=!ready;$('lower').disabled=!ready;
  for(const [id,active] of [['push',ready&&G.push===0],['shield',ready&&G.shields>0&&!G.protected[G.selected]],['peek',ready&&G.peeks>0],['swap',ready&&G.swaps>0],['cashout',ready&&G.streak>=3]])$(id).disabled=!active;
- $('push').textContent=G.push===1?'🎲 PUSH 2/2':'🎲 Push';
+ $('push').textContent=G.push===1?' PUSH 2/2':' Push';
  for(let i=0;i<9;i++){pads[i].material.emissive.setHex(i===G.selected&&ready?0x537c36:G.locked[i]?0x58212a:0x000000);pads[i].material.emissiveIntensity=i===G.selected&&ready?.9:G.locked[i]?.8:0;const m=cardMeshes[i];if(m)m.userData.targetY=i===G.selected&&ready?1.02:.75}
  spot.color.setHex(G.streak>=9?0xff7c51:G.streak>=3?0xffb477:0xffd1a0);
 }
-let audioContext, audioBus, roomTone, noiseBuffer;
+let audioContext, audioBus, roomTone, noiseBuffer, ambientLevel, ambientFilter;
 function openAudio() {
  if (!soundOn) return false;
  if (!audioContext) {
@@ -632,10 +821,12 @@ function openAudio() {
   roomTone.buffer = noiseBuffer;
   roomTone.loop = true;
   const filter = audioContext.createBiquadFilter();
+  ambientFilter=filter;
   filter.type = 'bandpass';
   filter.frequency.value = 275;
   filter.Q.value = .3;
   const level = audioContext.createGain();
+  ambientLevel=level;
   level.gain.value = .05;
   roomTone.connect(filter).connect(level).connect(audioBus);
   roomTone.start();
@@ -764,17 +955,17 @@ function guess(dir){
    if(up==='scout'){G.slotHits[i]++;if(G.slotHits[i]%4===0)G.peeks++}
    grantTokens(2);G.score+=pts;
    if(G.push===1){G.push=2;G.pushScore=pts;info=' · Push 1/2: stay on this position'}
-   else if(G.push===2){G.score+=2*(G.pushScore+pts);G.push=0;info=' · 🎲 PUSH COMPLETE 3×'}
-   if(G.streak%3===0){G.shields++;refill();if(has('phoenix'))refill();info+=' · 🔥 ON FIRE +1 shield and card';if(G.streak===6){G.peeks++;info+=' · SUPER FIRE +Peek'}}
+   else if(G.push===2){G.score+=2*(G.pushScore+pts);G.push=0;info=' ·  PUSH COMPLETE 3×'}
+   if(G.streak%3===0){G.shields++;refill();if(has('phoenix'))refill();info+=' ·  ON FIRE +1 shield and card';if(G.streak===6){G.peeks++;info+=' · SUPER FIRE +Peek'}}
    else if(G.correct%2===0)refill();
    G.message='✓ '+rank(old)+' → '+rank(c)+' · +'+pts+' pts';sound('good');flash('positive',i);
   }else{
    G.streak=0;if(G.stage===1)G.score=Math.max(0,G.score-75);
    const up=G.upgrades[i],pushing=G.push>0;
-   if(!pushing&&has('mirror')&&!G.mirrorUsed){G.mirrorUsed=true;info='🪞 Mirror saved card';sound('shield');flash('ability',i,'🪞 MIRROR SAVED')}
-   else if(!pushing&&up==='ward'&&!G.wardUsed[i]){G.wardUsed[i]=true;info='🛡️ Ward saved card';sound('shield');flash('ability',i,'🛡️ WARD BLOCK')}
-   else if(!pushing&&G.protected[i]){G.protected[i]=false;info='🛡️ Shield saved card';sound('shield');flash('ability',i,'🛡️ SHIELD BLOCK')}
-   else{G.board[i]=null;discardCard(i);info='Position lost';if(G.stage===2&&G.locked.filter(Boolean).length<3){G.locked[i]=true;info+=' · 🔒 Collector locked it'}if(has('salvage')&&!G.salvageUsed){G.salvageUsed=true;refill()}}
+   if(!pushing&&has('mirror')&&!G.mirrorUsed){G.mirrorUsed=true;info=' Mirror saved card';sound('shield');flash('ability',i,' MIRROR SAVED')}
+   else if(!pushing&&up==='ward'&&!G.wardUsed[i]){G.wardUsed[i]=true;info=' Ward saved card';sound('shield');flash('ability',i,' WARD BLOCK')}
+   else if(!pushing&&G.protected[i]){G.protected[i]=false;info=' Shield saved card';sound('shield');flash('ability',i,' SHIELD BLOCK')}
+   else{G.board[i]=null;discardCard(i);info='Position lost';if(G.stage===2&&G.locked.filter(Boolean).length<3){G.locked[i]=true;info+=' ·  Collector locked it'}if(has('salvage')&&!G.salvageUsed){G.salvageUsed=true;refill()}}
    G.push=0;G.message='✕ '+rank(old)+' → '+rank(c);sound('bad');flash('negative',i);
   }
   G.detail=info||('Streak '+G.streak+' · '+G.deck.length+' cards remaining');
@@ -786,11 +977,11 @@ function guess(dir){
 }
 $('higher').onclick=()=>guess('higher');$('lower').onclick=()=>guess('lower');
 $('restart').onclick=()=>showDialog('RESTART','Start a new run?','Your current Roguelike progress will be lost.',[],{label:'Restart',click:()=>{hideDialog();newRun()}});
-$('push').onclick=()=>{if(G.phase!=='playing'||G.push)return;G.push=1;G.message='🎲 Push Your Luck: win two guesses on this card for triple points';sound('push');flash('ability',G.selected,'🎲 PUSH YOUR LUCK');refresh()};
-$('shield').onclick=()=>{if(!G.shields||G.phase!=='playing'||G.protected[G.selected])return;G.shields--;G.protected[G.selected]=true;G.message='🛡️ Protected '+rank(G.board[G.selected]);sound('shield');flash('ability',G.selected,'🛡️ PROTECTED');refresh()};
-$('peek').onclick=()=>{if(!G.peeks||G.phase!=='playing')return;G.peeks--;const c=[...G.deck].reverse().find(x=>!x.joker);G.message=c?'👁️ Next regular card: '+rank(c):'No regular card left';sound('peek');flash('ability',G.selected,c?'👁️ NEXT: '+rank(c):'NO REGULAR CARD');refresh()};
+$('push').onclick=()=>{if(G.phase!=='playing'||G.push)return;G.push=1;G.message=' Push Your Luck: win two guesses on this card for triple points';sound('push');flash('ability',G.selected,' PUSH YOUR LUCK');refresh()};
+$('shield').onclick=()=>{if(!G.shields||G.phase!=='playing'||G.protected[G.selected])return;G.shields--;G.protected[G.selected]=true;G.message=' Protected '+rank(G.board[G.selected]);sound('shield');flash('ability',G.selected,' PROTECTED');refresh()};
+$('peek').onclick=()=>{if(!G.peeks||G.phase!=='playing')return;G.peeks--;const c=[...G.deck].reverse().find(x=>!x.joker);G.message=c?' Next regular card: '+rank(c):'No regular card left';sound('peek');flash('ability',G.selected,c?' NEXT: '+rank(c):'NO REGULAR CARD');refresh()};
 $('swap').onclick=()=>{if(!G.swaps||G.phase!=='playing')return;swapFrom=G.selected;G.message='⇄ Select another occupied card to swap';sound('swap');flash('ability',G.selected,'⇄ SELECT SECOND CARD');refresh()};
-$('cashout').onclick=()=>{if(G.phase!=='playing'||G.streak<3)return;G.streak=0;G.shields++;G.message='🔥 Streak cashed out · +1 Shield';sound('cashout');flash('ability',G.selected,'🔥 STREAK CASHED OUT');refresh()};
+$('cashout').onclick=()=>{if(G.phase!=='playing'||G.streak<3)return;G.streak=0;G.shields++;G.message=' Streak cashed out · +1 Shield';sound('cashout');flash('ability',G.selected,' STREAK CASHED OUT');refresh()};
 const ray=new THREE.Raycaster(),pointer=new THREE.Vector2();
 function hitCard(e){pointer.x=e.clientX/innerWidth*2-1;pointer.y=1-e.clientY/innerHeight*2;ray.setFromCamera(pointer,camera);return ray.intersectObjects(cardMeshes.filter(Boolean))[0]?.object.userData.index??-1}
 $('scene').addEventListener('pointermove',e=>{hovered=hitCard(e);$('scene').style.cursor=hovered>=0?'pointer':'default'});
@@ -800,10 +991,18 @@ $('scene').addEventListener('click',e=>{
  if(swapFrom!==null){if(i!==swapFrom){[G.board[i],G.board[swapFrom]]=[G.board[swapFrom],G.board[i]];[G.protected[i],G.protected[swapFrom]]=[G.protected[swapFrom],G.protected[i]];meshCard(G.board[i],i);meshCard(G.board[swapFrom],swapFrom);G.swaps--;G.message='⇄ Swapped two cards';sound('swap');flash('ability',i,'⇄ SWAPPED')}swapFrom=null}
  G.selected=i;refresh();sound('select');flash('ability',i);
 });
+
+$('runInfo').onclick=()=>showDialog('',BOSSES[G.stage-1].name,
+ BOSSES[G.stage-1].desc+' Ace is low. Ties lose. Each Joker adds five cards.',[
+ {title:'Run',desc:'Stage '+G.stage+'/3 · '+G.correct+' correct · Streak '+G.streak+' · '+cardsLeft()+'/9 slots'},
+ {title:'Ticket',desc:TICKETS.find(t=>t.id===G.ticket)?.desc||'Choose a ticket to begin.'},
+ {title:'Artifacts',desc:G.artifacts.map(id=>{const a=ARTIFACTS.find(a=>a.id===id);return a.name+' — '+a.desc}).join(' · ')||'None collected.'}
+ ],{label:'Back',click:hideDialog});
+
 $('settings').onclick=()=>{
  showDialog('SETTINGS','Visual & Audio Settings','Change animations or sound without affecting the run.',[
- {title:'🎞️ Animations: '+(reduced?'OFF':'ON'),desc:'Skip card movement and use instant draws.',click:()=>{reduced=!reduced;$('settings').click()}},
- {title:'🔊 Sound: '+(soundOn?'ON':'OFF'),desc:'Toggle all game sound effects.',click:()=>{toggleSound();$('settings').click()}}
+ {title:' Animations: '+(reduced?'OFF':'ON'),desc:'Skip card movement and use instant draws.',click:()=>{reduced=!reduced;$('settings').click()}},
+ {title:' Sound: '+(soundOn?'ON':'OFF'),desc:'Toggle all game sound effects.',click:()=>{toggleSound();$('settings').click()}}
  ],{label:'Return to Table',click:hideDialog});
 };
 document.addEventListener('keydown',e=>{if(!$('modal').classList.contains('hidden'))return;if(e.key.toLowerCase()==='h')guess('higher');if(e.key.toLowerCase()==='l')guess('lower')});
@@ -837,6 +1036,7 @@ function animate(now){
   pad.material.emissive.setHex(alive?(fx.kind==='negative'?0xa83223:fx.kind==='positive'?0x83a33a:0x3279ac):G?.locked[i]?0x58212a:selected?0x537c36:0);
   pad.material.emissiveIntensity=alive?.8*(fx.end-now)/520:G?.locked[i]?.8:selected?.75:0;
  }
+ animateCasino(now,dt);
  renderer.render(scene,camera);
 }
 requestAnimationFrame(animate);newRun();$('loading').classList.add('hidden');
