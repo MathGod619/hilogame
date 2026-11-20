@@ -92,6 +92,11 @@ button:not(:disabled):hover { filter: brightness(1.16); }
 .modalChoices button small { color: #dedbcb; font-size: 12px; line-height: 1.28; }
 .modalChoices button em { color: #e6c68d; font-size: 11px; font-style: normal; font-weight: 700; margin-top: auto; }
 .modalChoices button.wide { grid-column: 1 / -1; min-height: 0; align-items: center; text-align: center; }
+.modal[data-screen="ticket"] .modalbox { width:min(480px,100%); }
+.modal[data-screen="ticket"] .modalChoices { grid-template-columns:1fr; gap:9px; }
+.modal[data-screen="ticket"] .modalChoices button { min-height:78px; padding:14px 18px; justify-content:center; }
+.modal[data-screen="ticket"] .modalChoices button strong { font:700 19px Impact,'Arial Narrow',sans-serif; letter-spacing:.035em; }
+.modal[data-screen="ticket"] .modalChoices button small { font:13px/1.35 system-ui,sans-serif; }
 #modalAction { width: 100%; min-height: 44px; margin-top: 8px; border: 1px solid #dfbd7d; border-radius: 4px; color: #21190c; background: linear-gradient(#e7cc99, #bf9557); font: bold 16px var(--serif); }
 #modalSettings { display: none; }
 #toast {
@@ -677,19 +682,19 @@ const ARTIFACTS=[
 {id:'compass',icon:'',name:'The Compass',desc:'Every fifth guess grants a Peek.',cost:45},
 {id:'phoenix',icon:'',name:'Phoenix Feather',desc:'Every third consecutive success refills an empty board slot.',cost:65},
 {id:'mirror',icon:'',name:'Mirror Trick',desc:'Once each stage, a normal missed guess leaves its card intact.',cost:75},
-{id:'clover',icon:'',name:'Lucky Clover',desc:'Double scoring for successful predictions with odds of 35% or less.',cost:55},
+{id:'clover',icon:'',name:'Lucky Clover',desc:'The first successful guess at 35% odds or less each stage grants a Shield.',cost:55},
 {id:'timekeeper',icon:'⌛',name:'Timekeeper',desc:'Every tenth correct guess gives a Peek token.',cost:50},
-{id:'storm',icon:'',name:'Storm Lantern',desc:'Fire milestones score 40 points per occupied slot.',cost:55},
+{id:'storm',icon:'',name:'Storm Lantern',desc:'Each three-win streak milestone grants a Swap.',cost:55},
 {id:'anchor',icon:'⚓',name:'Iron Anchor',desc:'Begin each stage with two additional shields.',cost:60},
 {id:'salvage',icon:'',name:'Salvage Kit',desc:'Your first unsaved miss per stage restores one empty slot.',cost:55},
-{id:'ember',icon:'',name:'Ember Engine',desc:'Earn 20 points per streak level on each correct guess.',cost:65},
+{id:'ember',icon:'',name:'Ember Engine',desc:'Reaching a five-win streak grants a Peek.',cost:65},
 {id:'collector',icon:'',name:'Treasure Map',desc:'New completed lines grant 6 additional Pit Stop tokens.',cost:65},
 {id:'diamond',icon:'♦',name:'Diamond Eye',desc:'Successful predictions at 35% odds or less earn 5 extra tokens.',cost:55},
-{id:'twin',icon:'♊',name:'Twin Signals',desc:'Double the points from completed board lines.',cost:70}
+{id:'twin',icon:'',name:'Twin Signals',desc:'Completed board lines grant an extra Shield.',cost:70}
 ];
 const UPGRADES=[
 {id:'ward',icon:'',name:'Ward',desc:'First miss on this position per stage is blocked.',cost:35},
-{id:'amp',icon:'⚡',name:'Amplifier',desc:'Correct guesses here earn 1.5× points.',cost:35},
+{id:'amp',icon:'',name:'Amplifier',desc:'Every third correct guess here grants a Shield.',cost:35},
 {id:'kindle',icon:'',name:'Kindling',desc:'Correct guesses here grant an extra streak step.',cost:45},
 {id:'mint',icon:'',name:'Mint',desc:'Correct guesses here earn 3 extra Pit Stop tokens.',cost:35},
 {id:'seed',icon:'',name:'Seedbed',desc:'Every third successful guess here refills a board slot.',cost:40},
@@ -712,13 +717,12 @@ function syncSlotEffects(){
  });
 }
 const TICKETS=[
-{id:'lucky',icon:'',name:'Lucky Ticket',desc:'Two starting shields, plus one each subsequent stage.'},
-{id:'fire',icon:'',name:'Fire Ticket',desc:'Fire milestones award 200 bonus points and a Peek.'},
-{id:'risk',icon:'',name:'Risk Ticket',desc:'Successful predictions at 40% odds or less award 2.5× points and 6 tokens; three such wins grant a shield.'},
-{id:'builder',icon:'',name:'Builder Ticket',desc:'Each completed line awards 150 bonus points, without extra starting cards.'}
+{id:'lucky',icon:'',name:'Lucky Ticket',desc:'Start each stage with one Shield.'},
+{id:'fire',icon:'',name:'Fire Ticket',desc:'Each three-win streak milestone grants a Peek.'},
+{id:'risk',icon:'',name:'Risk Ticket',desc:'Wins at 40% odds or less earn 6 tokens; every third such win grants a Shield.'}
 ];
 const BOSSES=[
-{name:'The Tollkeeper',desc:'Each incorrect prediction costs 75 score points.'},
+{name:'The Tollkeeper',desc:'Each lost position costs 10 tokens. Unpaid tolls come out of future earnings.'},
 {name:'The Collector',desc:'Unprotected misses lock empty positions, up to three per stage.'},
 {name:'The Final Driver',desc:'Finish the deck with at least two occupied cards. Four Jokers await.'}
 ];
@@ -872,7 +876,7 @@ function animateCasino(now,dt) {
 }
 
 const BOSS_PRESENTATION = [
- {mark:'♠',name:'The Tollkeeper',rule:'Every miss costs 75 points.',color:'#c7a86b',felt:'#244b30',edge:'#102e20',notes:[110,164.81,220]},
+ {mark:'♠',name:'The Tollkeeper',rule:'Each lost position costs 10 tokens. Unpaid tolls carry forward.',color:'#c7a86b',felt:'#244b30',edge:'#102e20',notes:[110,164.81,220]},
  {mark:'♦',name:'The Collector',rule:'Lost positions lock. Up to three.',color:'#a9c9c5',felt:'#21454a',edge:'#112b33',notes:[98,146.83,207.65]},
  {mark:'♣',name:'The Final Driver',rule:'Finish with at least two cards. Four Jokers.',color:'#d78774',felt:'#4d2730',edge:'#221923',notes:[82.41,123.47,174.61]}
 ];
@@ -991,30 +995,30 @@ const rank=c=>c?R[c.v]+c.s:'empty';
 function shuffle(a){for(let i=a.length-1;i>0;i--){let j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a}
 const normalDeck=()=>S.flatMap(s=>R.map((_,v)=>({v,s})));
 function draw(){let jokers=0;while(G.deck.length){const c=G.deck.pop();if(c.joker){G.deck.push(...shuffle(normalDeck()).slice(0,5));shuffle(G.deck);G.stageTotal+=5;jokers++;continue}if(jokers){revealJoker(jokers);sound('joker');flash('negative');}return c}return null}
-function grantTokens(n){const give=Math.max(0,Math.min(n,100-G.stageEarned));G.credits+=give;G.stageEarned+=give}
+function creditTokens(n){const paid=Math.min(n,G.tollDebt);G.tollDebt-=paid;G.credits+=n-paid;return n-paid}
+function grantTokens(n){const give=Math.max(0,Math.min(n,100-G.stageEarned));G.stageEarned+=give;return creditTokens(give)}
 function bonusShield(){G.shields++;G.message=' +1 Shield token'}
 function lineState(){return LINES.map(l=>l.every(i=>G.board[i]))}
-function scoreLines(before){for(let j=0;j<LINES.length;j++)if(!before[j]&&LINES[j].every(i=>G.board[i])){let pts=(j<3?250:j<6?300:400)+(G.ticket==='builder'?150:0);if(has('twin'))pts*=2;casino.lineUntil[j]=performance.now()+1100;for(const index of LINES[j])burst(index,0xffd16b,12);floatLabel('LINE +'+pts,LINES[j][1]);G.score+=pts;G.shields++;grantTokens(6+(has('collector')?6:0));pop('✦ LINE COMPLETE · +'+pts+' PTS!');sound('line')}}
+function scoreLines(before){for(let j=0;j<LINES.length;j++)if(!before[j]&&LINES[j].every(i=>G.board[i])){const pts=j<3?250:j<6?300:400;casino.lineUntil[j]=performance.now()+1100;for(const index of LINES[j])burst(index,0xffd16b,12);G.score+=pts;G.shields+=has('twin')?2:1;grantTokens(6+(has('collector')?6:0));floatLabel('LINE +'+(has('twin')?'2 SHIELDS':'1 SHIELD'),LINES[j][1]);pop('LINE COMPLETE · +'+(has('twin')?2:1)+' Shield');sound('line')}}
 function refill(){const i=G.board.findIndex((c,k)=>!c&&!G.locked[k]);if(i<0)return;const before=lineState(),c=draw();if(c){G.board[i]=c;meshCard(c,i,true);scoreLines(before)}}
 const brief = {
- 'Lucky Ticket':'2 shields · +1 each stage',
- 'Fire Ticket':'Fire → +200 points + Peek',
- 'Risk Ticket':'Low odds → 2.5× points',
- 'Builder Ticket':'Completed line → +150 points',
+ 'Lucky Ticket':'+1 Shield each stage',
+ 'Fire Ticket':'3-win streak → Peek',
+ 'Risk Ticket':'Low odds → +6 tokens',
  'The Compass':'Every 5 guesses → Peek',
  'Phoenix Feather':'3-win streak → refill',
  'Mirror Trick':'First miss saved each stage',
- 'Lucky Clover':'Low odds → double points',
+ 'Lucky Clover':'First low-odds win → Shield',
  'Timekeeper':'10 correct → Peek',
- 'Storm Lantern':'Fire → bonus per occupied slot',
+ 'Storm Lantern':'3-win streak → Swap',
  'Iron Anchor':'+2 shields each stage',
  'Salvage Kit':'First lost card → refill',
- 'Ember Engine':'+20 points per streak level',
+ 'Ember Engine':'5-win streak → Peek',
  'Treasure Map':'Completed line → +6 tokens',
  'Diamond Eye':'Low odds → +5 tokens',
- 'Twin Signals':'Double line points',
+ 'Twin Signals':'Completed line → extra Shield',
  'Ward':'Blocks the first miss here',
- 'Amplifier':'1.5× points here',
+ 'Amplifier':'3 correct here → Shield',
  'Kindling':'Extra streak step here',
  'Mint':'+3 tokens per correct guess',
  'Seedbed':'3 correct here → refill',
@@ -1068,9 +1072,10 @@ function showDialog(k,title,body,buttons,action=null){
 }
 function hideDialog(){$('modal').classList.add('hidden')}
 function chooseTicket(){
- showDialog('HiLo 3D · Midnight Table','Your ticket','',TICKETS.map((t,i)=>({
-  title:t.name, desc:t.desc, kind:'ticket', mark:S[i], click:()=>{sound('purchase');G.ticket=t.id;shop(1,true)}
+ showDialog('HiLo 3D · Midnight Table','Your ticket','',TICKETS.map(t=>({
+  title:t.name, desc:t.desc, click:()=>{sound('purchase');G.ticket=t.id;shop(1,true)}
  })));
+ $('modal').dataset.screen='ticket';
 }
 function shop(stage,fresh=false){
  G.phase='shop';
@@ -1114,8 +1119,8 @@ function setupStage(stage){
  cancelBossEntry();
  applyBossStyle(stage);
  resetCasino();
- G.stage=stage;G.stageEarned=0;G.streak=0;G.phase='playing';G.locked=Array(9).fill(false);G.wardUsed=Array(9).fill(false);G.slotHits=Array(9).fill(0);G.mirrorUsed=false;G.salvageUsed=false;G.riskHits=0;G.protected=Array(9).fill(false);G.board=Array(9).fill(null);G.selected=0;G.deck=shuffle([...normalDeck(),...Array.from({length:stage===3?4:2},()=>({joker:true}))]);G.stageTotal=G.deck.length;G.push=0;G.pushScore=0;G.swapFrom=null;
- if(G.ticket==='lucky')G.shields+=stage===1?2:1;if(has('anchor'))G.shields+=2;
+ G.stage=stage;G.stageEarned=0;G.streak=0;G.phase='playing';G.locked=Array(9).fill(false);G.wardUsed=Array(9).fill(false);G.slotHits=Array(9).fill(0);G.mirrorUsed=false;G.salvageUsed=false;G.cloverUsed=false;G.riskHits=0;G.protected=Array(9).fill(false);G.board=Array(9).fill(null);G.selected=0;G.deck=shuffle([...normalDeck(),...Array.from({length:stage===3?4:2},()=>({joker:true}))]);G.stageTotal=G.deck.length;G.push=0;G.swapFrom=null;
+ if(G.ticket==='lucky')G.shields++;if(has('anchor'))G.shields+=2;
  animations=[];for(let i=0;i<9;i++)meshCard(null,i);
  for(let i=0;i<4-stage;i++){const c=draw();if(c){G.board[i]=c;meshCard(c,i,true)}}
  G.message='Choose a card';G.detail=BOSSES[stage-1].name+' · '+BOSSES[stage-1].desc;refresh();
@@ -1124,7 +1129,7 @@ function finishStage(){
  if(cardsLeft()===0){endRun(false,'You lost every card on the board.');return}
  if(G.deck.length)return;
  if(G.stage===3){endRun(cardsLeft()>=2,cardsLeft()<2?'The Final Driver required two remaining cards.':'');return}
- const cleared=G.stage;G.credits+=50;G.score+=500*cleared;G.phase='shop';shop(cleared+1,true);
+ const cleared=G.stage;creditTokens(50);G.score+=500*cleared;G.phase='shop';shop(cleared+1,true);
 }
 function endRun(win,reason){
  G.phase='ended';G.message=win?' THE FINAL DRIVER DEFEATED!':' END OF THE ROAD';
@@ -1181,7 +1186,7 @@ function newRun(){
  cancelBossEntry();
  applyBossStyle(1);
  resetCasino();
- G={deck:[],board:Array(9).fill(null),selected:0,correct:0,streak:0,best:0,turns:0,score:0,stage:1,stageTotal:54,credits:65,stageEarned:0,shields:0,peeks:0,swaps:0,protected:Array(9).fill(false),locked:Array(9).fill(false),wardUsed:Array(9).fill(false),slotHits:Array(9).fill(0),artifacts:[],upgrades:Array(9).fill(null),ticket:'',riskHits:0,phase:'ticket',message:'Choose your Ticket',detail:'',push:0,pushScore:0};
+ G={deck:[],board:Array(9).fill(null),selected:0,correct:0,streak:0,best:0,turns:0,score:0,stage:1,stageTotal:54,credits:65,tollDebt:0,stageEarned:0,shields:0,peeks:0,swaps:0,protected:Array(9).fill(false),locked:Array(9).fill(false),wardUsed:Array(9).fill(false),slotHits:Array(9).fill(0),artifacts:[],upgrades:Array(9).fill(null),ticket:'',riskHits:0,cloverUsed:false,phase:'ticket',message:'Choose your Ticket',detail:'',push:0};
  for(let i=0;i<9;i++)meshCard(null,i);
  refresh();chooseTicket();
 }
@@ -1367,30 +1372,34 @@ function guess(dir){
   if(G!==run)return;
   let info='';
   if(good){
-   G.board[i]=c;meshCard(c,i,false);G.correct++;G.streak++;G.best=Math.max(G.best,G.streak);
+   const streakBefore=G.streak;
+   G.board[i]=c;meshCard(c,i,false);G.correct++;G.streak++;
    let pts=Math.max(10,Math.round(100/Math.max(.1,p)));
    if(G.streak>=9)pts*=3;
-   if(G.ticket==='risk'&&p<=.4){pts=Math.round(pts*2.5);grantTokens(6);G.riskHits++;if(G.riskHits%3===0)G.shields++}
-   else if(has('clover')&&p<=.35)pts*=2;
-   const up=G.upgrades[i];if(up==='amp')pts=Math.round(pts*1.5);
+   if(G.ticket==='risk'&&p<=.4){const earned=grantTokens(6);G.riskHits++;if(earned)info+=' · Risk +'+earned+' tokens';if(G.riskHits%3===0){G.shields++;info+=' · Risk +Shield'}}
+   if(has('clover')&&p<=.35&&!G.cloverUsed){G.cloverUsed=true;G.shields++;info+=' · Clover +Shield'}
+   const up=G.upgrades[i];
    if(old.v>=4&&old.v<=8){pts+=Math.round(100/Math.max(.1,p)*.35);grantTokens(2)}
    if(up==='mint')grantTokens(3);if(up==='kindle')G.streak++;
-   if(has('ember'))pts+=20*Math.min(10,G.streak);
-   if(has('storm')&&G.streak%3===0)pts+=40*cardsLeft();
-   if(G.ticket==='fire'&&G.streak%3===0){pts+=200;G.peeks++}
+   const fireMilestone=Math.floor(G.streak/3)>Math.floor(streakBefore/3);
+   if(has('storm')&&fireMilestone){G.swaps++;info+=' · Storm +Swap'}
+   if(G.ticket==='fire'&&fireMilestone){G.peeks++;info+=' · Fire +Peek'}
+   if(has('ember')&&streakBefore<5&&G.streak>=5){G.peeks++;info+=' · Ember +Peek'}
    if(has('timekeeper')&&G.correct%10===0)G.peeks++;
    if(has('compass')&&G.turns%5===0)G.peeks++;
+   if(up==='amp'){G.slotHits[i]++;if(G.slotHits[i]%3===0){G.shields++;info+=' · Amplifier +Shield'}}
    if(up==='seed'){G.slotHits[i]++;if(G.slotHits[i]%3===0)refill()}
    if(up==='scout'){G.slotHits[i]++;if(G.slotHits[i]%4===0)G.peeks++}
    grantTokens(2);G.score+=pts;floatLabel('+'+pts,i);
-   if(up==='amp'||up==='mint'||up==='kindle'||up==='seed'&&G.slotHits[i]%3===0||up==='scout'&&G.slotHits[i]%4===0)upgradeTrigger(up,i);
-   if(G.push===1){G.push=2;G.pushScore=pts;info=' · Push 1/2: stay on this position'}
-   else if(G.push===2){G.score+=2*(G.pushScore+pts);G.push=0;info=' ·  PUSH COMPLETE 3×'}
-   if(G.streak%3===0){G.shields++;refill();if(has('phoenix'))refill();info+=' ·  ON FIRE +1 shield and card';if(G.streak===6){G.peeks++;info+=' · SUPER FIRE +Peek'}}
+   if(up==='mint'||up==='kindle'||up==='amp'&&G.slotHits[i]%3===0||up==='seed'&&G.slotHits[i]%3===0||up==='scout'&&G.slotHits[i]%4===0)upgradeTrigger(up,i);
+   if(G.push===1){G.push=2;info+=' · Push 1/2: stay on this position'}
+   else if(G.push===2){G.shields++;G.push=0;info+=' · PUSH COMPLETE +Shield'}
+   if(fireMilestone){G.shields++;refill();if(has('phoenix'))refill();info+=' · ON FIRE +Shield and card';if(streakBefore<6&&G.streak>=6){G.peeks++;info+=' · SUPER FIRE +Peek'}}
    else if(G.correct%2===0)refill();
-   G.message='✓ '+rank(old)+' → '+rank(c)+' · +'+pts+' pts';sound('good');flash('positive',i);
+   G.best=Math.max(G.best,G.streak);
+   G.message='✓ '+rank(old)+' → '+rank(c)+info;sound('good');flash('positive',i);
   }else{
-   G.streak=0;if(G.stage===1)G.score=Math.max(0,G.score-75);
+   G.streak=0;
    const up=G.upgrades[i],pushing=G.push>0;
    if(!pushing&&has('mirror')&&!G.mirrorUsed){G.mirrorUsed=true;info=' Mirror saved card';sound('shield');flash('ability',i,' MIRROR SAVED')}
    else if(!pushing&&up==='ward'&&!G.wardUsed[i]){G.wardUsed[i]=true;upgradeTrigger('ward',i);info=' Ward saved card';sound('shield');flash('ability',i,' WARD BLOCK')}
@@ -1398,7 +1407,8 @@ function guess(dir){
    else{G.board[i]=null;discardCard(i);info='Position lost';if(G.stage===2&&G.locked.filter(Boolean).length<3){G.locked[i]=true;info+=' ·  Collector locked it'}if(has('salvage')&&!G.salvageUsed){G.salvageUsed=true;refill()}}
    G.push=0;
    const saved=G.board[i]!==null;
-   G.message=saved?info:rank(old)+' → '+rank(c)+' · Card lost';
+   if(!saved&&G.stage===1){const paid=Math.min(10,G.credits);G.credits-=paid;G.tollDebt+=10-paid;info+=' · Tollkeeper -10 tokens'}
+   G.message=saved?info:rank(old)+' → '+rank(c)+' · Card lost'+(G.stage===1?' · Toll -10 tokens'+(G.tollDebt?' ('+G.tollDebt+' owed)':''):'');
    if(!saved){sound('bad');flash('negative',i);}
   }
   G.detail=info||('Streak '+G.streak+' · '+G.deck.length+' cards remaining');
@@ -1410,7 +1420,7 @@ function guess(dir){
 }
 $('higher').onclick=()=>guess('higher');$('lower').onclick=()=>guess('lower');
 $('restart').onclick=()=>showDialog('RESTART','Start a new run?','Your current Roguelike progress will be lost.',[],{label:'Restart',click:()=>{hideDialog();newRun()}});
-$('push').onclick=()=>{if(G.phase!=='playing'||G.push)return;G.push=1;G.message=' Push Your Luck: win two guesses on this card for triple points';sound('push');flash('ability',G.selected,' PUSH YOUR LUCK');refresh()};
+$('push').onclick=()=>{if(G.phase!=='playing'||G.push)return;G.push=1;G.message='Push: win twice on this card for a Shield · misses bypass protection';sound('push');flash('ability',G.selected,' PUSH YOUR LUCK');refresh()};
 $('shield').onclick=()=>{if(lesson){if(lesson.step!==2)return;G.shields=0;G.protected[0]=true;lesson.step=3;refresh();sound('shield');flash('ability',0);renderLesson();return}if(!G.shields||G.phase!=='playing'||!G.board[G.selected]||G.protected[G.selected])return;G.shields--;G.protected[G.selected]=true;G.message=rank(G.board[G.selected])+' protected · one miss';sound('shield');flash('ability',G.selected,' PROTECTED');refresh()};
 $('peek').onclick=()=>{if(!G.peeks||G.phase!=='playing')return;G.peeks--;const c=[...G.deck].reverse().find(x=>!x.joker);G.message=c?' Next regular card: '+rank(c):'No regular card left';sound('peek');flash('ability',G.selected,c?' NEXT: '+rank(c):'NO REGULAR CARD');refresh()};
 $('swap').onclick=()=>{if(!G.swaps||G.phase!=='playing')return;swapFrom=G.selected;G.message='⇄ Select another occupied card to swap';sound('swap');flash('ability',G.selected,'⇄ SELECT SECOND CARD');refresh()};
