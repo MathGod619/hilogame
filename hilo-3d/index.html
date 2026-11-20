@@ -809,8 +809,8 @@ function beginDraw(card,resolve){
 const dealerHands = [-1,1].map(side=>{
  const hand=new THREE.Group();
  const glove=mat(0xb4ac91,.9);
- const forearm=new THREE.Mesh(new THREE.BoxGeometry(.43,.13,.64),suit);
- forearm.position.z=-.38;hand.add(forearm);
+ const forearm=new THREE.Mesh(new THREE.BoxGeometry(.43,.13,1.6),suit);
+ forearm.position.z=-.83;hand.add(forearm);
  const cuff=new THREE.Mesh(new THREE.BoxGeometry(.47,.145,.15),shirt);
  cuff.position.z=-.18;hand.add(cuff);
  const palm=new THREE.Mesh(new THREE.SphereGeometry(1,12,8),glove);
@@ -826,7 +826,7 @@ const dealerHands = [-1,1].map(side=>{
  thumb.rotation.set(Math.PI/2,0,side*.7);
  thumb.position.set(-side*.23,0,.06);
  hand.add(thumb);
- hand.position.set(side*2.72,.9,-3.12);
+ hand.position.set(side*2.82,.9,-2.4);
  hand.visible=false;
  scene.add(hand);
  return hand;
@@ -885,7 +885,7 @@ function animateCasino(now,dt) {
   const dealing=i===1&&revealMotion&&now>=revealMotion.start;
   const reach=dealing?Math.sin(Math.PI*Math.min(1,(now-revealMotion.start)/revealMotion.duration)):0;
   hand.visible=active&&!joker;
-  hand.position.set((i?2.72:-2.72)+(i?-.16:.08)*reach,.9+(reduced?0:reaction*.1+reach*.18+Math.sin(now*.00065+i)*.008),-3.12+(i?1.85:.08)*reach);
+  hand.position.set((i?2.82:-2.82)+(i?-.16:.08)*reach,.9+(reduced?0:reaction*.1+reach*.18+Math.sin(now*.00065+i)*.008),-2.4+(i?1.72:.08)*reach);
   hand.rotation.x=reduced?0:reaction*-.15-reach*.16;
  });
  shieldGlows.forEach((glow,i)=>{
