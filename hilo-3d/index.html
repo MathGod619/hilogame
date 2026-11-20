@@ -182,9 +182,69 @@ header { background: none; }
 }
 
 #casinoEvent { position:fixed; top:70px; left:50%; transform:translateX(-50%); color:#e8c994; font:500 14px system-ui,sans-serif; pointer-events:none; z-index:4; }
+
+body { background:#181917; }
+body::before { content:''; position:fixed; inset:0; opacity:.2; pointer-events:none; background-image:var(--grain); background-size:180px;mix-blend-mode:soft-light; }
+#tableSurface { position:fixed; left:12px; right:25%; top:96px; bottom:12px; border:3px solid #ccb98c; border-radius:24px 12px; background-color:#16452d; background-image:var(--grain),radial-gradient(ellipse,#224d30,#113720); box-shadow:0 0 0 5px #131914,0 0 0 7px #87764d,inset 0 0 0 6px #14341f,inset 0 0 0 8px #ae9f65; }
+#tableSurface { background-blend-mode:soft-light,normal;background-size:160px,cover; }
+#tableSurface::after { content:'♠'; position:absolute; left:3%; top:32%; font:clamp(70px,13vw,240px) Georgia; color:#aab86d24; }
+.shade { display:none; }
+header { height:84px; padding:8px 22px; border-bottom:4px double #a7967355; align-items:center; }
+.brand { font-family:Impact,'Arial Narrow',sans-serif; font-style:italic; font-size:clamp(32px,4.6vw,72px); letter-spacing:.02em; color:#f1dfb4; }
+.brand span { color:inherit; }
+.brand::before { content:'♠'; display:inline-grid; place-items:center; transform:rotate(-10deg); background:#b4352e; color:#171917; font:normal .7em Georgia; width:.9em; height:1.15em; margin-right:12px; border-radius:3px; }
+.stats { gap:0; }
+.stat { min-width:110px; text-align:center; padding:0 20px; border-right:2px solid #b6a88666; }
+.stat:last-child { border-right:0; }
+.stat small { font:700 17px Impact,'Arial Narrow',sans-serif; letter-spacing:.08em; color:#e3d3b1; }
+.stat strong { font:40px/1.05 Impact,'Arial Narrow',sans-serif; color:#f3e3bb; }
+.stat:nth-child(3) strong { color:#c84136; }
+.menu { gap:10px; }
+.menu button { width:48px;height:48px;border:2px solid #c7b897;border-radius:9px;background:#161917;font:bold 28px Georgia;color:#e8d4ac; }
+.bottom { left:auto; right:1%; top:110px; bottom:18px; width:23%; transform:none; padding:0; align-items:stretch; }
+.controls { width:100%; background:transparent; padding:12px; border:0; border-radius:0; display:flex; flex-direction:column; justify-content:center; }
+.message { order:3; min-height:38px; margin:15px 0 0; font:500 14px/1.25 system-ui; color:#e9ddbd; }
+.actions { display:grid; grid-template-columns:1fr; gap:18px; margin:0; }
+.guess { min-height:clamp(72px,13vh,142px); border:3px solid #ddcaa0; border-radius:12px; background:linear-gradient(115deg,#c54135,#9c2523); color:#f7e5b9; font:clamp(27px,3.7vw,58px) Impact,'Arial Narrow',sans-serif; box-shadow:inset 0 0 0 5px #641d2340,0 6px 0 #090c0a; text-align:center; }
+.guess::before { content:'▲'; margin-right:12px; font-size:.65em; }
+.guess.lower { background:linear-gradient(125deg,#ecdbaf,#c4b28a); color:#1b211c; border-color:#f0deb6; }
+.guess.lower::before { content:'▼'; }
+.tools { display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-top:30px; }
+.tools button { min-height:62px; border:2px solid #a99c7d; border-radius:9px; background:#20231f; color:#e9d8b3; font:clamp(18px,2vw,31px) Impact,'Arial Narrow',sans-serif; }
+.tools button:last-child { grid-column:1/-1; }
+.tools button:disabled { opacity:.42; }
+#shield.armed { border-color:#c6ead4;background:#2b5140;color:#e2ffea; }
+#casinoEvent { top:86px; z-index:5; font-size:13px; }
+#toast { top:auto;bottom:15px;right:2%;left:auto;transform:none;max-width:22%;font:14px system-ui; }
+.modalbox { background:#19261df7; border:2px solid #b4a17b;border-radius:12px; }
+.modalbox h2 { font:34px Impact,'Arial Narrow',sans-serif; color:#efdfba; }
+.modalChoices button { background:#203c2b; border-color:#a3987066; }
+#modalAction { background:#b3342c; color:#f4e1b6; border:2px solid #d5bd8d; min-height:50px; }
+@media(max-width:760px) {
+ header { height:68px; padding:6px 10px;gap:5px; }
+ .brand { font-size:25px; }
+ .brand::before { margin-right:5px; }
+ .stat { min-width:40px;padding:0 6px; }
+ .stat small {font-size:9px;}
+ .stat strong {font-size:23px;}
+ .menu {gap:3px;}
+ .menu button {width:27px;height:31px;font-size:19px;border-width:1px;border-radius:4px;}
+ #tableSurface {left:9px;right:9px;top:78px;bottom:208px;}
+ .bottom {left:0;right:0;top:auto;bottom:0;width:100%;padding:5px 9px max(8px,env(safe-area-inset-bottom));}
+ .controls {padding:5px;background:#181c18;}
+ .actions {grid-template-columns:1fr 1fr;gap:8px;}
+ .guess {min-height:57px;font-size:28px;border-width:2px;border-radius:7px;}
+ .tools {grid-template-columns:repeat(5,1fr);gap:5px;margin-top:9px;}
+ .tools button {font-size:16px;min-height:43px;border-width:1px;border-radius:5px;}
+ .tools button:last-child{grid-column:auto;}
+ .message {font-size:12px;min-height:28px;margin:7px 0 0;}
+ #casinoEvent {top:69px;}
+ #toast {bottom:193px;right:10px;max-width:90%;}
+}
+
 </style>
 <script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.1/build/three.module.js"}}</script>
-</head><body><canvas id="scene" aria-label="Interactive three-dimensional casino table"></canvas><div class="shade"></div>
+</head><body><div id="tableSurface" aria-hidden="true"></div><canvas id="scene" aria-label="Interactive three-dimensional casino table"></canvas><div class="shade"></div>
 <header>
   <div><div class="eyebrow">Midnight Table</div><div class="brand">HI<span>LO</span> </div><div class="sub" id="bossrule">The Tollkeeper</div></div>
   <div class="stats">
@@ -204,31 +264,29 @@ header { background: none; }
 <script type="module">
 import * as THREE from 'three';
 const $=id=>document.getElementById(id);
-const renderer=new THREE.WebGLRenderer({canvas:$('scene'),antialias:true,powerPreference:'high-performance'});
+const renderer=new THREE.WebGLRenderer({canvas:$('scene'),antialias:true,alpha:true,powerPreference:'high-performance'});
 renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.PCFSoftShadowMap;renderer.outputColorSpace=THREE.SRGBColorSpace;renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=1.28;
 const scene = new THREE.Scene();
-scene.background = new THREE.Color(0x121310);
-scene.fog = new THREE.FogExp2(0x121310, .032);
+scene.background = null;
+scene.fog = null;
 const camera = new THREE.OrthographicCamera(-5, 5, 5, -5, .1, 90);
 const deckX = 3.12, deckZ = -.58, discardX = 3.12, discardZ = 2.05;
 
 function positionCamera() {
- const width = innerWidth, height = innerHeight;
- const top = document.querySelector('header').getBoundingClientRect().bottom + 8;
- const desktop = width >= 1000;
- const bottom = desktop ? height - 12 : document.querySelector('.controls').getBoundingClientRect().top - 10;
- const short = height < 570;
- const horizontal = desktop ? 9.5 * width / (width - 260) : short ? 7.9 : 7.65;
- const viewHeight = Math.max((short ? 5.5 : 6.5) * height / Math.max(1, bottom - top), horizontal * height / width);
- const half = viewHeight / 2, aspect = width / height;
- const offsetX = desktop ? 130 * viewHeight / height : .53;
- const offsetY = ((top + bottom) / 2 - height / 2) * viewHeight / height;
- camera.left = -half * aspect + offsetX;
- camera.right = half * aspect + offsetX;
- camera.top = half + offsetY;
- camera.bottom = -half + offsetY;
- camera.position.set(0, 18, 6);
- camera.lookAt(0, .72, .12);
+ const width=innerWidth, height=innerHeight;
+ const bounds=document.getElementById('tableSurface').getBoundingClientRect();
+ const viewHeight=Math.max(6.55*height/Math.max(1,bounds.height-24),7.6*height/Math.max(1,bounds.width-24));
+ const centerX=bounds.left+bounds.width/2,centerY=bounds.top+bounds.height/2;
+ const half=viewHeight/2;
+ const offsetX=.7+(width/2-centerX)*viewHeight/height;
+ const offsetY=(centerY-height/2)*viewHeight/height;
+ camera.left=-half*width/height+offsetX;
+ camera.right=half*width/height+offsetX;
+ camera.top=half+offsetY;
+ camera.bottom=-half+offsetY;
+ camera.position.set(0,18,.14);
+ camera.up.set(0,0,-1);
+ camera.lookAt(0,.72,.14);
  camera.updateProjectionMatrix();
 }
 function resizeScene() {
@@ -306,6 +364,9 @@ function weave(base, amplitude, repeatX, repeatY) {
  return texture;
 }
 
+const grainTexture=weave([100,100,90],110,1,1);
+document.documentElement.style.setProperty('--grain','url('+grainTexture.image.toDataURL()+')');
+grainTexture.dispose();
 const walnut = mat(0x4e2b1c, .36);
 const brass = mat(0xb78749, .38, .45);
 const leather = mat(0x30221b, .71);
@@ -377,6 +438,9 @@ for (const side of [-1, 1]) {
 box(1.19, .13, 1.62, brass, deckX, .77, deckZ);
 box(1.13, .12, 1.56, mat(0xc7b89b, .9), deckX, .88, deckZ);
 
+for(const object of [...scene.children]) {
+ if(object.isMesh) object.visible=false;
+}
 const S = ['♠','♥','♦','♣'], R = ['A','2','3','4','5','6','7','8','9','10','J','Q','K'];
 function medallion(g, x, y, radius, color) {
  g.strokeStyle = color;
@@ -424,8 +488,19 @@ function cardFace(g, card) {
   g.fillText(joker ? 'J O K E R' : suit, 256, 540);
  } else {
   g.fillStyle = ink;
-  g.font = 'bold 255px Georgia';
-  g.fillText(suit, 256, 379);
+  const count=card.v+1;
+  const layouts={
+   1:[[0,0]],2:[[0,-1],[0,1]],3:[[0,-1],[0,0],[0,1]],
+   4:[[-1,-1],[1,-1],[-1,1],[1,1]],
+   5:[[-1,-1],[1,-1],[0,0],[-1,1],[1,1]],
+   6:[[-1,-1],[1,-1],[-1,0],[1,0],[-1,1],[1,1]],
+   7:[[-1,-1],[1,-1],[0,-.5],[-1,0],[1,0],[-1,1],[1,1]],
+   8:[[-1,-1],[1,-1],[0,-.5],[-1,0],[1,0],[0,.5],[-1,1],[1,1]],
+   9:[[-1,-1],[1,-1],[-1,-.33],[1,-.33],[0,0],[-1,.33],[1,.33],[-1,1],[1,1]],
+   10:[[-1,-1],[1,-1],[0,-.65],[-1,-.33],[1,-.33],[-1,.33],[1,.33],[0,.65],[-1,1],[1,1]]
+  };
+  g.font='bold '+(count===1?210:79)+'px Georgia';
+  for(const [x,y] of layouts[count])g.fillText(suit,256+x*83,365+y*155);
  }
  for (const inverted of [false, true]) {
   g.save();
@@ -441,10 +516,10 @@ function cardFace(g, card) {
 }
 const tex = card => canvasTexture(512, 716, g => cardFace(g, card));
 const backTex = canvasTexture(512, 716, g => {
- g.fillStyle = '#122520';
+ g.fillStyle = '#8e2826';
  g.fillRect(0, 0, 512, 716);
  g.lineWidth = 3;
- g.strokeStyle = '#6f6245';
+ g.strokeStyle = '#dabd88';
  for (let x = -720; x < 700; x += 34) {
   g.beginPath(); g.moveTo(x, 0); g.lineTo(x + 716, 716); g.stroke();
   g.beginPath(); g.moveTo(x + 716, 0); g.lineTo(x, 716); g.stroke();
@@ -454,18 +529,30 @@ const backTex = canvasTexture(512, 716, g => {
  g.strokeRect(15, 15, 482, 686);
  g.lineWidth = 3;
  g.strokeRect(31, 31, 450, 654);
- g.fillStyle = '#122520';
+ g.fillStyle = '#8e2826';
  g.beginPath(); g.arc(256, 358, 153, 0, Math.PI * 2); g.fill();
  medallion(g, 256, 358, 144, '#d0ac6a');
  g.fillStyle = '#ecd09a';
  g.textAlign = 'center';
  g.font = 'bold 118px Georgia';
- g.fillText('H', 256, 397);
+ g.fillText('♠', 256, 397);
  for (const y of [124, 610]) {
   g.font = 'bold 52px Georgia';
   g.fillText('♠', 256, y);
  }
 });
+box(1.13,.14,1.56,mat(0xdccaa6),deckX,.84,deckZ);
+for(const [word,z] of [['DECK',deckZ-1.03],['DISCARD',discardZ-.97]]) {
+ const label=canvasTexture(256,64,g=>{
+  g.fillStyle='#e6d7ad';g.font='bold 34px sans-serif';g.textAlign='center';g.fillText(word,128,44);
+ });
+ const mesh=addMesh(new THREE.PlaneGeometry(1.2,.3),new THREE.MeshBasicMaterial({map:label,transparent:true,toneMapped:false,depthWrite:false}),deckX,.76,z);
+ mesh.rotation.x=-Math.PI/2;
+}
+const discardShape=roundedPath(new THREE.Shape(),1.22,1.65,.1);
+const discardOutline=new THREE.LineLoop(new THREE.BufferGeometry().setFromPoints(discardShape.getPoints(12)),
+ new THREE.LineBasicMaterial({color:0xb0b67d,transparent:true,opacity:.7}));
+discardOutline.rotation.x=-Math.PI/2;discardOutline.position.set(discardX,.74,discardZ);scene.add(discardOutline);
 const deckTop = addMesh(new THREE.PlaneGeometry(1.13, 1.56), new THREE.MeshBasicMaterial({
  map: backTex, toneMapped: false
 }), deckX, .944, deckZ);
@@ -476,10 +563,10 @@ jokerTexture.dispose();
 
 const slots = Array.from({length: 9}, (_, i) => ({x: (i % 3 - 1) * 1.54, z: Math.floor(i / 3) * 1.9 - 1.76}));
 const pads = [], cardMeshes = Array(9).fill(null);
-const slotRim = new THREE.LineBasicMaterial({color: 0xbfa472, transparent: true, opacity: .5});
+const slotRim = new THREE.LineBasicMaterial({color:0xb0b67d,transparent:true,opacity:.75});
 for (const p of slots) {
  const path = roundedPath(new THREE.Shape(), 1.30, 1.78, .075);
- const pad = addMesh(new THREE.ShapeGeometry(path, 6), mat(0x133b30, 1), p.x, .704, p.z);
+ const pad = addMesh(new THREE.ShapeGeometry(path, 6), mat(0x173b29,1), p.x, .704, p.z);
  pad.rotation.x = -Math.PI / 2;
  pads.push(pad);
  const line = new THREE.LineLoop(new THREE.BufferGeometry().setFromPoints(path.getPoints(6)), slotRim);
@@ -565,6 +652,7 @@ const dealerHands = [-1,1].map(side=>{
  thumb.position.set(-side*.18,0,.06);
  hand.add(thumb);
  hand.position.set(side*2.72,.9,-3.12);
+ hand.visible=false;
  scene.add(hand);
  return hand;
 });
@@ -796,7 +884,9 @@ function refresh(){
  const ready=G.phase==='playing'&&!!G.board[G.selected];$('higher').disabled=!ready;$('lower').disabled=!ready;
  for(const [id,active] of [['push',ready&&G.push===0],['shield',ready&&G.shields>0&&!G.protected[G.selected]],['peek',ready&&G.peeks>0],['swap',ready&&G.swaps>0],['cashout',ready&&G.streak>=3]])$(id).disabled=!active;
  $('push').textContent=G.push===1?'Push 2/2':'Push';
- $('shield').textContent='Shield '+G.shields;
+ $('shield').textContent=G.protected[G.selected]?'Armed':'Shield '+G.shields;
+ $('shield').classList.toggle('armed',Boolean(G.protected[G.selected]));
+ $('shield').title=G.protected[G.selected]?'Blocks one miss on this card. Push bypasses shields.':'Protect this card from one miss. Push bypasses shields.';
  $('peek').textContent='Peek '+G.peeks;
  $('swap').textContent='Swap '+G.swaps;
  for(let i=0;i<9;i++){pads[i].material.emissive.setHex(i===G.selected&&ready?0x537c36:G.locked[i]?0x58212a:0x000000);pads[i].material.emissiveIntensity=i===G.selected&&ready?.9:G.locked[i]?.8:0;const m=cardMeshes[i];if(m)m.userData.targetY=i===G.selected&&ready?1.02:.75}
@@ -937,10 +1027,12 @@ function meshCard(c,i,animate=false){
 }
 function guess(dir){
  if(G.phase!=='playing'||!G.board[G.selected])return;
+ const run=G;
  const i=G.selected,old=G.board[i],p=chance(old,dir),c=draw();
  if(!c){finishStage();return}
- G.phase='busy';G.turns++;const good=dir==='higher'?c.v>old.v:c.v<old.v;
+ G.phase='busy';refresh();G.turns++;const good=dir==='higher'?c.v>old.v:c.v<old.v;
  const resolve=()=>{
+  if(G!==run)return;
   let info='';
   if(good){
    G.board[i]=c;meshCard(c,i,true);G.correct++;G.streak++;G.best=Math.max(G.best,G.streak);
@@ -969,9 +1061,12 @@ function guess(dir){
    const up=G.upgrades[i],pushing=G.push>0;
    if(!pushing&&has('mirror')&&!G.mirrorUsed){G.mirrorUsed=true;info=' Mirror saved card';sound('shield');flash('ability',i,' MIRROR SAVED')}
    else if(!pushing&&up==='ward'&&!G.wardUsed[i]){G.wardUsed[i]=true;info=' Ward saved card';sound('shield');flash('ability',i,' WARD BLOCK')}
-   else if(!pushing&&G.protected[i]){G.protected[i]=false;info=' Shield saved card';sound('shield');flash('ability',i,' SHIELD BLOCK')}
+   else if(!pushing&&G.protected[i]){G.protected[i]=false;info='Shield used · card saved';sound('shield');flash('ability',i,' SHIELD BLOCK')}
    else{G.board[i]=null;discardCard(i);info='Position lost';if(G.stage===2&&G.locked.filter(Boolean).length<3){G.locked[i]=true;info+=' ·  Collector locked it'}if(has('salvage')&&!G.salvageUsed){G.salvageUsed=true;refill()}}
-   G.push=0;G.message='✕ '+rank(old)+' → '+rank(c);sound('bad');flash('negative',i);
+   G.push=0;
+   const saved=G.board[i]!==null;
+   G.message=saved?info:rank(old)+' → '+rank(c)+' · Card lost';
+   if(!saved){sound('bad');flash('negative',i);}
   }
   G.detail=info||('Streak '+G.streak+' · '+G.deck.length+' cards remaining');
   if(cardsLeft()===0){endRun(false,'All board positions lost.');return}
@@ -983,7 +1078,7 @@ function guess(dir){
 $('higher').onclick=()=>guess('higher');$('lower').onclick=()=>guess('lower');
 $('restart').onclick=()=>showDialog('RESTART','Start a new run?','Your current Roguelike progress will be lost.',[],{label:'Restart',click:()=>{hideDialog();newRun()}});
 $('push').onclick=()=>{if(G.phase!=='playing'||G.push)return;G.push=1;G.message=' Push Your Luck: win two guesses on this card for triple points';sound('push');flash('ability',G.selected,' PUSH YOUR LUCK');refresh()};
-$('shield').onclick=()=>{if(!G.shields||G.phase!=='playing'||G.protected[G.selected])return;G.shields--;G.protected[G.selected]=true;G.message=' Protected '+rank(G.board[G.selected]);sound('shield');flash('ability',G.selected,' PROTECTED');refresh()};
+$('shield').onclick=()=>{if(!G.shields||G.phase!=='playing'||!G.board[G.selected]||G.protected[G.selected])return;G.shields--;G.protected[G.selected]=true;G.message=rank(G.board[G.selected])+' protected · one miss';sound('shield');flash('ability',G.selected,' PROTECTED');refresh()};
 $('peek').onclick=()=>{if(!G.peeks||G.phase!=='playing')return;G.peeks--;const c=[...G.deck].reverse().find(x=>!x.joker);G.message=c?' Next regular card: '+rank(c):'No regular card left';sound('peek');flash('ability',G.selected,c?' NEXT: '+rank(c):'NO REGULAR CARD');refresh()};
 $('swap').onclick=()=>{if(!G.swaps||G.phase!=='playing')return;swapFrom=G.selected;G.message='⇄ Select another occupied card to swap';sound('swap');flash('ability',G.selected,'⇄ SELECT SECOND CARD');refresh()};
 $('cashout').onclick=()=>{if(G.phase!=='playing'||G.streak<3)return;G.streak=0;G.shields++;G.message=' Streak cashed out · +1 Shield';sound('cashout');flash('ability',G.selected,' STREAK CASHED OUT');refresh()};
