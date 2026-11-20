@@ -1,4 +1,4 @@
-import { abilities, ranks, newMatch, play, view } from './rules.mjs?v=shared1';
+import { abilities, ranks, newMatch, play, view } from './rules.mjs?v=turn2';
 
 const labels = { shield: 'Shield', peek: 'Peek', swap: 'Swap', double: 'Double Down' };
 const screen = document.getElementById('screen');
@@ -256,7 +256,7 @@ function renderLocal() {
       if (mode !== 'local' || match !== localMatch) return;
       botTurn(match, seat);
       renderLocal();
-    }, 550);
+    }, 850);
   }
 }
 
@@ -297,10 +297,18 @@ function renderMatch(match, seat, move, rematch, redraw) {
   const title = el('div', null, 'table-title');
   const winner = match.winners;
   const player = match.players[match.active];
-  const heading = winner
-    ? match.winners.map(i => match.players[i].name).join(' & ') + (winner.length === 1 ? ' wins' : ' tie')
-    : mode === 'local' && practice && seat === match.active ? 'Your turn' : player.name + '’s turn';
-  title.append(el('h1', heading), el('span', match.remaining + ' in deck'));
+  const personal = mode === 'online' || (mode === 'local' && practice);
+  const winnerNames = winner?.map(i => match.players[i].name).join(' & ');
+  const result = winner?.length === 1 && personal && winner[0] === seat ? 'You win'
+    : winnerNames + (winner?.length === 1 ? ' wins' : ' tie');
+  const heading = winner ? result : personal && seat === match.active ? 'Your turn' : player.name + '’s turn';
+  const drawInfo = el('div', null, 'draw-info');
+  drawInfo.append(el('span', match.remaining + ' in deck'));
+  if (!winner && match.remaining > 1) {
+    const next = (match.active + 1) % match.players.length;
+    drawInfo.append(el('small', 'Next: ' + (personal && next === seat ? 'you' : match.players[next].name)));
+  }
+  title.append(el('h1', heading), drawInfo);
   const canPlay = !winner && match.active === seat;
   if (selectionTurn !== match.turn) {
     selectionTurn = match.turn;
@@ -313,7 +321,7 @@ function renderMatch(match, seat, move, rematch, redraw) {
     const highlight = winner ? winner.includes(i) : i === match.active;
     const tile = el('article', null, highlight ? 'player active' : 'player');
     tile.append(el('h2', p.name + (mode === 'online' && i === seat ? ' (you)' : '')),
-      el('p', p.score + ' pts'), el('p', 'Streak ' + p.streak + ' · Best ' + p.best),
+      el('p', p.score + ' pts'), el('p', 'Streak ' + p.streak + ' · Best ' + p.best), el('p', 'Turns ' + p.turns),
       el('small', labels[p.ability] + (p.used ? ' · used' : '')));
     players.append(tile);
   });

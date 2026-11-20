@@ -62,3 +62,6 @@ details p {margin-top:.5rem}
 .board-card span {font-size:.72em}
 .board-card.selected {outline:2px solid #ffdb7d;outline-offset:1px}
 @media(max-width:540px) {.board {width:min(100%,224px)} .player p {font-size:.78rem}}
+
+.draw-info {flex:none;text-align:right}
+.draw-info small {display:block;color:var(--muted);font-size:.72rem}

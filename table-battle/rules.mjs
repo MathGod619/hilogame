@@ -18,7 +18,7 @@ export function newMatch(players, random = Math.random) {
   for (const slot of [0, 1, 2]) board[slot] = deck.pop();
   return {
     players: players.map(({name, ability}) => ({
-      name, ability, score: 0, streak: 0, best: 0, used: false
+      name, ability, score: 0, streak: 0, best: 0, turns: 0, used: false
     })),
     board, deck, first, turn: 0, active: first, discard: null,
     armed: null, last: null, winners: null
@@ -87,6 +87,7 @@ export function play(match, seat, action, value) {
   player.score += points;
   match.last = { seat, type: 'guess', old, card, hit, points, shielded, rebuilt, wiped };
   match.armed = null;
+  player.turns++;
   match.turn++;
 
   if (!match.deck.length) {
@@ -94,8 +95,7 @@ export function play(match, seat, action, value) {
     match.winners = match.players.flatMap((p,i) => p.score === top.score && p.best === top.best ? [i] : []);
     return;
   }
-  // Rotate the first seat each round. The randomly selected opener gets the 49th guess.
-  match.active = (match.first + Math.floor(match.turn / 4) + match.turn % 4) % 4;
+  match.active = (seat + 1) % match.players.length;
 }
 
 export function view(match, seat) {
