@@ -12,6 +12,64 @@
 .slot .slotupgrade{position:absolute;top:-7px;left:-7px;z-index:2;background:#3c2554;border:1px solid #eac0ff;color:#fff;border-radius:7px;padding:3px 5px;font-size:12px}
 .shopchoices{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin:13px 0}.shopchoice{border:1px solid #ffffff34;background:#18242b;border-radius:11px;padding:12px;text-align:left;color:white;min-height:93px}.shopchoice strong{display:block;color:#ffe09b;font-size:13px}.shopchoice small{display:block;color:#aec8ca;font-size:11px;margin-top:5px}.shopchoice em{display:block;font-size:11px;color:#dff58f;margin-top:5px;font-style:normal}.shopchoice:disabled{opacity:.4}.modalscroll{max-height:min(83vh,740px);overflow:auto}.ticketchoice{display:block;width:100%;text-align:left!important;background:#ffffff13!important;color:white!important;border:1px solid #ffffff36!important;padding:12px!important}.ticketchoice strong{display:block}.ticketchoice small{display:block;color:#bfd0d4;margin-top:4px}
 @media(max-width:440px){.roguerow{grid-template-columns:1fr 1fr}.roguerow>div:last-child{grid-column:span 2}.shopchoices{grid-template-columns:1fr}}
+
+/* Desktop fit + readable reward descriptions. Keep all 3x3 positions visible at 100% zoom. */
+.rewardsdetails{padding:13px 16px}
+.rewardsdetails>summary{cursor:pointer;list-style:none;font-size:15px;font-weight:900;display:flex;justify-content:space-between;align-items:center;gap:8px}
+.rewardsdetails>summary::-webkit-details-marker{display:none}
+.rewardsdetails>summary:after{content:'▾';color:var(--lime)}
+.rewardsdetails[open]>summary:after{content:'▴'}
+.rewardsdetails .rulegrid{margin-top:13px}
+.rule{font-size:14px;line-height:1.45;color:#edf5f2;border-color:#ffffff2a;background:#ffffff12;padding:12px}
+.rule b{color:#e4faac}
+.rewardsdetails details{line-height:1.55}
+.power{font-size:13px;line-height:1.2;color:#f4f9f7}
+#powerinfo{font-size:13px;line-height:1.4;color:#dce8e7}
+@media(min-width:736px) and (max-height:920px){
+ .app{padding:10px 14px;max-width:1160px}
+ .top{margin-bottom:8px;min-height:42px}
+ .brand{font-size:29px}
+ .progresspanel{padding:9px 14px;margin-bottom:8px}
+ .progressheads strong{font-size:15px}
+ .stagechips{margin-top:6px}
+ .stagechips span{padding:5px 3px;font-size:11px}
+ .progresspanel .meter{margin-top:7px!important;height:8px!important}
+ .stats{margin-bottom:8px;gap:7px}
+ .stat{padding:7px 10px;border-radius:10px}
+ .stat strong{font-size:21px}
+ .layout{grid-template-columns:minmax(0,1.05fr) minmax(340px,.95fr);gap:10px}
+ .felt{padding:12px 16px}
+ .sectiontop{margin-bottom:10px}
+ .board{max-width:min(100%,280px);gap:7px}
+ .slot{border-radius:8px}
+ .card{padding:5px}
+ .card .rank{font-size:20px}
+ .card .suit{font-size:37px}
+ .boardfoot{margin-top:10px;font-size:12px}
+ .panel{padding:11px 14px;border-radius:12px;margin-bottom:8px}
+ .panel h3{margin-bottom:8px}
+ .big{font-size:21px}
+ .choices{margin:8px 0}
+ .primary{padding:11px 10px;font-size:15px}
+ .feedback{min-height:43px;padding:8px;margin-top:8px}
+ .power{padding:7px 9px}
+ .pillrow{gap:5px}
+ .footer{margin:8px 0 0}
+}
+@media(min-width:736px) and (max-height:740px){
+ .app{padding-top:5px;padding-bottom:5px}
+ .top{margin-bottom:5px}
+ .progresspanel{padding:7px 12px}
+ .stats{margin-bottom:6px}
+ .stat{padding:5px 9px}
+ .board{max-width:min(100%,255px);gap:6px}
+ .sectiontop{margin-bottom:7px}
+ .boardfoot{margin-top:7px}
+ .panel{padding:9px 12px;margin-bottom:6px}
+ .feedback{padding:7px}
+ .power{padding:6px 8px}
+}
+
 </style></head><body>
 <main class="app"><header class="top"><div><div class="kicker">RIDE THE BUS • SURVIVE THE DECK</div><div class="brand">HI<span>LO</span> <span style="font-size:13px;letter-spacing:0;color:#9cb4b3">ARCADE</span></div></div><div class="topcontrols"><label class="small" for="mode">MODE</label><select id="mode"><option value="arcade">Arcade Run · 3 Stages</option><option value="classic">Classic · 1 Deck</option><option value="endless">Endless · High Score</option><option value="rogue">Roguelike · Build a Run</option><option value="casino">Casino · Free Chips</option></select><button class="secondary" id="reset">↻ New game</button></div></header>
 <section id="casino" class="casino" aria-label="HiLo Casino Mode">
@@ -30,7 +88,7 @@
 <div class="layout"><section class="felt" id="felt"><div class="sectiontop"><h2>THE NINE-CARD BOARD</h2><div class="tag" id="firestatus">BUILD YOUR STREAK</div></div><div class="board" id="board" role="group" aria-label="Choose a card on the board"></div><div class="boardfoot" id="boardfoot">Tap a card to select it</div></section>
 <div><section class="panel"><div class="small" id="statuslabel">CURRENT CARD</div><div class="big" id="prompt">Choose a card</div><div class="muted" style="font-size:12px" id="instruction">Choose a card and predict Higher or Lower.</div><div class="odds"><span>Higher: <b id="phigh">—</b></span><span>Lower: <b id="plow">—</b></span></div><div class="meter"><i id="highbar" style="width:50%"></i></div><div class="choices" id="choices"><button class="primary" id="higher">↑ HIGHER</button><button class="primary lower" id="lower">↓ LOWER</button></div><div class="feedback" aria-live="polite"><div style="font-weight:800" id="feedback">Choose a card to start.</div><div class="muted" style="font-size:12px;margin-top:4px" id="detail">Ace low · Equal ranks lose · Two Jokers</div></div><button class="primary hidden" id="playagain" style="width:100%;margin-top:10px">Play again ↻</button></section>
 <section class="panel" id="powerspanel"><h3>⚡ Power-ups &amp; strategy</h3><div class="pillrow"><button class="power" id="push">🎲 Push Your Luck: OFF</button><button class="power" id="shield">🛡️ Shield <span id="shieldqty">0</span></button><button class="power" id="peek">👁️ Peek <span id="peekqty">0</span></button><button class="power" id="swap">⇄ Swap <span id="swapqty">0</span></button><button class="power" id="cashout">🔥 Cash Out</button></div><div id="powerinfo" class="toast">Push Your Luck: win two guesses on the same card for 3× their combined points; miss either and lose that position.</div></section>
-<section class="panel"><h3>🏆 How you earn rewards</h3><div class="rulegrid"><div class="rule">✓ Every 2 total correct: <b>+1 board card</b></div><div class="rule">🔥 Every 3 consecutive: <b>+1 shield token &amp; card</b></div><div class="rule">⚡ 6 consecutive: <b>choose Peek or Swap</b></div><div class="rule">🌋 9 consecutive: <b>Inferno, 3× points</b></div><div class="rule">▦ Complete a line: <b>bonus points &amp; shield</b></div><div class="rule">🃏 Joker: <b>+5 cards or power-up</b></div></div><details style="margin-top:12px"><summary style="cursor:pointer;font-weight:800;font-size:12px">History &amp; complete rules</summary><div style="font-size:12px;color:#b5c9c8;margin:10px 0">In Arcade, choose any occupied card. Correct guesses replace that card; wrong guesses remove it unless protected by a shield. Shield tokens can be placed on any card; one shield prevents one ordinary miss. Cash Out uses a streak of 3+ to earn another shield token and resets your streak. Peek reveals the upcoming regular card; Swap lets you exchange two occupied board positions. Push Your Luck commits to two guesses on one card for 3× combined points, but shields cannot save a missed Push. Complete a newly filled row, column, or diagonal for a line bonus; filling the same line again after it breaks earns another bonus. Jokers never appear on the board. Classic mode uses automatic board order without Arcade powers or line scoring. Ace is low; ties lose. Arcade Run: survive three consecutive decks (3, 2, then 1 starting cards) to win. Classic: clear one deck. Endless: keep clearing decks for the highest score. Each cleared deck advances the stage; lose all board cards and the run ends.</div><div class="log" id="log"></div></details></section></div></div><div class="footer">Single-player prototype · No payments or wagers · H / L keyboard shortcuts</div></main>
+<details class="panel rewardsdetails"><summary>🏆 Rewards &amp; rules <span class="muted">Tap to expand</span></summary><div class="rulegrid"><div class="rule">✓ Every 2 total correct: <b>+1 board card</b></div><div class="rule">🔥 Every 3 consecutive: <b>+1 shield token &amp; card</b></div><div class="rule">⚡ 6 consecutive: <b>choose Peek or Swap</b></div><div class="rule">🌋 9 consecutive: <b>Inferno, 3× points</b></div><div class="rule">▦ Complete a line: <b>bonus points &amp; shield</b></div><div class="rule">🃏 Joker: <b>+5 cards or power-up</b></div></div><details style="margin-top:12px"><summary style="cursor:pointer;font-weight:800;font-size:12px">History &amp; complete rules</summary><div style="font-size:12px;color:#b5c9c8;margin:10px 0">In Arcade, choose any occupied card. Correct guesses replace that card; wrong guesses remove it unless protected by a shield. Shield tokens can be placed on any card; one shield prevents one ordinary miss. Cash Out uses a streak of 3+ to earn another shield token and resets your streak. Peek reveals the upcoming regular card; Swap lets you exchange two occupied board positions. Push Your Luck commits to two guesses on one card for 3× combined points, but shields cannot save a missed Push. Complete a newly filled row, column, or diagonal for a line bonus; filling the same line again after it breaks earns another bonus. Jokers never appear on the board. Classic mode uses automatic board order without Arcade powers or line scoring. Ace is low; ties lose. Arcade Run: survive three consecutive decks (3, 2, then 1 starting cards) to win. Classic: clear one deck. Endless: keep clearing decks for the highest score. Each cleared deck advances the stage; lose all board cards and the run ends.</div><div class="log" id="log"></div></details></details></div></div><div class="footer">Single-player prototype · No payments or wagers · H / L keyboard shortcuts</div></main>
 <div class="modalback hidden" id="overlay"><div class="modal modalscroll" role="dialog" aria-modal="true" aria-labelledby="modaltitle"><div class="kicker" id="modalkicker">SPECIAL EVENT</div><h2 id="modaltitle">Joker!</h2><p id="modaldesc">Choose your reward.</p><div id="modalbuttons"></div></div></div>
 <script>
 (()=>{'use strict';
@@ -62,7 +120,7 @@ const TICKETS=[
 {id:'lucky',icon:'🍀',name:'Lucky Ticket',desc:'Begin with two shields, plus one at each new stage.'},
 {id:'fire',icon:'🔥',name:'Fire Ticket',desc:'Fire milestones give +200 bonus points and one extra Peek.'},
 {id:'risk',icon:'🎲',name:'Risk Ticket',desc:'Guesses with ≤40% odds earn 2.5× points and 18 tokens on success. Three such wins earn a shield.'},
-{id:'builder',icon:'🏗️',name:'Builder Ticket',desc:'Start with four occupied positions and get +150 per line.'}
+{id:'builder',icon:'🏗️',name:'Builder Ticket',desc:'Earn +150 extra points for each completed row, column or diagonal. No extra starting card.'}
 ];
 const BOSSES=[{name:'The Tollkeeper',description:'Each miss costs 75 points, but riskier guesses still pay big.'},{name:'The Collector',description:'The first three unprotected misses each lock an empty slot until the next stage.'},{name:'The Final Driver',description:'Clear the deck while keeping at least two occupied positions. Extra Jokers await.'}];
 const has=id=>G&&G.mode==='rogue'&&G.rogue?.artifacts.includes(id);
@@ -155,7 +213,7 @@ function finishCheck(){if(G.board.every(c=>c===null)){endRun('lose');return true
  if(!G.deck.length){if(G.mode==='rogue'&&G.stage===3&&G.board.filter(Boolean).length<2){endRun('lose')}else if(G.mode==='classic'||(G.mode==='arcade'||G.mode==='rogue')&&G.stage===3){endRun('win')}else{beginNextStage()}return true}return false}
 function setupStage(stage){G.stage=stage;G.stageTotal=0;if(rogue()){G.rogue.mirrorUsed=false;G.rogue.salvageUsed=false;G.rogue.locked=Array(9).fill(false);G.rogue.wardUsed=Array(9).fill(false);G.rogue.slotHits=Array(9).fill(0);G.rogue.correctStage=0;G.rogue.riskHits=0;}G.deck=shuffle([...normalDeck(),...Array.from({length:G.mode==='endless'?Math.min(5,stage+1):(G.mode==='arcade'||G.mode==='rogue')&&stage===3?4:2},()=>({joker:true}))]);G.stageTotal=G.deck.length;
  G.board=Array(9).fill(null);G.protected=Array(9).fill(false);G.selected=0;G.cursor=0;G.streak=0;G.pushArmed=false;G.pushStage=0;G.pushIndex=null;G.pushPoints=0;G.bonusRefill=false;G.pendingSix=false;G.extraNotes=[];G.peeked=null;G.swapFrom=null;G.phase='ready';G.result=null;
- const startCards=G.mode==='classic'?1:G.mode==='endless'?Math.max(1,4-stage):[3,2,1][Math.min(stage-1,2)]+(rogue()&&G.rogue.ticket==='builder'?1:0);let added=0;
+ const startCards=G.mode==='classic'?1:G.mode==='endless'?Math.max(1,4-stage):[3,2,1][Math.min(stage-1,2)];let added=0;
  while(added<startCards&&G.deck.length){const c=G.deck.pop();if(c.joker){insertFive();continue}G.board[added++]=c}
  if(rogue()){if(G.rogue.ticket==='lucky')G.shields++;if(G.rogue.ticket==='lucky'&&stage===1)G.shields++;if(has('anchor'))G.shields+=2;G.rogue.credits+=stage===1?0:20}tell('Stage '+stage+' ready — pick a card!',startCards+' starting '+(startCards===1?'card':'cards')+'. Clear the deck to advance.');addLog('Started '+G.mode+' stage '+stage+' with '+added+' starting cards')}
 
