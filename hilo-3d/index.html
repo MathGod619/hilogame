@@ -270,6 +270,20 @@ body[data-boss="3"] .bossStamp {color:#d78774;transform:rotate(6deg);}
 @media(prefers-reduced-motion:reduce){.bossStamp,.resultScore{animation:none!important;}#tableSurface{transition:none;}}
 @media(max-width:760px){#bossName{font-size:12px;top:9px;left:16px;}.bossStamp{width:70px;height:70px;font-size:49px;}}
 
+
+/* Compact settings panel: rows, not offer cards. */
+.modal[data-screen="settings"] .modalbox { position:relative; width:min(370px,100%); padding:24px; border:1px solid #81765d; border-radius:2px; background:#171b17; box-shadow:0 20px 60px #0009; text-align:left; }
+.modal[data-screen="settings"] h2 { font:600 22px/1.2 system-ui,sans-serif; margin:0 0 20px; }
+.modal[data-screen="settings"] #modalText { display:none; }
+.modal[data-screen="settings"] .modalChoices { display:block; }
+.modal[data-screen="settings"] .settingRow { display:flex; align-items:center; justify-content:space-between; min-height:58px; border-top:1px solid #ffffff18; font:500 15px system-ui,sans-serif; }
+.modal[data-screen="settings"] .settingRow input { appearance:none; width:44px; height:24px; margin:0; border:1px solid #6e7267; border-radius:3px; background:#30352e; cursor:pointer; position:relative; }
+.modal[data-screen="settings"] .settingRow input::after { content:''; position:absolute; width:16px; height:16px; top:3px; left:3px; background:#aaa899; border-radius:1px; }
+.modal[data-screen="settings"] .settingRow input:checked { background:#c4b47e; border-color:#c4b47e; }
+.modal[data-screen="settings"] .settingRow input:checked::after { left:23px; background:#20251e; }
+.modal[data-screen="settings"] .settingRow input:focus-visible { outline:2px solid #fff1b3; outline-offset:3px; }
+.modal[data-screen="settings"] #modalAction { position:absolute; top:12px; right:12px; width:36px; min-height:36px; margin:0; padding:0; border:0; background:none; color:#d9d1bd; font:24px system-ui,sans-serif; }
+
 </style>
 <script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.1/build/three.module.js"}}</script>
 </head><body><div id="tableSurface" aria-hidden="true" data-mark="♠"><span id="bossName">The Tollkeeper</span></div><canvas id="scene" aria-label="Interactive three-dimensional casino table"></canvas><div class="shade"></div>
@@ -590,6 +604,14 @@ const jokerArt = jokerTexture.image.toDataURL();
 jokerTexture.dispose();
 
 const slots = Array.from({length: 9}, (_, i) => ({x: (i % 3 - 1) * 1.54, z: Math.floor(i / 3) * 1.9 - 1.76}));
+function borderMesh(w,h,thickness,color,opacity=1){
+ const shape=roundedPath(new THREE.Shape(),w,h,.06);
+ const hole=roundedPath(new THREE.Path(),w-thickness*2,h-thickness*2,.04);
+ shape.holes.push(hole);
+ const mesh=new THREE.Mesh(new THREE.ShapeGeometry(shape,8),new THREE.MeshBasicMaterial({color,transparent:opacity<1,opacity,toneMapped:false,depthWrite:false,side:THREE.DoubleSide}));
+ mesh.rotation.x=-Math.PI/2;return mesh;
+}
+const slotEffects=[];
 const pads = [], cardMeshes = Array(9).fill(null);
 const slotRim = new THREE.LineBasicMaterial({color:0xb0b67d,transparent:true,opacity:.75});
 for (const p of slots) {
@@ -597,6 +619,9 @@ for (const p of slots) {
  const pad = addMesh(new THREE.ShapeGeometry(path, 6), mat(0x173b29,1), p.x, .704, p.z);
  pad.rotation.x = -Math.PI / 2;
  pads.push(pad);
+ const rim=borderMesh(1.36,1.84,.035,0xffffff);rim.position.set(p.x,.73,p.z);rim.visible=false;scene.add(rim);
+ const halo=borderMesh(1.44,1.92,.09,0xffffff,.16);halo.position.set(p.x,.725,p.z);halo.visible=false;scene.add(halo);
+ slotEffects.push({rim,halo,label:null,id:null});
  const line = new THREE.LineLoop(new THREE.BufferGeometry().setFromPoints(path.getPoints(6)), slotRim);
  line.position.set(p.x, .708, p.z);
  line.rotation.x = -Math.PI / 2;
@@ -625,6 +650,22 @@ const UPGRADES=[
 {id:'seed',icon:'',name:'Seedbed',desc:'Every third successful guess here refills a board slot.',cost:40},
 {id:'scout',icon:'',name:'Watchtower',desc:'Every fourth successful guess here earns a Peek.',cost:40}
 ];
+const UPGRADE_COLORS={ward:0x66cfff,amp:0xc18aff,kindle:0xff8854,mint:0x57e0c0,seed:0xa4dc65,scout:0xf1a5dc};
+function syncSlotEffects(){
+ slotEffects.forEach((fx,i)=>{
+  const id=G.upgrades[i];fx.rim.visible=fx.halo.visible=!!id;
+  if(!id){if(fx.label)fx.label.visible=false;return}
+  const color=UPGRADE_COLORS[id];fx.rim.material.color.setHex(color);fx.halo.material.color.setHex(color);
+  if(fx.id!==id){
+   if(fx.label){scene.remove(fx.label);fx.label.geometry.dispose();fx.label.material.map.dispose();fx.label.material.dispose()}
+   const up=UPGRADES.find(u=>u.id===id);
+   const texture=canvasTexture(512,64,g=>{g.fillStyle='#'+color.toString(16).padStart(6,'0');g.font='bold 40px sans-serif';g.textAlign='center';g.textBaseline='middle';g.fillText(up.name.toUpperCase(),256,32)});
+   fx.label=new THREE.Mesh(new THREE.PlaneGeometry(1.25,.156),new THREE.MeshBasicMaterial({map:texture,transparent:true,toneMapped:false,depthWrite:false}));
+   fx.label.rotation.x=-Math.PI/2;fx.label.position.set(slots[i].x,.74,slots[i].z+.99);scene.add(fx.label);fx.id=id;
+  }
+  fx.label.visible=true;
+ });
+}
 const TICKETS=[
 {id:'lucky',icon:'',name:'Lucky Ticket',desc:'Two starting shields, plus one each subsequent stage.'},
 {id:'fire',icon:'',name:'Fire Ticket',desc:'Fire milestones award 200 bonus points and a Peek.'},
@@ -838,11 +879,13 @@ function flash(kind,index=-1,msg=''){
 }
 function disposeCard(m){
  if(!m)return;scene.remove(m);m.geometry.dispose();
+ if(m.userData.selection){m.userData.selection.geometry.dispose();m.userData.selection.material.dispose()}
  for(const material of m.material){if(material.map&&material.map!==backTex)material.map.dispose();material.dispose()}
 }
 function discardCard(i){
  const m=cardMeshes[i];if(!m)return;
  cardMeshes[i]=null;
+ if(m.userData.selection)m.userData.selection.visible=false;
  sound('discard');
  if(reduced){disposeCard(m);return}
  discards.push({m,from:m.position.clone(),start:performance.now(),duration:400,rotation:m.rotation.z});
@@ -885,6 +928,7 @@ const brief = {
 };
 function showDialog(k,title,body,buttons,action=null){
  $('modal').dataset.screen='';
+ $('modalAction').removeAttribute('aria-label');
  $('modal').querySelectorAll('.bossStamp,.resultScore,.resultCaption,.resultDetail').forEach(node=>node.remove());
  const host = $('modalChoices');
  $('modalKick').textContent = k;
@@ -1003,7 +1047,7 @@ function newRun(){
 }
 function chance(card,dir){const a=G.deck.filter(c=>!c.joker);return a.length?a.filter(c=>dir==='higher'?c.v>card.v:c.v<card.v).length/a.length:0}
 function refresh(){
- if(!G)return;if(!G.board[G.selected])G.selected=G.board.findIndex(Boolean);
+ if(!G)return;syncSlotEffects();if(!G.board[G.selected])G.selected=G.board.findIndex(Boolean);
  $('stage').textContent=G.stage+'/3';$('score').textContent=G.score.toLocaleString();$('tokens').textContent=G.credits;
  $('deck').textContent=G.deck.length;$('correct').textContent=G.correct;$('streak').textContent=G.streak;$('boardCount').textContent=cardsLeft()+'/9';
  $('ticketName').textContent=' '+(TICKETS.find(x=>x.id===G.ticket)?.name||'Choose Ticket');$('artifactCount').textContent='✨ Artifacts '+G.artifacts.length+'/4';$('shields').textContent=' '+G.shields;$('stageProgress').textContent=G.deck.length+' left';
@@ -1161,6 +1205,7 @@ function meshCard(c,i,animate=false){
  if(!c){cardMeshes[i]=null;return}
  const p=slots[i],face=new THREE.MeshBasicMaterial({map:tex(c),toneMapped:false}),back=new THREE.MeshBasicMaterial({map:backTex,toneMapped:false}),side=mat(0xe5dece,.9);
  const m=new THREE.Mesh(new THREE.BoxGeometry(1.17,.045,1.65),[side,side,face,back,side,side]);m.position.set(animate?deckX:p.x,animate?1.1:.75,animate?deckZ:p.z);m.rotation.x=animate?Math.PI:0;m.castShadow=true;m.userData.index=i;m.userData.targetY=i===G?.selected?1.02:.75;scene.add(m);cardMeshes[i]=m;
+ const selection=borderMesh(1.25,1.73,.04,0xffe13b);selection.position.y=.03;selection.visible=i===G?.selected;m.add(selection);m.userData.selection=selection;
  if (animate) sound('deal');
  if (animate && !reduced) animations.push({m,p,start:performance.now(),duration:440});
  else { m.position.set(p.x,m.userData.targetY,p.z); m.rotation.x=0; }
@@ -1240,13 +1285,22 @@ $('runInfo').onclick=()=>showDialog('',BOSSES[G.stage-1].name,
  ],{label:'Back',click:hideDialog});
 
 $('settings').onclick=()=>{
- showDialog('SETTINGS','Visual & Audio Settings','Change animations or sound without affecting the run.',[
- {title:' Animations: '+(reduced?'OFF':'ON'),desc:'Skip card movement and use instant draws.',click:()=>{reduced=!reduced;$('settings').click()}},
- {title:' Sound: '+(soundOn?'ON':'OFF'),desc:'Toggle all game sound effects.',click:()=>{toggleSound();$('settings').click()}}
- ,{title:'Music: '+(musicOn?'ON':'OFF'),desc:'Quiet ambient tones for each boss.',click:()=>{musicOn=!musicOn;$('settings').click()}}
- ],{label:'Return to Table',click:hideDialog});
+ showDialog('','Settings','',[],{label:'×',click:hideDialog});
+ $('modal').dataset.screen='settings';
+ $('modalAction').setAttribute('aria-label','Close settings');
+ for(const [label,checked,change] of [
+  ['Sound',soundOn,()=>toggleSound()],
+  ['Music',musicOn,()=>{musicOn=!musicOn}],
+  ['Reduced motion',reduced,()=>{reduced=!reduced}]
+ ]){
+  const row=document.createElement('label');row.className='settingRow';
+  const name=document.createElement('span');name.textContent=label;
+  const input=document.createElement('input');input.type='checkbox';input.checked=checked;input.setAttribute('role','switch');input.onchange=change;
+  row.append(name,input);$('modalChoices').append(row);
+ }
 };
 document.addEventListener('keydown',e=>{
+ if(e.key==='Escape'&&$('modal').dataset.screen==='settings'){hideDialog();$('settings').focus();return}
  if(pendingBoss!==null&&(e.key==='Enter'||e.key===' ')){e.preventDefault();$('modalAction').click();return}
  if(!$('modal').classList.contains('hidden'))return;if(e.key.toLowerCase()==='h')guess('higher');if(e.key.toLowerCase()==='l')guess('lower')});
 let lastTime=0;
@@ -1266,6 +1320,7 @@ function animate(now){
   d.m.rotation.z=d.rotation+q*.5;d.m.rotation.x=q*.55;
   if(t>=1){disposeCard(d.m);discards.splice(i,1)}
  }
+ for(const m of cardMeshes)if(m?.userData.selection)m.userData.selection.visible=m.userData.index===G?.selected&&(G?.phase==='playing'||G?.phase==='busy');
  for(const m of cardMeshes)if(m&&!animations.some(a=>a.m===m)){
   const chosen=m.userData.index===G?.selected&&G?.phase==='playing';
   const hover=m.userData.index===hovered&&G?.phase==='playing';
