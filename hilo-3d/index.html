@@ -1,136 +1,434 @@
 <!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#09120f"><title>HiLo 3D — Midnight Table</title>
 <style>
-:root{font-family:Inter,system-ui,-apple-system,Segoe UI,sans-serif;color:#f7eedf;color-scheme:dark}*{box-sizing:border-box}html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#090d0c}button,select{font:inherit}button{cursor:pointer;touch-action:manipulation}button:focus-visible{outline:3px solid #e5c177;outline-offset:3px}#scene{position:fixed;inset:0;width:100%;height:100%;display:block}.shade{position:fixed;inset:0;pointer-events:none;background:linear-gradient(180deg,#030708a8 0%,transparent 23%,transparent 67%,#020605b8 100%)}header{position:fixed;top:0;left:0;right:0;padding:14px clamp(12px,3vw,35px);display:flex;align-items:start;justify-content:space-between;gap:12px;pointer-events:none}header>*{pointer-events:auto}.brand{font-size:clamp(22px,3vw,32px);font-weight:950;letter-spacing:-1.5px;line-height:1}.brand span{color:#e9be72}.eyebrow{font-size:10px;letter-spacing:2px;font-weight:900;color:#edcf99}.sub{font-size:11px;color:#c0c5bd;margin-top:5px}.stats{display:flex;gap:7px;flex-wrap:wrap;justify-content:end}.stat{background:#101b19cf;border:1px solid #e9bd6952;border-radius:9px;padding:7px 11px;min-width:75px;backdrop-filter:blur(10px)}.stat small{font-size:9px;letter-spacing:1.1px;color:#b7c5bf;display:block}.stat strong{font-size:19px;font-variant-numeric:tabular-nums}.bottom{position:fixed;bottom:0;left:0;right:0;display:flex;align-items:end;justify-content:center;padding:12px 18px max(16px,env(safe-area-inset-bottom));pointer-events:none}.controls{width:min(760px,100%);background:#10211ecf;border:1px solid #b6a17580;border-radius:16px;padding:13px 16px;backdrop-filter:blur(16px);box-shadow:0 15px 40px #0009;pointer-events:auto}.message{text-align:center;min-height:34px;font-size:15px;font-weight:780}.detail{text-align:center;font-size:12px;color:#c9d2c9;min-height:16px;margin-bottom:8px}.actions{display:grid;grid-template-columns:1fr 1fr;gap:10px}.guess{border:none;border-radius:10px;padding:14px 8px;font-size:17px;font-weight:950;background:#d7ecac;color:#25321c;box-shadow:inset 0 -3px #0002}.guess.lower{background:#ecc18f;color:#42261d}.guess:disabled{opacity:.35;cursor:default}#restart{border:1px solid #c9aa7059;color:#e9e7db;border-radius:8px;padding:8px 11px;background:#182721bb}#settings{border:1px solid #c9aa7059;color:#e9e7db;border-radius:8px;padding:8px 11px;background:#182721bb}.menu{display:flex;gap:6px}.hint{text-align:center;font-size:11px;color:#a4b9ae;margin-top:9px}.modal{position:fixed;inset:0;display:grid;place-items:center;background:#030806b9;z-index:10;padding:18px}.modal.hidden{display:none}.modalbox{width:min(440px,100%);background:#17221e;border:1px solid #d1aa6c;border-radius:17px;padding:25px;box-shadow:0 30px 90px #000b}.modalbox h2{font-size:26px;margin:7px 0}.modalbox p{color:#d0d8d0;line-height:1.5}.modalbox label{display:block;margin:14px 0}.modalbox button{padding:12px 15px;border:0;background:#dfbf7d;color:#231e14;border-radius:9px;font-weight:900;width:100%}#toast{position:fixed;top:25%;left:50%;transform:translateX(-50%);padding:15px 23px;background:#2f1514f0;border:1px solid #ffb07a;border-radius:12px;text-align:center;font-weight:950;box-shadow:0 12px 40px #000a;pointer-events:none;opacity:0;transition:opacity .15s;max-width:90vw}#toast.show{opacity:1}#loading{position:fixed;inset:0;display:grid;place-items:center;background:#08110f;z-index:20;text-align:center;color:#efd49c;font-weight:800}#loading.hidden{display:none}#loading small{display:block;color:#9eb4ab;font-weight:400;margin-top:8px} @media(max-width:650px){header{padding:9px}.brand{font-size:21px}.stats{gap:4px}.stat{min-width:52px;padding:4px 7px}.stat strong{font-size:16px}.stat small{font-size:8px}.sub{display:none}.bottom{padding:8px 8px max(10px,env(safe-area-inset-bottom))}.controls{padding:10px;border-radius:12px}.message{font-size:13px;min-height:24px}.detail{font-size:11px}.guess{padding:11px 5px;font-size:15px}.hint{font-size:10px;margin-top:6px}} @media(max-height:650px){header{padding:6px 15px}.sub{display:none}.controls{padding:8px 12px}.message{min-height:22px}.guess{padding:9px}.hint{margin-top:4px}.bottom{padding-bottom:6px}}
-
-/* Roguelike-first HUD, high-contrast shop, and tablet-sized board framing */
-header{z-index:3;gap:7px;padding:9px clamp(9px,2vw,26px);align-items:center}
-.eyebrow{font-size:10px;letter-spacing:1.2px}
-.brand{font-size:26px}
-.stats{gap:5px}
-.stat{padding:5px 9px;min-width:62px}
-.stat strong{font-size:16px}
-.stat small{font-size:9px}
-.bottom{z-index:3;padding:7px 10px max(10px,env(safe-area-inset-bottom))}
-.controls{width:min(690px,100%);padding:10px 13px}
-.message{font-size:15px;min-height:23px}
-.detail{font-size:12px;margin-bottom:5px}
-.guess{padding:12px 8px}
-.hint{font-size:10px}
-.ribbon{display:flex;justify-content:space-between;gap:6px;flex-wrap:wrap;color:#efd8a6;font-size:11px;font-weight:800;margin-bottom:6px}
-.tools{display:flex;gap:5px;justify-content:center;flex-wrap:wrap;margin-top:7px}
-.tools button{background:#22352f;color:#f4f4e9;border:1px solid #8b9476a0;padding:6px 9px;border-radius:8px;font-size:11px;font-weight:800}
-.tools button:disabled{opacity:.36}
-.modal{z-index:20}
-.modalbox{width:min(770px,100%);padding:18px;max-height:88dvh;overflow:auto;background:#132420}
-.modalbox h2{font-size:23px}
-.modalbox p{font-size:13px;margin:8px 0 11px}
-.modalChoices{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}
-.modalChoices button{margin:0;min-height:80px;background:#22332e!important;color:#f8f6eb!important;border:1px solid #8c9e85!important;text-align:left;padding:12px!important;display:flex;flex-direction:column;gap:5px;align-items:flex-start}
-.modalChoices button strong{color:#f5d78d;font-size:14px}
-.modalChoices button small{color:#e5eee7;font-weight:500;font-size:12px;line-height:1.4}
-.modalChoices button em{color:#d7f29e;font-style:normal;font-size:12px;font-weight:900;margin-top:auto}
-.modalChoices button:disabled{opacity:.53}
-.modalChoices button:not(:disabled):hover{background:#38584b!important}
-.modalChoices .wide{grid-column:1/-1}
-#modalAction{margin-top:10px}
-#modalAction:disabled{opacity:.35}
-#modalSettings{display:none}
-#scene{touch-action:manipulation}
-@media(max-width:700px){
- header{padding:7px 8px;align-items:flex-start}
- .brand{font-size:21px}
- .eyebrow{font-size:8px;letter-spacing:.5px}
- .stats{max-width:265px}
- .stat{min-width:47px;padding:3px 5px}
- .stat strong{font-size:14px}
- .stat small{font-size:7px;letter-spacing:.4px}
- .statBoard{display:none}
- .menu button{padding:6px}
- .bottom{padding:6px 7px max(8px,env(safe-area-inset-bottom))}
- .controls{padding:8px 9px}
- .message{font-size:13px}
- .detail{font-size:11px}
- .ribbon{font-size:10px}
- .guess{font-size:15px;padding:11px 5px}
- .tools button{padding:6px;font-size:10px}
- .hint{font-size:9px}
- .modalbox{padding:14px}
- .modalChoices{grid-template-columns:1fr}
- .modalChoices button{min-height:64px}
+:root {
+  color-scheme: dark;
+  font-family: system-ui, sans-serif;
+  color: #f2e7ce;
+  background: #090b0a;
+  --gold: #c5a36b;
+  --line: #b0864a66;
+  --muted: #b0b1a2;
+  --serif: Georgia, 'Times New Roman', serif;
 }
-@media(max-height:700px) and (min-width:701px){
- .controls{padding:7px}
- .guess{padding:8px}
- .tools button{padding:4px}
- .hint{margin-top:4px}
+* { box-sizing: border-box; }
+html, body { margin: 0; width: 100%; height: 100%; overflow: hidden; }
+button { font: inherit; color: inherit; cursor: pointer; touch-action: manipulation; }
+button:disabled { opacity: .43; cursor: default; }
+button:focus-visible { outline: 2px solid #f8d794; outline-offset: 2px; }
+#scene, .shade { position: fixed; inset: 0; width: 100%; height: 100%; }
+#scene { display: block; touch-action: manipulation; }
+.shade { pointer-events: none; background: radial-gradient(ellipse at 50% 45%, transparent 50%, #070806a0 100%); }
+header {
+  position: fixed; z-index: 3; inset: 0 0 auto;
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  padding: max(11px, env(safe-area-inset-top)) clamp(10px, 3vw, 38px) 10px;
+  background: linear-gradient(180deg, #090c0bf2, #090c0b70 80%, transparent);
+  pointer-events: none;
 }
-
-
-.controls{transition:border-color .16s,box-shadow .16s}
-.controls.positive{border-color:#d9f59b;box-shadow:0 0 22px #c9f57a50}
-.controls.negative{border-color:#eb8c76;box-shadow:0 0 22px #ff594550}
-.controls.ability{border-color:#9fd3fa;box-shadow:0 0 22px #73baf650}
-#toast{z-index:5;top:19%;font-size:clamp(13px,3vw,19px);max-width:min(88vw,540px)}
-@media(prefers-reduced-motion:reduce){.controls,#toast{transition:none}}
+header button { pointer-events: auto; }
+.eyebrow { color: var(--gold); font-size: 10px; font-weight: 700; letter-spacing: .19em; text-transform: uppercase; }
+.brand { font: bold clamp(25px, 3vw, 38px)/1 var(--serif); letter-spacing: -.07em; white-space: nowrap; }
+.brand span { color: var(--gold); }
+.brand small { color: var(--muted); font: 600 .28em system-ui, sans-serif; letter-spacing: .18em; }
+.sub { margin-top: 5px; font-size: 11px; color: var(--muted); }
+.stats, .menu { display: flex; gap: 5px; align-items: center; }
+.stat { min-width: 54px; padding: 2px 8px; border-left: 1px solid var(--line); }
+.stat small { display: block; color: var(--muted); font-size: 9px; letter-spacing: .08em; }
+.stat strong { font: 600 18px/1.2 var(--serif); font-variant-numeric: tabular-nums; }
+.menu button { background: #191914; border: 1px solid var(--line); border-radius: 4px; width: 36px; height: 36px; }
+.bottom { position: fixed; z-index: 3; inset: auto 0 0; display: flex; justify-content: center; padding: 0 8px max(8px, env(safe-area-inset-bottom)); pointer-events: none; }
+.controls {
+  width: min(650px, 100%); background: linear-gradient(170deg, #26241b, #131713 45%, #101410);
+  border: 1px solid var(--line); border-radius: 10px 10px 5px 5px;
+  box-shadow: 0 8px 36px #000b, inset 0 1px #f8dca426;
+  padding: 7px 11px 8px; pointer-events: auto; transition: border-color .16s, box-shadow .16s;
+}
+.controls.positive { border-color: #b9da97; box-shadow: 0 0 20px #a1cc5d42; }
+.controls.negative { border-color: #e18e79; box-shadow: 0 0 20px #ab523d60; }
+.controls.ability { border-color: #a4c4c9; box-shadow: 0 0 20px #6d9aa742; }
+.ribbon { display: flex; justify-content: space-between; gap: 5px; flex-wrap: wrap; padding-bottom: 4px; color: #d5bd8c; font-size: 11px; }
+.message { min-height: 2.32em; align-content: center; text-align: center; font: 700 clamp(14px, 2vw, 17px)/1.16 var(--serif); }
+.detail { min-height: 2.7em; line-height: 1.25; align-content: center; text-align: center; font-size: 11px; color: #c1c2b2; padding-top: 2px; }
+.actions { display: grid; grid-template-columns: 1fr 1fr; gap: 7px; margin-top: 6px; }
+.guess {
+  min-height: 44px; border-radius: 5px; border: 1px solid #e9cc8b; color: #211a0f;
+  background: linear-gradient(#e6c991, #af8549); font: bold 16px var(--serif); letter-spacing: .09em;
+  box-shadow: inset 0 1px #fff3, inset 0 -2px #0003;
+}
+.guess.lower { background: linear-gradient(#354139, #1b2923); border-color: #758575; color: #f4e9d2; }
+button:not(:disabled):hover { filter: brightness(1.16); }
+.tools { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 4px; margin-top: 5px; }
+.tools button { min-height: 36px; padding: 3px 1px; background: #211e16; border: 1px solid var(--line); border-radius: 4px; font-size: clamp(10px, 2.8vw, 12px); }
+.hint { margin-top: 4px; text-align: center; color: var(--muted); font-size: 10px; }
+.modal {
+  position: fixed; z-index: 20; inset: 0; display: grid; place-items: center;
+  background: radial-gradient(ellipse, #080a08b8, #080a08ef);
+  padding: max(8px, env(safe-area-inset-top)) 9px max(8px, env(safe-area-inset-bottom));
+}
+.modal.hidden, #loading.hidden { display: none; }
+.modalbox {
+  width: min(660px, 100%); max-height: 100%; min-height: 0; overflow: auto;
+  border: 1px solid #a9854e; border-radius: 5px;
+  padding: clamp(13px, 3.2vw, 28px); text-align: center;
+  background: linear-gradient(155deg, #2a261c, #151a15 48%, #0d1410);
+  box-shadow: 0 15px 80px #000c, inset 0 0 0 4px #191b14, inset 0 0 0 5px #8a704347;
+}
+.modalbox h2 { font: normal clamp(26px, 5vw, 42px)/1.07 var(--serif); margin: 6px 0; }
+.modalbox p { color: #d0cabb; font-size: 13px; line-height: 1.4; margin: 8px auto 15px; max-width: 520px; }
+.modalChoices { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 7px; }
+.modalChoices button {
+  min-height: 74px; display: flex; flex-direction: column; gap: 4px; text-align: left;
+  position: relative; padding: 9px 10px; background: linear-gradient(145deg, #2b2a20, #1a211b);
+  border: 1px solid var(--line); border-radius: 4px;
+}
+.modalChoices button[data-kind] { padding-top: 13px; min-height: 112px; }
+.modalChoices button[data-kind]::before {
+  content: attr(data-mark); align-self: flex-end; font: bold 20px/1 var(--serif); color: var(--gold);
+  border: 1px solid var(--line); border-radius: 50%; width: 28px; height: 28px; display: grid; place-items: center;
+}
+.modalChoices button[data-kind="board"]::before { color: #a6c0a5; }
+.modalChoices button strong { font: bold 16px/1.05 var(--serif); color: #f6deb0; }
+.modalChoices button small { color: #dedbcb; font-size: 12px; line-height: 1.28; }
+.modalChoices button em { color: #e6c68d; font-size: 11px; font-style: normal; font-weight: 700; margin-top: auto; }
+.modalChoices button.wide { grid-column: 1 / -1; min-height: 0; align-items: center; text-align: center; }
+#modalAction { width: 100%; min-height: 44px; margin-top: 8px; border: 1px solid #dfbd7d; border-radius: 4px; color: #21190c; background: linear-gradient(#e7cc99, #bf9557); font: bold 16px var(--serif); }
+#modalSettings { display: none; }
+#toast {
+  position: fixed; z-index: 5; top: var(--toast-top, 16%); left: 50%; transform: translateX(-50%);
+  width: max-content; max-width: 88vw; padding: 8px 14px; background: #1f1614f5; border: 1px solid #bc8e61;
+  border-radius: 4px; text-align: center; font: bold 15px var(--serif);
+  pointer-events: none; opacity: 0; transition: opacity .15s;
+}
+#toast.show { opacity: 1; }
+#toast img { width: 26px; height: auto; vertical-align: middle; margin-right: 7px; }
+#loading { position: fixed; inset: 0; display: grid; place-content: center; background: #0c100d; z-index: 30; text-align: center; font: 22px var(--serif); }
+#loading small { display: block; color: var(--muted); font: 12px system-ui, sans-serif; margin-top: 8px; }
+@media (max-width: 760px) {
+  header { display: grid; grid-template-columns: 1fr auto; gap: 5px; }
+  .sub { display: none; }
+  .stats { grid-row: 2; grid-column: 1 / -1; display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 1px; }
+  .stat { min-width: 0; padding: 1px 3px; }
+  .stat small { font-size: 8px; letter-spacing: 0; }
+  .stat strong { font-size: 15px; }
+  .tools button { min-height: 44px; }
+  .hint { font-size: 9px; }
+}
+@media (max-height: 570px) and (min-width: 600px) {
+  header { padding-block: 4px; }
+  .sub, .hint { display: none; }
+  .controls { width: min(780px, 100%); display: grid; grid-template-columns: 1fr 1fr; gap: 3px 8px; }
+  .ribbon, .tools { grid-column: 1 / -1; }
+  .actions { grid-row: 2 / span 2; grid-column: 2; margin: 0; }
+  .message, .detail { min-height: 0; }
+  .tools { margin-top: 0; }
+  .tools button { min-height: 30px; }
+}
+@media (prefers-reduced-motion: reduce) { .controls, #toast { transition: none; } }
 </style>
 <script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.1/build/three.module.js"}}</script>
 </head><body><canvas id="scene" aria-label="Interactive three-dimensional casino table"></canvas><div class="shade"></div>
-<header><div><div class="eyebrow">MIDNIGHT CASINO · ROGUELIKE</div><div class="brand">HI<span>LO</span> <span style="font-size:12px;letter-spacing:1px;font-weight:600;color:#b5c7b9">3D</span></div><div class="sub" id="bossrule">Three bosses. Build your run.</div></div><div class="stats"><div class="stat"><small>STAGE</small><strong id="stage">1/3</strong></div><div class="stat"><small>SCORE</small><strong id="score">0</strong></div><div class="stat"><small>🪙 TOKENS</small><strong id="tokens">65</strong></div><div class="stat"><small>DECK</small><strong id="deck">54</strong></div><div class="stat"><small>CORRECT</small><strong id="correct">0</strong></div><div class="stat"><small>STREAK</small><strong id="streak">0</strong></div><div class="stat statBoard"><small>BOARD</small><strong id="boardCount">1/9</strong></div><div class="menu"><button id="settings" title="Settings">⚙</button><button id="restart">↻</button></div></div></header>
-<div class="bottom"><div class="controls"><div class="ribbon"><span id="ticketName">🎟️ Ticket</span><span id="artifactCount">Artifacts 0/4</span><span id="shields">🛡️ 0</span><span id="stageProgress">Deck 1</span></div><div class="message" id="message">Choose your card</div><div class="detail" id="detail">Tap an occupied card on the 3D table.</div><div class="actions"><button class="guess" id="higher">↑ HIGHER</button><button class="guess lower" id="lower">↓ LOWER</button></div><div class="tools"><button id="push">🎲 Push</button><button id="shield">🛡️ Shield</button><button id="peek">👁️ Peek</button><button id="swap">⇄ Swap</button><button id="cashout">🔥 Cash Out</button></div><div class="hint">Tap any card • Ace low • Ties lose • Joker automatically adds 5 cards</div></div></div>
+<header>
+  <div><div class="eyebrow">Midnight Table</div><div class="brand">HI<span>LO</span> <small>3D</small></div><div class="sub" id="bossrule">The Tollkeeper</div></div>
+  <div class="stats">
+    <div class="stat"><small>STAGE</small><strong id="stage">1/3</strong></div>
+    <div class="stat"><small>SCORE</small><strong id="score">0</strong></div>
+    <div class="stat"><small>TOKENS</small><strong id="tokens">65</strong></div>
+    <div class="stat"><small>DECK</small><strong id="deck">54</strong></div>
+    <div class="stat"><small>CORRECT</small><strong id="correct">0</strong></div>
+    <div class="stat"><small>STREAK</small><strong id="streak">0</strong></div>
+    <div class="stat"><small>BOARD</small><strong id="boardCount">1/9</strong></div>
+  </div>
+  <div class="menu"><button id="settings" aria-label="Settings">⚙</button><button id="restart" aria-label="Restart">↻</button></div>
+</header>
+<div class="bottom"><div class="controls"><div class="ribbon"><span id="ticketName">🎟️ Ticket</span><span id="artifactCount">Artifacts 0/4</span><span id="shields">🛡️ 0</span><span id="stageProgress">Deck 1</span></div><div class="message" id="message" aria-live="polite">Choose your card</div><div class="detail" id="detail">Tap an occupied card on the 3D table.</div><div class="actions"><button class="guess" id="higher">↑ HIGHER</button><button class="guess lower" id="lower">↓ LOWER</button></div><div class="tools"><button id="push">🎲 Push</button><button id="shield">🛡️ Shield</button><button id="peek">👁️ Peek</button><button id="swap">⇄ Swap</button><button id="cashout">🔥 Cash Out</button></div><div class="hint">Tap any card • Ace low • Ties lose • Joker automatically adds 5 cards</div></div></div>
 <div id="toast" aria-live="polite"></div><div id="loading">Preparing the midnight table…<small>Loading the Three.js renderer</small></div>
-<div id="modal" class="modal hidden"><div class="modalbox"><div class="eyebrow" id="modalKick">THE MIDNIGHT TABLE</div><h2 id="modalTitle">Settings</h2><p id="modalText"></p><div id="modalChoices" class="modalChoices"></div><div id="modalSettings"><label><input type="checkbox" id="motion"> Reduced motion / instant cards</label><label><input type="checkbox" id="sound" checked> Sound effects</label></div><button id="modalAction">Close</button></div></div>
+<div id="modal" class="modal hidden"><div class="modalbox" role="dialog" aria-modal="true" aria-labelledby="modalTitle" aria-describedby="modalText"><div class="eyebrow" id="modalKick">THE MIDNIGHT TABLE</div><h2 id="modalTitle">Settings</h2><p id="modalText"></p><div id="modalChoices" class="modalChoices"></div><div id="modalSettings"><label><input type="checkbox" id="motion"> Reduced motion / instant cards</label><label><input type="checkbox" id="sound" checked> Sound effects</label></div><button id="modalAction">Close</button></div></div>
 <script type="module">
 import * as THREE from 'three';
 const $=id=>document.getElementById(id);
 const renderer=new THREE.WebGLRenderer({canvas:$('scene'),antialias:true,powerPreference:'high-performance'});
-renderer.setPixelRatio(Math.min(devicePixelRatio||1,1.7));renderer.setSize(innerWidth,innerHeight);renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.PCFSoftShadowMap;renderer.outputColorSpace=THREE.SRGBColorSpace;renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=1.28;
-const scene=new THREE.Scene();scene.background=new THREE.Color(0x111a18);scene.fog=new THREE.FogExp2(0x111a18,.035);
-// Near-top-down orthographic tabletop. Frame the cards within the space between HUD and controls.
-const camera=new THREE.OrthographicCamera(-5,5,5,-5,.1,110);
-const mobile=()=>innerWidth<700;
-function positionCamera(){
- const top=mobile()?108:84,bottom=mobile()?190:164;
- const room=Math.max(280,innerHeight-top-bottom);
- const vertical=Math.max(6.6*innerHeight/room,5.25*innerHeight/innerWidth);
- const half=vertical/2,aspect=innerWidth/innerHeight;
- camera.left=-half*aspect;camera.right=half*aspect;camera.top=half;camera.bottom=-half;
- camera.position.set(0,18,6);camera.lookAt(0,.68,.12);camera.updateProjectionMatrix();
- renderer.setSize(innerWidth,innerHeight);
- renderer.setPixelRatio(Math.min(devicePixelRatio||1,mobile()?1.5:1.8));
-}positionCamera();addEventListener('resize',positionCamera);
-const mat=(color,rough=.8,metal=0)=>new THREE.MeshStandardMaterial({color,roughness:rough,metalness:metal});const felt=mat(0x0b5744,.98),wood=mat(0x28160d,.27),wood2=mat(0x492918,.35),gold=mat(0xb79a58,.25,.76),wall=mat(0x16231f,.95),floor=mat(0x222521,.68),black=mat(0x151919,.7);
-function box(w,h,d,m,x,y,z,shadow=true){const o=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),m);o.position.set(x,y,z);o.castShadow=shadow;o.receiveShadow=true;scene.add(o);return o}
-function sphere(r,m,x,y,z){let o=new THREE.Mesh(new THREE.SphereGeometry(r,24,16),m);o.position.set(x,y,z);o.castShadow=true;scene.add(o);return o}
-box(50,.2,50,floor,0,-.42,0,false);box(50,12,.3,wall,0,5,-13,false);box(.3,12,50,wall,-15,5,0,false);box(.3,12,50,wall,15,5,0,false);
-for(let i=-5;i<=5;i++){box(.07,4,.07,gold,i*2.4,2.1,-12.8,false)}
-box(10.2,.35,9,wood,0,.28,.2);box(9.9,.09,8.72,gold,0,.49,.2);box(9.68,.08,8.52,wood2,0,.57,.2);box(9.4,.055,8.24,felt,0,.645,.2);
-for(let x of [-4.4,4.4]){box(.16,.25,8.4,wood2,x,.71,.2)}for(let z of [-3.85,4.25])box(9.45,.25,.18,wood2,0,.71,z);
-const spot=new THREE.SpotLight(0xffd69a,180,30,.82,.72,1.2);spot.position.set(-1,9,-1);spot.target.position.set(0,.55,.2);spot.castShadow=true;spot.shadow.mapSize.set(1024,1024);spot.shadow.bias=-.0003;scene.add(spot,spot.target);scene.add(new THREE.HemisphereLight(0xb3b9b3,0x30221b,1.8));const blue=new THREE.PointLight(0x4b8991,36,14);blue.position.set(6,3,-6);scene.add(blue);
-for(let i=0;i<3;i++){let x=(i-1)*4.5;box(.85,.11,.85,gold,x,6.2,-4.8);sphere(.45,mat(0xffdb9c,.25),x,6,-4.8)}
-// The dealer is deliberately a mysterious silhouette, rather than an unpolished animated human.
-const suit=mat(0x151a1c,.95),shirt=mat(0xd7d0c1,.9),skin=mat(0x55453a,.9);let torso=box(2.1,1.8,.62,suit,0,1.6,-5.8);sphere(.58,skin,0,2.85,-5.75);box(.34,.9,.08,shirt,0,1.82,-5.41);box(.12,.62,.10,black,0,1.88,-5.33);box(2.8,.2,.55,wood,0,.95,-5.45);
-// Decorative card deck and discard area.
-box(1.1,.14,1.57,gold,3.18,.76,-.28);box(1.02,.1,1.49,mat(0x23364b,.35),3.18,.9,-.28);
-const S=['♠','♥','♦','♣'],R=['A','2','3','4','5','6','7','8','9','10','J','Q','K'];
-function tex(card){
- // High-resolution, high-contrast printing. Unlit card faces retain their real ink colors.
- const c=document.createElement('canvas');c.width=512;c.height=716;
- const g=c.getContext('2d');g.fillStyle='#ffffff';g.fillRect(0,0,512,716);
- g.strokeStyle='#2c3838';g.lineWidth=7;g.strokeRect(12,12,488,692);
- const red=card.s==='♥'||card.s==='♦',ink=red?'#b10e25':'#101820';
- g.fillStyle=ink;g.textBaseline='top';
- g.font='900 112px Georgia, serif';g.textAlign='left';g.fillText(R[card.v],28,20);
- g.font='bold 88px Georgia, serif';g.fillText(card.s,34,136);
- g.font='bold 300px Georgia, serif';g.textAlign='center';g.textBaseline='middle';g.fillText(card.s,256,387);
- g.save();g.translate(512,716);g.rotate(Math.PI);g.textBaseline='top';g.textAlign='left';
- g.font='900 99px Georgia, serif';g.fillText(R[card.v],28,17);g.font='bold 72px Georgia, serif';g.fillText(card.s,32,123);g.restore();
- const t=new THREE.CanvasTexture(c);t.colorSpace=THREE.SRGBColorSpace;t.anisotropy=Math.min(renderer.capabilities.getMaxAnisotropy(),8);
- t.minFilter=THREE.LinearMipmapLinearFilter;t.magFilter=THREE.LinearFilter;t.generateMipmaps=true;return t;
+renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.PCFSoftShadowMap;renderer.outputColorSpace=THREE.SRGBColorSpace;renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=1.28;
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x121310);
+scene.fog = new THREE.FogExp2(0x121310, .032);
+const camera = new THREE.OrthographicCamera(-5, 5, 5, -5, .1, 90);
+const deckX = 3.12, deckZ = -.58, discardX = 3.12, discardZ = 2.05;
+
+function positionCamera() {
+ const width = innerWidth, height = innerHeight;
+ const top = document.querySelector('header').getBoundingClientRect().bottom + 8;
+ const bottom = document.querySelector('.controls').getBoundingClientRect().top - 10;
+ const short = height < 570;
+ const horizontal = width >= 900 ? 10.1 : short ? 7.9 : 7.65;
+ const viewHeight = Math.max((short ? 5.5 : 6.5) * height / Math.max(1, bottom - top), horizontal * height / width);
+ const half = viewHeight / 2, aspect = width / height;
+ const offsetX = width < 900 ? .53 : 0;
+ const offsetY = ((top + bottom) / 2 - height / 2) * viewHeight / height;
+ camera.left = -half * aspect + offsetX;
+ camera.right = half * aspect + offsetX;
+ camera.top = half + offsetY;
+ camera.bottom = -half + offsetY;
+ camera.position.set(0, 18, 6);
+ camera.lookAt(0, .72, .12);
+ camera.updateProjectionMatrix();
 }
-const backCanvas=document.createElement('canvas');backCanvas.width=256;backCanvas.height=350;let b=backCanvas.getContext('2d');b.fillStyle='#172a38';b.fillRect(0,0,256,350);b.strokeStyle='#c9a46e';b.lineWidth=12;b.strokeRect(18,18,220,314);b.strokeRect(34,34,188,282);b.fillStyle='#d0ac74';b.font='bold 58px Georgia';b.textAlign='center';b.fillText('H',128,195);let backTex=new THREE.CanvasTexture(backCanvas);backTex.colorSpace=THREE.SRGBColorSpace;
-const slots=Array.from({length:9},(_,i)=>({x:(i%3-1)*1.54,z:Math.floor(i/3)*1.9-1.76}));const pads=[];const cardMeshes=Array(9).fill(null);
-for(let i=0;i<9;i++){const p=slots[i];const o=box(1.26,.012,1.75,mat(0x0f4035,.98),p.x,.701,p.z,false);o.material=new THREE.MeshStandardMaterial({color:0x0f4035,roughness:1,emissive:0x000000});pads.push(o);const e=new THREE.LineSegments(new THREE.EdgesGeometry(new THREE.BoxGeometry(1.3,.013,1.79)),new THREE.LineBasicMaterial({color:0xa28750,transparent:true,opacity:.35}));e.position.copy(o.position);scene.add(e)}
+function resizeScene() {
+ renderer.setPixelRatio(Math.min(devicePixelRatio || 1, innerWidth < 760 ? 1.5 : 1.8));
+ renderer.setSize(innerWidth, innerHeight);
+ positionCamera();
+}
+const layoutObserver = new ResizeObserver(positionCamera);
+layoutObserver.observe(document.querySelector('header'));
+layoutObserver.observe(document.querySelector('.controls'));
+addEventListener('resize', resizeScene);
+resizeScene();
+
+const mat = (color, roughness = .8, metalness = 0) => new THREE.MeshStandardMaterial({color, roughness, metalness});
+function addMesh(geometry, material, x, y, z, shadow = false) {
+ const mesh = new THREE.Mesh(geometry, material);
+ mesh.position.set(x, y, z);
+ mesh.castShadow = shadow;
+ mesh.receiveShadow = true;
+ scene.add(mesh);
+ return mesh;
+}
+function box(w, h, d, material, x, y, z, shadow = false) {
+ return addMesh(new THREE.BoxGeometry(w, h, d), material, x, y, z, shadow);
+}
+function roundedPath(path, w, d, r) {
+ const x = w / 2, y = d / 2;
+ path.moveTo(-x + r, -y);
+ path.lineTo(x - r, -y); path.quadraticCurveTo(x, -y, x, -y + r);
+ path.lineTo(x, y - r); path.quadraticCurveTo(x, y, x - r, y);
+ path.lineTo(-x + r, y); path.quadraticCurveTo(-x, y, -x, y - r);
+ path.lineTo(-x, -y + r); path.quadraticCurveTo(-x, -y, -x + r, -y);
+ path.closePath();
+ return path;
+}
+function tableLayer(w, d, r, depth, bevel, material, y, inset = 0) {
+ const shape = roundedPath(new THREE.Shape(), w, d, r);
+ if (inset) shape.holes.push(roundedPath(new THREE.Path(), w - inset * 2, d - inset * 2, r - inset));
+ const geometry = new THREE.ExtrudeGeometry(shape, {
+  depth, bevelEnabled: bevel > 0, bevelSize: bevel, bevelThickness: bevel, bevelSegments: 3, curveSegments: 12
+ });
+ const mesh = addMesh(geometry, material, 0, y, .16, Boolean(inset));
+ mesh.rotation.x = -Math.PI / 2;
+ return mesh;
+}
+function canvasTexture(width, height, paint) {
+ const canvas = document.createElement('canvas');
+ canvas.width = width;
+ canvas.height = height;
+ paint(canvas.getContext('2d'));
+ const texture = new THREE.CanvasTexture(canvas);
+ texture.colorSpace = THREE.SRGBColorSpace;
+ texture.anisotropy = Math.min(renderer.capabilities.getMaxAnisotropy(), 8);
+ return texture;
+}
+function weave(base, amplitude, repeatX, repeatY) {
+ const texture = canvasTexture(128, 128, ctx => {
+  const pixels = ctx.createImageData(128, 128);
+  let seed = 62;
+  for (let y = 0; y < 128; y++) {
+   for (let x = 0; x < 128; x++) {
+    seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0;
+    const tone = (seed / 4294967296 - .5) * amplitude + ((x + y) % 2 ? 2 : -2);
+    const i = (y * 128 + x) * 4;
+    pixels.data[i] = base[0] + tone;
+    pixels.data[i + 1] = base[1] + tone;
+    pixels.data[i + 2] = base[2] + tone;
+    pixels.data[i + 3] = 255;
+   }
+  }
+  ctx.putImageData(pixels, 0, 0);
+ });
+ texture.wrapS = texture.wrapT = THREE.RepeatWrapping;
+ texture.repeat.set(repeatX, repeatY);
+ return texture;
+}
+
+const walnut = mat(0x4e2b1c, .36);
+const brass = mat(0xb78749, .38, .45);
+const leather = mat(0x30221b, .71);
+const feltMaterial = new THREE.MeshStandardMaterial({map: weave([20, 75, 58], 28, 1.3, 1.3), roughness: 1});
+box(45, .2, 45, mat(0x191815, 1), 0, -.48, 0);
+tableLayer(9.72, 8.05, 1.38, .25, .12, walnut, .20);
+tableLayer(9.62, 7.95, 1.33, .12, .055, brass, .43, .45);
+tableLayer(9.49, 7.82, 1.29, .13, .12, leather, .58, .43);
+tableLayer(8.61, 6.94, .86, .04, .015, brass, .655, .12);
+tableLayer(8.39, 6.72, .74, .035, 0, feltMaterial, .663);
+
+const lampPrint = canvasTexture(1024, 832, ctx => {
+ const pool = ctx.createRadialGradient(455, 330, 36, 490, 390, 540);
+ pool.addColorStop(0, '#eec57938');
+ pool.addColorStop(.52, '#d4ac6f0b');
+ pool.addColorStop(1, '#05151050');
+ ctx.fillStyle = pool;
+ ctx.fillRect(0, 0, 1024, 832);
+ ctx.strokeStyle = '#ddbc816a';
+ ctx.lineWidth = 2;
+ ctx.beginPath();
+ ctx.roundRect(26, 28, 972, 776, 80);
+ ctx.stroke();
+ ctx.strokeStyle = '#ddbc8138';
+ ctx.beginPath();
+ ctx.roundRect(34, 36, 956, 760, 73);
+ ctx.stroke();
+ ctx.textAlign = 'center';
+ ctx.fillStyle = '#e9cb897d';
+ ctx.font = 'bold 23px Georgia';
+ ctx.fillText('M I D N I G H T   T A B L E', 495, 82);
+ ctx.font = '18px Georgia';
+ ctx.fillText('D E C K', 894, 207);
+ ctx.fillText('D I S C A R D', 894, 560);
+ ctx.strokeStyle = '#ddbc8150';
+ ctx.beginPath();
+ ctx.roundRect(815, 580, 153, 194, 14);
+ ctx.stroke();
+});
+const print = addMesh(new THREE.PlaneGeometry(8.39, 6.72), new THREE.MeshBasicMaterial({
+ map: lampPrint, transparent: true, depthWrite: false, toneMapped: false
+}), 0, .699, .16);
+print.rotation.x = -Math.PI / 2;
+
+const spot = new THREE.SpotLight(0xffd1a0, 140, 26, .68, .83, 1.4);
+spot.position.set(-3, 9, -4);
+spot.target.position.set(0, .55, .2);
+spot.castShadow = true;
+spot.shadow.mapSize.set(1024, 1024);
+spot.shadow.bias = -.0003;
+spot.shadow.normalBias = .018;
+spot.shadow.radius = 3;
+scene.add(spot, spot.target, new THREE.HemisphereLight(0xc2cbb7, 0x4a3830, 1.9));
+const fill = new THREE.DirectionalLight(0xc4dacc, 1.15);
+fill.position.set(5, 5, 2);
+scene.add(fill);
+const rim = new THREE.PointLight(0xf7ab65, 35, 13);
+rim.position.set(-4.6, 2.8, -1.7);
+scene.add(rim);
+
+// The dealer's sleeves establish the far seat without occupying a card slot.
+const suit = mat(0x171a1b), shirt = mat(0xc7b69c, .85);
+for (const side of [-1, 1]) {
+ const sleeve = addMesh(new THREE.CapsuleGeometry(.25, .75, 5, 10), suit, side * 2.8, .88, -4.04);
+ sleeve.rotation.set(Math.PI / 2, 0, side * .14);
+ const cuff = box(.38, .13, .33, shirt, side * 2.72, .94, -3.48);
+ cuff.rotation.y = side * .14;
+}
+box(1.19, .13, 1.62, brass, deckX, .77, deckZ);
+box(1.13, .12, 1.56, mat(0xc7b89b, .9), deckX, .88, deckZ);
+
+const S = ['♠','♥','♦','♣'], R = ['A','2','3','4','5','6','7','8','9','10','J','Q','K'];
+function medallion(g, x, y, radius, color) {
+ g.strokeStyle = color;
+ for (const ratio of [1, .87]) {
+  g.beginPath();
+  g.arc(x, y, radius * ratio, 0, Math.PI * 2);
+  g.stroke();
+ }
+ g.save();
+ g.translate(x, y);
+ for (let i = 0; i < 24; i++) {
+  g.rotate(Math.PI / 12);
+  g.beginPath();
+  g.ellipse(0, radius * .72, radius * .1, radius * .24, 0, 0, Math.PI * 2);
+  g.stroke();
+ }
+ g.restore();
+}
+function cardFace(g, card) {
+ const joker = card.joker;
+ const paper = g.createLinearGradient(0, 0, 512, 716);
+ paper.addColorStop(0, '#fff9e9');
+ paper.addColorStop(.6, '#f9eed8');
+ paper.addColorStop(1, '#e9d7b4');
+ g.fillStyle = paper;
+ g.fillRect(0, 0, 512, 716);
+ g.strokeStyle = '#937244';
+ g.lineWidth = 4;
+ g.strokeRect(17, 17, 478, 682);
+ g.lineWidth = 2;
+ g.strokeRect(25, 25, 462, 666);
+
+ const ink = joker ? '#3b2147' : '♥♦'.includes(card.s) ? '#941f35' : '#10221f';
+ const court = joker || card.v >= 10;
+ const index = joker ? '★' : R[card.v];
+ const suit = joker ? '✦' : card.s;
+ g.textBaseline = 'middle';
+ g.textAlign = 'center';
+ if (court) {
+  medallion(g, 256, 365, 139, '#a17b4c');
+  g.fillStyle = ink;
+  g.font = 'bold 150px Georgia';
+  g.fillText(joker ? '☾' : index, 256, 365);
+  g.font = 'bold 24px Georgia';
+  g.fillText(joker ? 'J O K E R' : suit, 256, 540);
+ } else {
+  g.fillStyle = ink;
+  g.font = 'bold 255px Georgia';
+  g.fillText(suit, 256, 379);
+ }
+ for (const inverted of [false, true]) {
+  g.save();
+  if (inverted) { g.translate(512, 716); g.rotate(Math.PI); }
+  g.fillStyle = ink;
+  g.font = 'bold 108px Georgia';
+  g.textAlign = 'left';
+  g.fillText(index, 35, 86);
+  g.font = 'bold 72px Georgia';
+  g.fillText(suit, 39, 172);
+  g.restore();
+ }
+}
+const tex = card => canvasTexture(512, 716, g => cardFace(g, card));
+const backTex = canvasTexture(512, 716, g => {
+ g.fillStyle = '#122520';
+ g.fillRect(0, 0, 512, 716);
+ g.lineWidth = 3;
+ g.strokeStyle = '#6f6245';
+ for (let x = -720; x < 700; x += 34) {
+  g.beginPath(); g.moveTo(x, 0); g.lineTo(x + 716, 716); g.stroke();
+  g.beginPath(); g.moveTo(x + 716, 0); g.lineTo(x, 716); g.stroke();
+ }
+ g.lineWidth = 11;
+ g.strokeStyle = '#d0ac6a';
+ g.strokeRect(15, 15, 482, 686);
+ g.lineWidth = 3;
+ g.strokeRect(31, 31, 450, 654);
+ g.fillStyle = '#122520';
+ g.beginPath(); g.arc(256, 358, 153, 0, Math.PI * 2); g.fill();
+ medallion(g, 256, 358, 144, '#d0ac6a');
+ g.fillStyle = '#ecd09a';
+ g.textAlign = 'center';
+ g.font = 'bold 118px Georgia';
+ g.fillText('H', 256, 397);
+ for (const y of [124, 610]) {
+  g.font = 'bold 52px Georgia';
+  g.fillText('♠', 256, y);
+ }
+});
+const deckTop = addMesh(new THREE.PlaneGeometry(1.13, 1.56), new THREE.MeshBasicMaterial({
+ map: backTex, toneMapped: false
+}), deckX, .944, deckZ);
+deckTop.rotation.x = -Math.PI / 2;
+const jokerTexture = tex({joker: true});
+const jokerArt = jokerTexture.image.toDataURL();
+jokerTexture.dispose();
+
+const slots = Array.from({length: 9}, (_, i) => ({x: (i % 3 - 1) * 1.54, z: Math.floor(i / 3) * 1.9 - 1.76}));
+const pads = [], cardMeshes = Array(9).fill(null);
+const slotRim = new THREE.LineBasicMaterial({color: 0xbfa472, transparent: true, opacity: .5});
+for (const p of slots) {
+ const path = roundedPath(new THREE.Shape(), 1.30, 1.78, .075);
+ const pad = addMesh(new THREE.ShapeGeometry(path, 6), mat(0x133b30, 1), p.x, .704, p.z);
+ pad.rotation.x = -Math.PI / 2;
+ pads.push(pad);
+ const line = new THREE.LineLoop(new THREE.BufferGeometry().setFromPoints(path.getPoints(6)), slotRim);
+ line.position.set(p.x, .708, p.z);
+ line.rotation.x = -Math.PI / 2;
+ scene.add(line);
+}
 
 const ARTIFACTS=[
 {id:'compass',icon:'🧭',name:'The Compass',desc:'Every fifth guess grants a Peek.',cost:45},
@@ -182,6 +480,7 @@ function disposeCard(m){
 function discardCard(i){
  const m=cardMeshes[i];if(!m)return;
  cardMeshes[i]=null;
+ sound('discard');
  if(reduced){disposeCard(m);return}
  discards.push({m,from:m.position.clone(),start:performance.now(),duration:400,rotation:m.rotation.z});
 }
@@ -191,22 +490,48 @@ const cardsLeft=()=>G?.board.filter(Boolean).length||0;
 const rank=c=>c?R[c.v]+c.s:'empty';
 function shuffle(a){for(let i=a.length-1;i>0;i--){let j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a}
 const normalDeck=()=>S.flatMap(s=>R.map((_,v)=>({v,s})));
-function draw(){let jokers=0;while(G.deck.length){const c=G.deck.pop();if(c.joker){G.deck.push(...shuffle(normalDeck()).slice(0,5));shuffle(G.deck);G.stageTotal+=5;jokers++;continue}if(jokers){pop('🃏 JOKER! +'+(5*jokers)+' CARDS');sound('joker');flash('negative');}return c}return null}
+function draw(){let jokers=0;while(G.deck.length){const c=G.deck.pop();if(c.joker){G.deck.push(...shuffle(normalDeck()).slice(0,5));shuffle(G.deck);G.stageTotal+=5;jokers++;continue}if(jokers){pop('JOKER! +'+(5*jokers)+' CARDS', jokerArt);sound('joker');flash('negative');}return c}return null}
 function grantTokens(n){const give=Math.max(0,Math.min(n,100-G.stageEarned));G.credits+=give;G.stageEarned+=give}
 function bonusShield(){G.shields++;G.message='🛡️ +1 Shield token'}
 function lineState(){return LINES.map(l=>l.every(i=>G.board[i]))}
 function scoreLines(before){for(let j=0;j<LINES.length;j++)if(!before[j]&&LINES[j].every(i=>G.board[i])){let pts=(j<3?250:j<6?300:400)+(G.ticket==='builder'?150:0);if(has('twin'))pts*=2;G.score+=pts;G.shields++;grantTokens(6+(has('collector')?6:0));pop('✦ LINE COMPLETE · +'+pts+' PTS!');sound('line')}}
 function refill(){const i=G.board.findIndex((c,k)=>!c&&!G.locked[k]);if(i<0)return;const before=lineState(),c=draw();if(c){G.board[i]=c;meshCard(c,i,true);scoreLines(before)}}
 function showDialog(k,title,body,buttons,action=null){
- $('modalKick').textContent=k;$('modalTitle').textContent=title;$('modalText').textContent=body;
- const host=$('modalChoices');host.replaceChildren();$('modalSettings').style.display='none';
- for(const opt of buttons){const b=document.createElement('button');b.disabled=!!opt.disabled;b.innerHTML='<strong>'+opt.title+'</strong>'+(opt.desc?'<small>'+opt.desc+'</small>':'')+(opt.price!=null?'<em>🪙 '+opt.price+' tokens</em>':'');b.onclick=opt.click;host.appendChild(b)}
- $('modalAction').style.display=action?'block':'none';if(action){$('modalAction').textContent=action.label;$('modalAction').onclick=action.click}
+ const host = $('modalChoices');
+ $('modalKick').textContent = k;
+ $('modalTitle').textContent = title;
+ $('modalText').textContent = body;
+ host.replaceChildren();
+ for (const opt of buttons) {
+  const button = document.createElement('button');
+  button.disabled = Boolean(opt.disabled);
+  if (opt.kind) {
+   button.dataset.kind = opt.kind;
+   button.dataset.mark = opt.mark;
+  }
+  if (opt.wide) button.classList.add('wide');
+  for (const [tag, value] of [['strong', opt.title], ['small', opt.desc], ['em', opt.price == null ? '' : opt.price + ' tokens']]) {
+   if (!value) continue;
+   const label = document.createElement(tag);
+   label.textContent = value;
+   button.append(label);
+  }
+  button.onclick = opt.click;
+  host.append(button);
+ }
+ $('modalAction').style.display = action ? 'block' : 'none';
+ if (action) {
+  $('modalAction').textContent = action.label;
+  $('modalAction').onclick = action.click;
+ }
  $('modal').classList.remove('hidden');
+ $('modal').querySelector('.modalbox').scrollTop = 0;
 }
 function hideDialog(){$('modal').classList.add('hidden')}
 function chooseTicket(){
- showDialog('YOUR RUN STARTS HERE','🎟️ Choose Your Ticket','Pick a starting strategy for your three-boss Roguelike run.',TICKETS.map(t=>({title:t.icon+' '+t.name,desc:t.desc,click:()=>{G.ticket=t.id;shop(1,true)}})));
+ showDialog('HiLo 3D · Midnight Table','Choose Your Ticket','Pick a starting advantage for your run.',TICKETS.map((t,i)=>({
+  title:t.name, desc:t.desc, kind:'ticket', mark:S[i], click:()=>{sound('purchase');G.ticket=t.id;shop(1,true)}
+ })));
 }
 function shop(stage,fresh=false){
  G.phase='shop';
@@ -222,29 +547,29 @@ function shop(stage,fresh=false){
  for(const id of shopOffers.artifacts){
   const a=ARTIFACTS.find(x=>x.id===id);if(!a)continue;
   const price=a.cost+15*G.artifacts.length;
-  opts.push({title:'✨ ARTIFACT · '+a.icon+' '+a.name,desc:a.desc,price,
+  opts.push({title:'Artifact · '+a.name,desc:a.desc,price,kind:'artifact',mark:a.icon,
    disabled:G.credits<price||G.artifacts.length>=4,
-   click:()=>{if(G.credits<price||G.artifacts.length>=4)return;G.credits-=price;G.artifacts.push(id);shopOffers.artifacts=shopOffers.artifacts.filter(x=>x!==id);shop(stage)}
+   click:()=>{if(G.credits<price||G.artifacts.length>=4)return;sound('purchase');G.credits-=price;G.artifacts.push(id);shopOffers.artifacts=shopOffers.artifacts.filter(x=>x!==id);shop(stage)}
   });
  }
  for(const id of shopOffers.upgrades){
   const up=UPGRADES.find(x=>x.id===id);if(!up)continue;
   const price=up.cost+10*G.upgrades.filter(Boolean).length;
-  opts.push({title:'▦ BOARD · '+up.icon+' '+up.name,desc:up.desc,price,
+  opts.push({title:'Board · '+up.name,desc:up.desc,price,kind:'board',mark:up.icon,
    disabled:G.credits<price||G.upgrades.every(Boolean),
    click:()=>chooseSlot(stage,up)
   });
  }
- opts.push({title:'↻ Reroll All Four Offers',desc:'Refresh both Artifacts and both board upgrades.',price:15,
-  disabled:G.credits<15,click:()=>{if(G.credits<15)return;G.credits-=15;shop(stage,true)}
+ opts.push({title:'Reroll All Four Offers',price:15,wide:true,
+  disabled:G.credits<15,click:()=>{if(G.credits<15)return;sound('purchase');G.credits-=15;shop(stage,true)}
  });
- showDialog('🚌 PIT STOP · STAGE '+stage,'Choose Your Upgrades',
-  'Four offers per visit: 2 Artifacts + 2 board upgrades. Buy what you want, then reroll everything for 15 tokens. 🪙 '+G.credits+' available · '+G.artifacts.length+'/4 Artifacts · '+G.upgrades.filter(Boolean).length+'/9 upgraded positions.',
-  opts,{label:'▶ FACE '+BOSSES[stage-1].name,click:()=>{hideDialog();setupStage(stage)}});
+ showDialog('Pit Stop · Stage '+stage,'Choose Your Upgrades',
+  G.credits+' tokens available · '+G.artifacts.length+'/4 artifacts · '+G.upgrades.filter(Boolean).length+'/9 upgraded slots',
+  opts,{label:'Face '+BOSSES[stage-1].name,click:()=>{hideDialog();setupStage(stage)}});
 }
 function chooseSlot(stage,up){
  const price=up.cost+10*G.upgrades.filter(Boolean).length;
- showDialog('BOARD UPGRADE',up.icon+' '+up.name,'Choose a position. Cost: '+price+' tokens. Each slot supports one permanent upgrade.',Array.from({length:9},(_,i)=>({title:'Position '+(i+1),desc:G.upgrades[i]?'Already upgraded':'Apply '+up.name,disabled:!!G.upgrades[i]||G.credits<price,click:()=>{G.credits-=price;G.upgrades[i]=up.id;shopOffers.upgrades=shopOffers.upgrades.filter(x=>x!==up.id);shop(stage)}})),{label:'← Back to Pit Stop',click:()=>shop(stage)});
+ showDialog('BOARD UPGRADE',up.icon+' '+up.name,'Choose a position. Cost: '+price+' tokens. Each slot supports one permanent upgrade.',Array.from({length:9},(_,i)=>({title:'Position '+(i+1),desc:G.upgrades[i]?'Already upgraded':'Apply '+up.name,disabled:!!G.upgrades[i]||G.credits<price,click:()=>{sound('purchase');G.credits-=price;G.upgrades[i]=up.id;shopOffers.upgrades=shopOffers.upgrades.filter(x=>x!==up.id);shop(stage)}})),{label:'← Back to Pit Stop',click:()=>shop(stage)});
 }
 function setupStage(stage){
  G.stage=stage;G.stageEarned=0;G.streak=0;G.phase='playing';G.locked=Array(9).fill(false);G.wardUsed=Array(9).fill(false);G.slotHits=Array(9).fill(0);G.mirrorUsed=false;G.salvageUsed=false;G.riskHits=0;G.protected=Array(9).fill(false);G.board=Array(9).fill(null);G.selected=0;G.deck=shuffle([...normalDeck(),...Array.from({length:stage===3?4:2},()=>({joker:true}))]);G.stageTotal=G.deck.length;G.push=0;G.pushScore=0;G.swapFrom=null;
@@ -281,35 +606,138 @@ function refresh(){
  for(const [id,active] of [['push',ready&&G.push===0],['shield',ready&&G.shields>0&&!G.protected[G.selected]],['peek',ready&&G.peeks>0],['swap',ready&&G.swaps>0],['cashout',ready&&G.streak>=3]])$(id).disabled=!active;
  $('push').textContent=G.push===1?'🎲 PUSH 2/2':'🎲 Push';
  for(let i=0;i<9;i++){pads[i].material.emissive.setHex(i===G.selected&&ready?0x537c36:G.locked[i]?0x58212a:0x000000);pads[i].material.emissiveIntensity=i===G.selected&&ready?.9:G.locked[i]?.8:0;const m=cardMeshes[i];if(m)m.userData.targetY=i===G.selected&&ready?1.02:.75}
- spot.color.setHex(G.streak>=9?0xff5731:G.streak>=3?0xffa45b:0xffd69a);
+ spot.color.setHex(G.streak>=9?0xff7c51:G.streak>=3?0xffb477:0xffd1a0);
 }
-function sound(kind){
- if(!soundOn)return;
- try{
- const Audio=window.AudioContext||window.webkitAudioContext;
- const ac=window._hiloAudio||(window._hiloAudio=new Audio());
- if(ac.state==='suspended')ac.resume();
- const tones={select:[350,520,.06,'triangle',.09],deal:[680,370,.055,'triangle',.12],
- good:[520,880,.07,'sine',.19],bad:[330,130,.08,'triangle',.25],
- shield:[450,1040,.07,'sine',.26],peek:[750,1230,.045,'sine',.23],
- swap:[400,680,.06,'triangle',.2],push:[260,530,.06,'sawtooth',.17],
- cashout:[620,930,.07,'sine',.24],line:[580,960,.08,'sine',.3],
- joker:[210,95,.09,'sawtooth',.36],purchase:[710,1030,.06,'triangle',.18]};
- const p=tones[kind]||tones.select,o=ac.createOscillator(),g=ac.createGain(),t=ac.currentTime;
- o.type=p[3];o.frequency.setValueAtTime(p[0],t);o.frequency.exponentialRampToValueAtTime(p[1],t+p[4]);
- g.gain.setValueAtTime(.0001,t);g.gain.linearRampToValueAtTime(p[2],t+.012);
- g.gain.exponentialRampToValueAtTime(.0001,t+p[4]);o.connect(g);g.connect(ac.destination);
- o.start(t);o.stop(t+p[4]+.02);
- }catch(e){}
+let audioContext, audioBus, roomTone, noiseBuffer;
+function openAudio() {
+ if (!soundOn) return false;
+ if (!audioContext) {
+  const Audio = window.AudioContext || window.webkitAudioContext;
+  if (!Audio) return false;
+  audioContext = new Audio();
+  audioBus = audioContext.createGain();
+  audioBus.gain.value = .76;
+  audioBus.connect(audioContext.destination);
+  noiseBuffer = audioContext.createBuffer(1, audioContext.sampleRate * 2, audioContext.sampleRate);
+  const samples = noiseBuffer.getChannelData(0);
+  let seed = 193;
+  for (let i = 0; i < samples.length; i++) {
+   seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0;
+   samples[i] = seed / 2147483648 - 1;
+  }
+ }
+ if (audioContext.state !== 'running') audioContext.resume().catch(() => {});
+ if (!roomTone) {
+  roomTone = audioContext.createBufferSource();
+  roomTone.buffer = noiseBuffer;
+  roomTone.loop = true;
+  const filter = audioContext.createBiquadFilter();
+  filter.type = 'bandpass';
+  filter.frequency.value = 275;
+  filter.Q.value = .3;
+  const level = audioContext.createGain();
+  level.gain.value = .05;
+  roomTone.connect(filter).connect(level).connect(audioBus);
+  roomTone.start();
+ }
+ return true;
 }
-function pop(msg){const t=$('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),1250)}
+function toggleSound() {
+ soundOn = !soundOn;
+ if (audioBus) audioBus.gain.setTargetAtTime(soundOn ? .76 : 0, audioContext.currentTime, .014);
+ if (soundOn) sound('select');
+}
+function playFoley(at, period, from, to, volume) {
+ const source = audioContext.createBufferSource();
+ const filter = audioContext.createBiquadFilter();
+ const level = audioContext.createGain();
+ source.buffer = noiseBuffer;
+ filter.type = 'bandpass';
+ filter.Q.value = .68;
+ filter.frequency.setValueAtTime(from, at);
+ filter.frequency.exponentialRampToValueAtTime(to, at + period);
+ level.gain.setValueAtTime(.0001, at);
+ level.gain.linearRampToValueAtTime(volume, at + .008);
+ level.gain.exponentialRampToValueAtTime(.0001, at + period);
+ source.connect(filter).connect(level).connect(audioBus);
+ source.start(at);
+ source.stop(at + period);
+}
+function sound(kind) {
+ try {
+  if (openAudio()) playSound(kind);
+ } catch (error) {
+  console.debug('HiLo audio unavailable', error);
+ }
+}
+const lastFoley = {deal: -1, land: -1};
+function playSound(kind) {
+ const t = audioContext.currentTime;
+ if (kind in lastFoley) {
+  if (t - lastFoley[kind] < .037) return;
+  lastFoley[kind] = t;
+ }
+ switch (kind) {
+  case 'deal':
+   playFoley(t, .10, 2100, 760, .18);
+   playFoley(t + .11, .046, 4380, 1220, .15);
+   return;
+  case 'land':
+   playFoley(t, .065, 650, 150, .37);
+   return;
+  case 'discard':
+   playFoley(t, .24, 1450, 340, .22);
+   return;
+  case 'select':
+   playFoley(t, .045, 2300, 630, .12);
+   return;
+  case 'purchase':
+   playFoley(t, .065, 4200, 1200, .28);
+   playFoley(t + .05, .035, 3600, 1100, .19);
+   break;
+ }
+ const tones = {
+  good:[520,880,.07,'sine',.19],bad:[330,130,.08,'triangle',.25],
+  shield:[450,1040,.07,'sine',.26],peek:[750,1230,.045,'sine',.23],
+  swap:[400,680,.06,'triangle',.2],push:[260,530,.06,'sawtooth',.17],
+  cashout:[620,930,.07,'sine',.24],line:[580,960,.08,'sine',.3],
+  joker:[210,95,.09,'sawtooth',.36],purchase:[710,1030,.022,'triangle',.11]
+ };
+ const p = tones[kind];
+ if (!p) return;
+ const oscillator = audioContext.createOscillator(), level = audioContext.createGain();
+ oscillator.type = p[3];
+ oscillator.frequency.setValueAtTime(p[0], t);
+ oscillator.frequency.exponentialRampToValueAtTime(p[1], t + p[4]);
+ level.gain.setValueAtTime(.0001, t);
+ level.gain.linearRampToValueAtTime(p[2], t + .012);
+ level.gain.exponentialRampToValueAtTime(.0001, t + p[4]);
+ oscillator.connect(level).connect(audioBus);
+ oscillator.start(t);
+ oscillator.stop(t + p[4] + .02);
+}
+let toastTimeout;
+function pop(msg, art) {
+ const toast = $('toast');
+ toast.textContent = msg;
+ if (art) {
+  const image = document.createElement('img');
+  image.src = art;
+  image.alt = '';
+  toast.prepend(image);
+ }
+ toast.classList.add('show');
+ clearTimeout(toastTimeout);
+ toastTimeout = setTimeout(() => toast.classList.remove('show'), 1250);
+}
 function meshCard(c,i,animate=false){
  if(cardMeshes[i])disposeCard(cardMeshes[i]);
  if(!c){cardMeshes[i]=null;return}
  const p=slots[i],face=new THREE.MeshBasicMaterial({map:tex(c),toneMapped:false}),back=new THREE.MeshBasicMaterial({map:backTex,toneMapped:false}),side=mat(0xe5dece,.9);
- const m=new THREE.Mesh(new THREE.BoxGeometry(1.17,.045,1.65),[side,side,face,back,side,side]);m.position.set(animate?3.18:p.x,animate?1.1:.75,animate?-.28:p.z);m.rotation.x=animate?Math.PI:0;m.castShadow=true;m.userData.index=i;m.userData.targetY=i===G?.selected?1.02:.75;scene.add(m);cardMeshes[i]=m;
- if(animate&&!reduced){animations.push({m,p,start:performance.now(),duration:440});sound('deal')}
- else{m.position.set(p.x,m.userData.targetY,p.z);m.rotation.x=0}
+ const m=new THREE.Mesh(new THREE.BoxGeometry(1.17,.045,1.65),[side,side,face,back,side,side]);m.position.set(animate?deckX:p.x,animate?1.1:.75,animate?deckZ:p.z);m.rotation.x=animate?Math.PI:0;m.castShadow=true;m.userData.index=i;m.userData.targetY=i===G?.selected?1.02:.75;scene.add(m);cardMeshes[i]=m;
+ if (animate) sound('deal');
+ if (animate && !reduced) animations.push({m,p,start:performance.now(),duration:440});
+ else { m.position.set(p.x,m.userData.targetY,p.z); m.rotation.x=0; }
 }
 function guess(dir){
  if(G.phase!=='playing'||!G.board[G.selected])return;
@@ -374,8 +802,8 @@ $('scene').addEventListener('click',e=>{
 });
 $('settings').onclick=()=>{
  showDialog('SETTINGS','Visual & Audio Settings','Change animations or sound without affecting the run.',[
- {title:'🎞️ Animations: '+(reduced?'OFF':'ON'),desc:'Toggle fast, reduced-motion card draws.',click:()=>{reduced=!reduced;$('settings').click()}},
- {title:'🔊 Sound: '+(soundOn?'ON':'OFF'),desc:'Toggle all game sound effects.',click:()=>{soundOn=!soundOn;$('settings').click()}}
+ {title:'🎞️ Animations: '+(reduced?'OFF':'ON'),desc:'Skip card movement and use instant draws.',click:()=>{reduced=!reduced;$('settings').click()}},
+ {title:'🔊 Sound: '+(soundOn?'ON':'OFF'),desc:'Toggle all game sound effects.',click:()=>{toggleSound();$('settings').click()}}
  ],{label:'Return to Table',click:hideDialog});
 };
 document.addEventListener('keydown',e=>{if(!$('modal').classList.contains('hidden'))return;if(e.key.toLowerCase()==='h')guess('higher');if(e.key.toLowerCase()==='l')guess('lower')});
@@ -386,13 +814,13 @@ function animate(now){
  for(let i=animations.length-1;i>=0;i--){
   const a=animations[i];if(!a.m.parent){animations.splice(i,1);continue}
   const t=Math.min(1,(now-a.start)/a.duration),q=1-(1-t)**3;
-  a.m.position.set(THREE.MathUtils.lerp(3.18,a.p.x,q),THREE.MathUtils.lerp(1.15,a.m.userData.targetY,q)+Math.sin(Math.PI*t)*.32,THREE.MathUtils.lerp(-.28,a.p.z,q));
+  a.m.position.set(THREE.MathUtils.lerp(deckX,a.p.x,q),THREE.MathUtils.lerp(1.15,a.m.userData.targetY,q)+Math.sin(Math.PI*t)*.32,THREE.MathUtils.lerp(deckZ,a.p.z,q));
   a.m.rotation.x=Math.PI*(1-q);
-  if(t>=1)animations.splice(i,1);
+  if(t>=1){animations.splice(i,1);sound('land')};
  }
  for(let i=discards.length-1;i>=0;i--){
   const d=discards[i],t=Math.min(1,(now-d.start)/d.duration),q=t*t*(3-2*t);
-  d.m.position.set(THREE.MathUtils.lerp(d.from.x,3.15,q),d.from.y+Math.sin(Math.PI*t)*.36,THREE.MathUtils.lerp(d.from.z,3.5,q));
+  d.m.position.set(THREE.MathUtils.lerp(d.from.x,discardX,q),d.from.y+Math.sin(Math.PI*t)*.36,THREE.MathUtils.lerp(d.from.z,discardZ,q));
   d.m.rotation.z=d.rotation+q*.5;d.m.rotation.x=q*.55;
   if(t>=1){disposeCard(d.m);discards.splice(i,1)}
  }
@@ -400,8 +828,8 @@ function animate(now){
   const chosen=m.userData.index===G?.selected&&G?.phase==='playing';
   const hover=m.userData.index===hovered&&G?.phase==='playing';
   m.userData.targetY=chosen?1.02:hover?.92:.75;
-  m.position.y=THREE.MathUtils.damp(m.position.y,m.userData.targetY,15,dt);
-  m.rotation.z=THREE.MathUtils.damp(m.rotation.z,hover?.04:chosen?-.025:0,10,dt);
+  m.position.y=reduced?.75:THREE.MathUtils.damp(m.position.y,m.userData.targetY,15,dt);
+  m.rotation.z=reduced?0:THREE.MathUtils.damp(m.rotation.z,hover?.04:chosen?-.025:0,10,dt);
  }
  for(let i=0;i<9;i++){
   const fx=highlights[i],alive=fx&&now<fx.end,selected=G?.selected===i&&G?.phase==='playing';
