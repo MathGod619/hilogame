@@ -2,21 +2,96 @@
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#09120f"><title>HiLo 3D — Midnight Table</title>
 <style>
 :root{font-family:Inter,system-ui,-apple-system,Segoe UI,sans-serif;color:#f7eedf;color-scheme:dark}*{box-sizing:border-box}html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#090d0c}button,select{font:inherit}button{cursor:pointer;touch-action:manipulation}button:focus-visible{outline:3px solid #e5c177;outline-offset:3px}#scene{position:fixed;inset:0;width:100%;height:100%;display:block}.shade{position:fixed;inset:0;pointer-events:none;background:linear-gradient(180deg,#030708a8 0%,transparent 23%,transparent 67%,#020605b8 100%)}header{position:fixed;top:0;left:0;right:0;padding:14px clamp(12px,3vw,35px);display:flex;align-items:start;justify-content:space-between;gap:12px;pointer-events:none}header>*{pointer-events:auto}.brand{font-size:clamp(22px,3vw,32px);font-weight:950;letter-spacing:-1.5px;line-height:1}.brand span{color:#e9be72}.eyebrow{font-size:10px;letter-spacing:2px;font-weight:900;color:#edcf99}.sub{font-size:11px;color:#c0c5bd;margin-top:5px}.stats{display:flex;gap:7px;flex-wrap:wrap;justify-content:end}.stat{background:#101b19cf;border:1px solid #e9bd6952;border-radius:9px;padding:7px 11px;min-width:75px;backdrop-filter:blur(10px)}.stat small{font-size:9px;letter-spacing:1.1px;color:#b7c5bf;display:block}.stat strong{font-size:19px;font-variant-numeric:tabular-nums}.bottom{position:fixed;bottom:0;left:0;right:0;display:flex;align-items:end;justify-content:center;padding:12px 18px max(16px,env(safe-area-inset-bottom));pointer-events:none}.controls{width:min(760px,100%);background:#10211ecf;border:1px solid #b6a17580;border-radius:16px;padding:13px 16px;backdrop-filter:blur(16px);box-shadow:0 15px 40px #0009;pointer-events:auto}.message{text-align:center;min-height:34px;font-size:15px;font-weight:780}.detail{text-align:center;font-size:12px;color:#c9d2c9;min-height:16px;margin-bottom:8px}.actions{display:grid;grid-template-columns:1fr 1fr;gap:10px}.guess{border:none;border-radius:10px;padding:14px 8px;font-size:17px;font-weight:950;background:#d7ecac;color:#25321c;box-shadow:inset 0 -3px #0002}.guess.lower{background:#ecc18f;color:#42261d}.guess:disabled{opacity:.35;cursor:default}#restart{border:1px solid #c9aa7059;color:#e9e7db;border-radius:8px;padding:8px 11px;background:#182721bb}#settings{border:1px solid #c9aa7059;color:#e9e7db;border-radius:8px;padding:8px 11px;background:#182721bb}.menu{display:flex;gap:6px}.hint{text-align:center;font-size:11px;color:#a4b9ae;margin-top:9px}.modal{position:fixed;inset:0;display:grid;place-items:center;background:#030806b9;z-index:10;padding:18px}.modal.hidden{display:none}.modalbox{width:min(440px,100%);background:#17221e;border:1px solid #d1aa6c;border-radius:17px;padding:25px;box-shadow:0 30px 90px #000b}.modalbox h2{font-size:26px;margin:7px 0}.modalbox p{color:#d0d8d0;line-height:1.5}.modalbox label{display:block;margin:14px 0}.modalbox button{padding:12px 15px;border:0;background:#dfbf7d;color:#231e14;border-radius:9px;font-weight:900;width:100%}#toast{position:fixed;top:25%;left:50%;transform:translateX(-50%);padding:15px 23px;background:#2f1514f0;border:1px solid #ffb07a;border-radius:12px;text-align:center;font-weight:950;box-shadow:0 12px 40px #000a;pointer-events:none;opacity:0;transition:opacity .15s;max-width:90vw}#toast.show{opacity:1}#loading{position:fixed;inset:0;display:grid;place-items:center;background:#08110f;z-index:20;text-align:center;color:#efd49c;font-weight:800}#loading.hidden{display:none}#loading small{display:block;color:#9eb4ab;font-weight:400;margin-top:8px} @media(max-width:650px){header{padding:9px}.brand{font-size:21px}.stats{gap:4px}.stat{min-width:52px;padding:4px 7px}.stat strong{font-size:16px}.stat small{font-size:8px}.sub{display:none}.bottom{padding:8px 8px max(10px,env(safe-area-inset-bottom))}.controls{padding:10px;border-radius:12px}.message{font-size:13px;min-height:24px}.detail{font-size:11px}.guess{padding:11px 5px;font-size:15px}.hint{font-size:10px;margin-top:6px}} @media(max-height:650px){header{padding:6px 15px}.sub{display:none}.controls{padding:8px 12px}.message{min-height:22px}.guess{padding:9px}.hint{margin-top:4px}.bottom{padding-bottom:6px}}
+
+/* Roguelike-first HUD, high-contrast shop, and tablet-sized board framing */
+header{z-index:3;gap:7px;padding:9px clamp(9px,2vw,26px);align-items:center}
+.eyebrow{font-size:10px;letter-spacing:1.2px}
+.brand{font-size:26px}
+.stats{gap:5px}
+.stat{padding:5px 9px;min-width:62px}
+.stat strong{font-size:16px}
+.stat small{font-size:9px}
+.bottom{z-index:3;padding:7px 10px max(10px,env(safe-area-inset-bottom))}
+.controls{width:min(690px,100%);padding:10px 13px}
+.message{font-size:15px;min-height:23px}
+.detail{font-size:12px;margin-bottom:5px}
+.guess{padding:12px 8px}
+.hint{font-size:10px}
+.ribbon{display:flex;justify-content:space-between;gap:6px;flex-wrap:wrap;color:#efd8a6;font-size:11px;font-weight:800;margin-bottom:6px}
+.tools{display:flex;gap:5px;justify-content:center;flex-wrap:wrap;margin-top:7px}
+.tools button{background:#22352f;color:#f4f4e9;border:1px solid #8b9476a0;padding:6px 9px;border-radius:8px;font-size:11px;font-weight:800}
+.tools button:disabled{opacity:.36}
+.modal{z-index:20}
+.modalbox{width:min(770px,100%);padding:18px;max-height:88dvh;overflow:auto;background:#132420}
+.modalbox h2{font-size:23px}
+.modalbox p{font-size:13px;margin:8px 0 11px}
+.modalChoices{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}
+.modalChoices button{margin:0;min-height:80px;background:#22332e!important;color:#f8f6eb!important;border:1px solid #8c9e85!important;text-align:left;padding:12px!important;display:flex;flex-direction:column;gap:5px;align-items:flex-start}
+.modalChoices button strong{color:#f5d78d;font-size:14px}
+.modalChoices button small{color:#e5eee7;font-weight:500;font-size:12px;line-height:1.4}
+.modalChoices button em{color:#d7f29e;font-style:normal;font-size:12px;font-weight:900;margin-top:auto}
+.modalChoices button:disabled{opacity:.53}
+.modalChoices button:not(:disabled):hover{background:#38584b!important}
+.modalChoices .wide{grid-column:1/-1}
+#modalAction{margin-top:10px}
+#modalAction:disabled{opacity:.35}
+#modalSettings{display:none}
+#scene{touch-action:manipulation}
+@media(max-width:700px){
+ header{padding:7px 8px;align-items:flex-start}
+ .brand{font-size:21px}
+ .eyebrow{font-size:8px;letter-spacing:.5px}
+ .stats{max-width:265px}
+ .stat{min-width:47px;padding:3px 5px}
+ .stat strong{font-size:14px}
+ .stat small{font-size:7px;letter-spacing:.4px}
+ .statBoard{display:none}
+ .menu button{padding:6px}
+ .bottom{padding:6px 7px max(8px,env(safe-area-inset-bottom))}
+ .controls{padding:8px 9px}
+ .message{font-size:13px}
+ .detail{font-size:11px}
+ .ribbon{font-size:10px}
+ .guess{font-size:15px;padding:11px 5px}
+ .tools button{padding:6px;font-size:10px}
+ .hint{font-size:9px}
+ .modalbox{padding:14px}
+ .modalChoices{grid-template-columns:1fr}
+ .modalChoices button{min-height:64px}
+}
+@media(max-height:700px) and (min-width:701px){
+ .controls{padding:7px}
+ .guess{padding:8px}
+ .tools button{padding:4px}
+ .hint{margin-top:4px}
+}
+
 </style>
 <script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.1/build/three.module.js"}}</script>
 </head><body><canvas id="scene" aria-label="Interactive three-dimensional casino table"></canvas><div class="shade"></div>
-<header><div><div class="eyebrow">MIDNIGHT CASINO · PROTOTYPE 01</div><div class="brand">HI<span>LO</span> <span style="font-size:12px;letter-spacing:1px;font-weight:600;color:#b5c7b9">3D</span></div><div class="sub">Select a card on the table, then guess Higher or Lower.</div></div><div class="stats"><div class="stat"><small>DECK</small><strong id="deck">54</strong></div><div class="stat"><small>CORRECT</small><strong id="correct">0</strong></div><div class="stat"><small>STREAK</small><strong id="streak">0</strong></div><div class="stat"><small>BOARD</small><strong id="boardCount">1/9</strong></div><div class="menu"><button id="settings" title="Settings">⚙</button><button id="restart">↻</button></div></div></header>
-<div class="bottom"><div class="controls"><div class="message" id="message">Choose your card</div><div class="detail" id="detail">Tap an occupied card on the 3D table.</div><div class="actions"><button class="guess" id="higher">↑ HIGHER</button><button class="guess lower" id="lower">↓ LOWER</button></div><div class="hint">Ace low · Ties lose · Every 2nd correct adds a card · 3 consecutive triggers On Fire · Joker = +5 cards</div></div></div>
+<header><div><div class="eyebrow">MIDNIGHT CASINO · ROGUELIKE</div><div class="brand">HI<span>LO</span> <span style="font-size:12px;letter-spacing:1px;font-weight:600;color:#b5c7b9">3D</span></div><div class="sub" id="bossrule">Three bosses. Build your run.</div></div><div class="stats"><div class="stat"><small>STAGE</small><strong id="stage">1/3</strong></div><div class="stat"><small>SCORE</small><strong id="score">0</strong></div><div class="stat"><small>🪙 TOKENS</small><strong id="tokens">65</strong></div><div class="stat"><small>DECK</small><strong id="deck">54</strong></div><div class="stat"><small>CORRECT</small><strong id="correct">0</strong></div><div class="stat"><small>STREAK</small><strong id="streak">0</strong></div><div class="stat statBoard"><small>BOARD</small><strong id="boardCount">1/9</strong></div><div class="menu"><button id="settings" title="Settings">⚙</button><button id="restart">↻</button></div></div></header>
+<div class="bottom"><div class="controls"><div class="ribbon"><span id="ticketName">🎟️ Ticket</span><span id="artifactCount">Artifacts 0/4</span><span id="shields">🛡️ 0</span><span id="stageProgress">Deck 1</span></div><div class="message" id="message">Choose your card</div><div class="detail" id="detail">Tap an occupied card on the 3D table.</div><div class="actions"><button class="guess" id="higher">↑ HIGHER</button><button class="guess lower" id="lower">↓ LOWER</button></div><div class="tools"><button id="push">🎲 Push</button><button id="shield">🛡️ Shield</button><button id="peek">👁️ Peek</button><button id="swap">⇄ Swap</button><button id="cashout">🔥 Cash Out</button></div><div class="hint">Tap any card • Ace low • Ties lose • Joker automatically adds 5 cards</div></div></div>
 <div id="toast" aria-live="polite"></div><div id="loading">Preparing the midnight table…<small>Loading the Three.js renderer</small></div>
-<div id="modal" class="modal hidden"><div class="modalbox"><div class="eyebrow" id="modalKick">THE MIDNIGHT TABLE</div><h2 id="modalTitle">Settings</h2><p id="modalText"></p><div id="modalSettings"><label><input type="checkbox" id="motion"> Reduced motion / instant cards</label><label><input type="checkbox" id="sound" checked> Sound effects</label></div><button id="modalAction">Close</button></div></div>
+<div id="modal" class="modal hidden"><div class="modalbox"><div class="eyebrow" id="modalKick">THE MIDNIGHT TABLE</div><h2 id="modalTitle">Settings</h2><p id="modalText"></p><div id="modalChoices" class="modalChoices"></div><div id="modalSettings"><label><input type="checkbox" id="motion"> Reduced motion / instant cards</label><label><input type="checkbox" id="sound" checked> Sound effects</label></div><button id="modalAction">Close</button></div></div>
 <script type="module">
 import * as THREE from 'three';
 const $=id=>document.getElementById(id);
 const renderer=new THREE.WebGLRenderer({canvas:$('scene'),antialias:true,powerPreference:'high-performance'});
 renderer.setPixelRatio(Math.min(devicePixelRatio||1,1.7));renderer.setSize(innerWidth,innerHeight);renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.PCFSoftShadowMap;renderer.outputColorSpace=THREE.SRGBColorSpace;renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=1.28;
 const scene=new THREE.Scene();scene.background=new THREE.Color(0x111a18);scene.fog=new THREE.FogExp2(0x111a18,.035);
-const camera=new THREE.PerspectiveCamera(43,innerWidth/innerHeight,.1,110);const mobile=()=>innerWidth<700;
-function positionCamera(){camera.aspect=innerWidth/innerHeight;camera.fov=mobile()?58:43;camera.position.set(0,mobile()?9.7:7.5,mobile()?12.5:10.6);camera.lookAt(0,.65,mobile()?-.3:-.6);camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight);renderer.setPixelRatio(Math.min(devicePixelRatio||1,1.7))}positionCamera();addEventListener('resize',positionCamera);
+// Near-top-down orthographic tabletop. Frame the cards within the space between HUD and controls.
+const camera=new THREE.OrthographicCamera(-5,5,5,-5,.1,110);
+const mobile=()=>innerWidth<700;
+function positionCamera(){
+ const top=mobile()?108:84,bottom=mobile()?190:164;
+ const room=Math.max(280,innerHeight-top-bottom);
+ const vertical=Math.max(6.6*innerHeight/room,5.25*innerHeight/innerWidth);
+ const half=vertical/2,aspect=innerWidth/innerHeight;
+ camera.left=-half*aspect;camera.right=half*aspect;camera.top=half;camera.bottom=-half;
+ camera.position.set(0,18,6);camera.lookAt(0,.68,.12);camera.updateProjectionMatrix();
+ renderer.setSize(innerWidth,innerHeight);
+ renderer.setPixelRatio(Math.min(devicePixelRatio||1,mobile()?1.5:1.8));
+}positionCamera();addEventListener('resize',positionCamera);
 const mat=(color,rough=.8,metal=0)=>new THREE.MeshStandardMaterial({color,roughness:rough,metalness:metal});const felt=mat(0x0b5744,.98),wood=mat(0x28160d,.27),wood2=mat(0x492918,.35),gold=mat(0xb79a58,.25,.76),wall=mat(0x16231f,.95),floor=mat(0x222521,.68),black=mat(0x151919,.7);
 function box(w,h,d,m,x,y,z,shadow=true){const o=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),m);o.position.set(x,y,z);o.castShadow=shadow;o.receiveShadow=true;scene.add(o);return o}
 function sphere(r,m,x,y,z){let o=new THREE.Mesh(new THREE.SphereGeometry(r,24,16),m);o.position.set(x,y,z);o.castShadow=true;scene.add(o);return o}
@@ -35,25 +110,198 @@ function tex(card){const c=document.createElement('canvas');c.width=400;c.height
 const backCanvas=document.createElement('canvas');backCanvas.width=256;backCanvas.height=350;let b=backCanvas.getContext('2d');b.fillStyle='#172a38';b.fillRect(0,0,256,350);b.strokeStyle='#c9a46e';b.lineWidth=12;b.strokeRect(18,18,220,314);b.strokeRect(34,34,188,282);b.fillStyle='#d0ac74';b.font='bold 58px Georgia';b.textAlign='center';b.fillText('H',128,195);let backTex=new THREE.CanvasTexture(backCanvas);backTex.colorSpace=THREE.SRGBColorSpace;
 const slots=Array.from({length:9},(_,i)=>({x:(i%3-1)*1.54,z:Math.floor(i/3)*1.9-1.76}));const pads=[];const cardMeshes=Array(9).fill(null);
 for(let i=0;i<9;i++){const p=slots[i];const o=box(1.26,.012,1.75,mat(0x0f4035,.98),p.x,.701,p.z,false);o.material=new THREE.MeshStandardMaterial({color:0x0f4035,roughness:1,emissive:0x000000});pads.push(o);const e=new THREE.LineSegments(new THREE.EdgesGeometry(new THREE.BoxGeometry(1.3,.013,1.79)),new THREE.LineBasicMaterial({color:0xa28750,transparent:true,opacity:.35}));e.position.copy(o.position);scene.add(e)}
-let deck=[],board=Array(9).fill(null),selected=0,correct=0,streak=0,turns=0,lock=false,ended=false,animations=[],lastEvent='',reduced=false,soundOn=true;
-const makeDeck=()=>{let a=[];for(let s of S)for(let v=0;v<13;v++)a.push({v,s});a.push({joker:true},{joker:true});return shuffle(a)};
-function shuffle(a){for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a}
-function draw(){let jokers=0;while(deck.length){let c=deck.pop();if(c.joker){deck.push(...shuffle(S.flatMap(s=>R.map((_,v)=>({s,v})))).slice(0,5));shuffle(deck);jokers++;continue}return {c,jokers}}return {c:null,jokers}}
-function score(){return board.filter(Boolean).length}function nextSelected(){if(board[selected])return;selected=board.findIndex(Boolean)}function refresh(){nextSelected();$('deck').textContent=deck.length;$('correct').textContent=correct;$('streak').textContent=streak;$('boardCount').textContent=score()+'/9';$('higher').disabled=lock||ended||selected<0;$('lower').disabled=lock||ended||selected<0;for(let i=0;i<9;i++){pads[i].material.emissive.setHex(i===selected&&!ended?0x537c36:0x000000);pads[i].material.emissiveIntensity=i===selected?.7:0;const m=cardMeshes[i];if(m)m.userData.targetY=i===selected?.99:.75}spot.color.setHex(streak>=3?0xffa45b:0xffd69a);$('message').textContent=ended?(score()?'🏆 You survived the deck!':'💀 The board is empty'):(selected>=0?'Selected: '+R[board[selected].v]+board[selected].s+' · Higher or Lower?':'No active card')}
-function sound(kind){if(!soundOn)return;try{const ac=window._hiloAudio||(window._hiloAudio=new(window.AudioContext||window.webkitAudioContext)());const o=ac.createOscillator(),gain=ac.createGain();o.type='sine';o.frequency.value=kind==='good'?660:kind==='bad'?230:420;gain.gain.setValueAtTime(.035,ac.currentTime);gain.gain.exponentialRampToValueAtTime(.0001,ac.currentTime+.18);o.connect(gain);gain.connect(ac.destination);o.start();o.stop(ac.currentTime+.18)}catch(e){}}
+
+const ARTIFACTS=[
+{id:'compass',icon:'🧭',name:'The Compass',desc:'Every fifth guess grants a Peek.',cost:45},
+{id:'phoenix',icon:'🪶',name:'Phoenix Feather',desc:'Every third consecutive success refills an empty board slot.',cost:65},
+{id:'mirror',icon:'🪞',name:'Mirror Trick',desc:'Once each stage, a normal missed guess leaves its card intact.',cost:75},
+{id:'clover',icon:'🍀',name:'Lucky Clover',desc:'Double scoring for successful predictions with odds of 35% or less.',cost:55},
+{id:'timekeeper',icon:'⌛',name:'Timekeeper',desc:'Every tenth correct guess gives a Peek token.',cost:50},
+{id:'storm',icon:'🏮',name:'Storm Lantern',desc:'Fire milestones score 40 points per occupied slot.',cost:55},
+{id:'anchor',icon:'⚓',name:'Iron Anchor',desc:'Begin each stage with two additional shields.',cost:60},
+{id:'salvage',icon:'🛠️',name:'Salvage Kit',desc:'Your first unsaved miss per stage restores one empty slot.',cost:55},
+{id:'ember',icon:'🔥',name:'Ember Engine',desc:'Earn 20 points per streak level on each correct guess.',cost:65},
+{id:'collector',icon:'💎',name:'Treasure Map',desc:'New completed lines grant 6 additional Pit Stop tokens.',cost:65},
+{id:'diamond',icon:'♦️',name:'Diamond Eye',desc:'Successful predictions at 35% odds or less earn 5 extra tokens.',cost:55},
+{id:'twin',icon:'♊',name:'Twin Signals',desc:'Double the points from completed board lines.',cost:70}
+];
+const UPGRADES=[
+{id:'ward',icon:'🛡️',name:'Ward',desc:'First miss on this position per stage is blocked.',cost:35},
+{id:'amp',icon:'⚡',name:'Amplifier',desc:'Correct guesses here earn 1.5× points.',cost:35},
+{id:'kindle',icon:'🔥',name:'Kindling',desc:'Correct guesses here grant an extra streak step.',cost:45},
+{id:'mint',icon:'🪙',name:'Mint',desc:'Correct guesses here earn 3 extra Pit Stop tokens.',cost:35},
+{id:'seed',icon:'🌱',name:'Seedbed',desc:'Every third successful guess here refills a board slot.',cost:40},
+{id:'scout',icon:'👁️',name:'Watchtower',desc:'Every fourth successful guess here earns a Peek.',cost:40}
+];
+const TICKETS=[
+{id:'lucky',icon:'🍀',name:'Lucky Ticket',desc:'Two starting shields, plus one each subsequent stage.'},
+{id:'fire',icon:'🔥',name:'Fire Ticket',desc:'Fire milestones award 200 bonus points and a Peek.'},
+{id:'risk',icon:'🎲',name:'Risk Ticket',desc:'Successful predictions at 40% odds or less award 2.5× points and 6 tokens; three such wins grant a shield.'},
+{id:'builder',icon:'🏗️',name:'Builder Ticket',desc:'Each completed line awards 150 bonus points, without extra starting cards.'}
+];
+const BOSSES=[
+{name:'The Tollkeeper',desc:'Each incorrect prediction costs 75 score points.'},
+{name:'The Collector',desc:'Unprotected misses lock empty positions, up to three per stage.'},
+{name:'The Final Driver',desc:'Finish the deck with at least two occupied cards. Four Jokers await.'}
+];
+const LINES=[[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0,4,8],[2,4,6]];
+let G=null,animations=[],reduced=false,soundOn=true,shopOffers=[],hovered=-1,swapFrom=null;
+const has=id=>G?.artifacts.includes(id);
+const cardsLeft=()=>G?.board.filter(Boolean).length||0;
+const rank=c=>c?R[c.v]+c.s:'empty';
+function shuffle(a){for(let i=a.length-1;i>0;i--){let j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a}
+const normalDeck=()=>S.flatMap(s=>R.map((_,v)=>({v,s})));
+function draw(){let jokers=0;while(G.deck.length){const c=G.deck.pop();if(c.joker){G.deck.push(...shuffle(normalDeck()).slice(0,5));shuffle(G.deck);G.stageTotal+=5;jokers++;continue}if(jokers)pop('🃏 JOKER! +'+(5*jokers)+' CARDS');return c}return null}
+function grantTokens(n){const give=Math.max(0,Math.min(n,100-G.stageEarned));G.credits+=give;G.stageEarned+=give}
+function bonusShield(){G.shields++;G.message='🛡️ +1 Shield token'}
+function lineState(){return LINES.map(l=>l.every(i=>G.board[i]))}
+function scoreLines(before){for(let j=0;j<LINES.length;j++)if(!before[j]&&LINES[j].every(i=>G.board[i])){let pts=(j<3?250:j<6?300:400)+(G.ticket==='builder'?150:0);if(has('twin'))pts*=2;G.score+=pts;G.shields++;grantTokens(6+(has('collector')?6:0));pop('✦ LINE COMPLETE · +'+pts+' PTS!')}}
+function refill(){const i=G.board.findIndex((c,k)=>!c&&!G.locked[k]);if(i<0)return;const before=lineState(),c=draw();if(c){G.board[i]=c;meshCard(c,i,true);scoreLines(before)}}
+function showDialog(k,title,body,buttons,action=null){
+ $('modalKick').textContent=k;$('modalTitle').textContent=title;$('modalText').textContent=body;
+ const host=$('modalChoices');host.replaceChildren();$('modalSettings').style.display='none';
+ for(const opt of buttons){const b=document.createElement('button');b.disabled=!!opt.disabled;b.innerHTML='<strong>'+opt.title+'</strong>'+(opt.desc?'<small>'+opt.desc+'</small>':'')+(opt.price!=null?'<em>🪙 '+opt.price+' tokens</em>':'');b.onclick=opt.click;host.appendChild(b)}
+ $('modalAction').style.display=action?'block':'none';if(action){$('modalAction').textContent=action.label;$('modalAction').onclick=action.click}
+ $('modal').classList.remove('hidden');
+}
+function hideDialog(){$('modal').classList.add('hidden')}
+function chooseTicket(){
+ showDialog('YOUR RUN STARTS HERE','🎟️ Choose Your Ticket','Pick a starting strategy for your three-boss Roguelike run.',TICKETS.map(t=>({title:t.icon+' '+t.name,desc:t.desc,click:()=>{G.ticket=t.id;shop(1,true)}})));
+}
+function shop(stage,fresh=false){
+ G.phase='shop';if(fresh||!shopOffers.length)shopOffers=shuffle(ARTIFACTS.filter(a=>!G.artifacts.includes(a.id))).slice(0,5).map(a=>a.id);
+ const opts=[];
+ for(const id of shopOffers){const a=ARTIFACTS.find(x=>x.id===id);if(!a)continue;const price=a.cost+15*G.artifacts.length;opts.push({title:a.icon+' '+a.name,desc:a.desc,price,disabled:G.credits<price||G.artifacts.length>=4,click:()=>{G.credits-=price;G.artifacts.push(id);shopOffers=shopOffers.filter(x=>x!==id);shop(stage)}})}
+ for(const up of UPGRADES){const price=up.cost+10*G.upgrades.filter(Boolean).length;opts.push({title:up.icon+' '+up.name+' · Board Upgrade',desc:up.desc,price,disabled:G.credits<price||G.upgrades.every(Boolean),click:()=>chooseSlot(stage,up)})}
+ opts.push({title:'↻ Reroll Artifact Offers',desc:'Five new random Artifacts',price:15,disabled:G.credits<15,click:()=>{G.credits-=15;shop(stage,true)}});
+ showDialog('🚌 PIT STOP · STAGE '+stage,'Build Your Run','🪙 '+G.credits+' tokens · '+G.artifacts.length+'/4 Artifacts · '+G.upgrades.filter(Boolean).length+'/9 upgraded positions. Gameplay rewards cap at 100 tokens per stage; defeated bosses grant 50.',opts,{label:'▶ FACE '+BOSSES[stage-1].name,click:()=>{hideDialog();setupStage(stage)}});
+}
+function chooseSlot(stage,up){
+ const price=up.cost+10*G.upgrades.filter(Boolean).length;
+ showDialog('BOARD UPGRADE',up.icon+' '+up.name,'Choose a position. Cost: '+price+' tokens. Each slot supports one permanent upgrade.',Array.from({length:9},(_,i)=>({title:'Position '+(i+1),desc:G.upgrades[i]?'Already upgraded':'Apply '+up.name,disabled:!!G.upgrades[i]||G.credits<price,click:()=>{G.credits-=price;G.upgrades[i]=up.id;shop(stage)}})),{label:'← Back to Pit Stop',click:()=>shop(stage)});
+}
+function setupStage(stage){
+ G.stage=stage;G.stageEarned=0;G.streak=0;G.phase='playing';G.locked=Array(9).fill(false);G.wardUsed=Array(9).fill(false);G.slotHits=Array(9).fill(0);G.mirrorUsed=false;G.salvageUsed=false;G.riskHits=0;G.protected=Array(9).fill(false);G.board=Array(9).fill(null);G.selected=0;G.deck=shuffle([...normalDeck(),...Array.from({length:stage===3?4:2},()=>({joker:true}))]);G.stageTotal=G.deck.length;G.push=0;G.pushScore=0;G.swapFrom=null;
+ if(G.ticket==='lucky')G.shields+=stage===1?2:1;if(has('anchor'))G.shields+=2;
+ animations=[];for(let i=0;i<9;i++)meshCard(null,i);
+ for(let i=0;i<4-stage;i++){const c=draw();if(c){G.board[i]=c;meshCard(c,i,true)}}
+ G.message='Choose a card and guess Higher or Lower';G.detail=BOSSES[stage-1].name+' · '+BOSSES[stage-1].desc;refresh();
+}
+function finishStage(){
+ if(cardsLeft()===0){endRun(false,'You lost every card on the board.');return}
+ if(G.deck.length)return;
+ if(G.stage===3){endRun(cardsLeft()>=2,cardsLeft()<2?'The Final Driver required two remaining cards.':'');return}
+ const cleared=G.stage;G.credits+=50;G.score+=500*cleared;G.phase='shop';shop(cleared+1,true);
+}
+function endRun(win,reason){
+ G.phase='ended';G.message=win?'🏆 THE FINAL DRIVER DEFEATED!':'💀 END OF THE ROAD';
+ G.detail=reason||'Run completed.';refresh();const bestKey='hilo-3d-rogue-best';let prior=0;try{prior=Number(localStorage.getItem(bestKey))||0;if(G.score>prior)localStorage.setItem(bestKey,String(G.score))}catch(e){}
+ showDialog(win?'VICTORY':'GAME OVER',G.message,reason+'  Score: '+G.score.toLocaleString()+' · Correct: '+G.correct+' / '+G.turns+' · Best: '+Math.max(prior,G.score).toLocaleString(),[],{label:'↻ New Roguelike Run',click:()=>{hideDialog();newRun()}});
+}
+function newRun(){
+ G={deck:[],board:Array(9).fill(null),selected:0,correct:0,streak:0,best:0,turns:0,score:0,stage:1,stageTotal:54,credits:65,stageEarned:0,shields:0,peeks:0,swaps:0,protected:Array(9).fill(false),locked:Array(9).fill(false),wardUsed:Array(9).fill(false),slotHits:Array(9).fill(0),artifacts:[],upgrades:Array(9).fill(null),ticket:'',riskHits:0,phase:'ticket',message:'Choose your Ticket',detail:'',push:0,pushScore:0};
+ for(let i=0;i<9;i++)meshCard(null,i);
+ refresh();chooseTicket();
+}
+function chance(card,dir){const a=G.deck.filter(c=>!c.joker);return a.length?a.filter(c=>dir==='higher'?c.v>card.v:c.v<card.v).length/a.length:0}
+function refresh(){
+ if(!G)return;if(!G.board[G.selected])G.selected=G.board.findIndex(Boolean);
+ $('stage').textContent=G.stage+'/3';$('score').textContent=G.score.toLocaleString();$('tokens').textContent=G.credits;
+ $('deck').textContent=G.deck.length;$('correct').textContent=G.correct;$('streak').textContent=G.streak;$('boardCount').textContent=cardsLeft()+'/9';
+ $('ticketName').textContent='🎟️ '+(TICKETS.find(x=>x.id===G.ticket)?.name||'Choose Ticket');$('artifactCount').textContent='✨ Artifacts '+G.artifacts.length+'/4';$('shields').textContent='🛡️ '+G.shields;$('stageProgress').textContent=G.deck.length+' left';
+ $('bossrule').textContent=BOSSES[G.stage-1].name+' · '+BOSSES[G.stage-1].desc;
+ $('message').textContent=G.message||((G.board[G.selected]?'Selected: '+rank(G.board[G.selected]):'Select a card')+' · Higher or Lower?');$('detail').textContent=G.detail;
+ const ready=G.phase==='playing'&&!!G.board[G.selected];$('higher').disabled=!ready;$('lower').disabled=!ready;
+ for(const [id,active] of [['push',ready&&G.push===0],['shield',ready&&G.shields>0&&!G.protected[G.selected]],['peek',ready&&G.peeks>0],['swap',ready&&G.swaps>0],['cashout',ready&&G.streak>=3]])$(id).disabled=!active;
+ $('push').textContent=G.push===1?'🎲 PUSH 2/2':'🎲 Push';
+ for(let i=0;i<9;i++){pads[i].material.emissive.setHex(i===G.selected&&ready?0x537c36:G.locked[i]?0x58212a:0x000000);pads[i].material.emissiveIntensity=i===G.selected&&ready?.9:G.locked[i]?.8:0;const m=cardMeshes[i];if(m)m.userData.targetY=i===G.selected&&ready?1.02:.75}
+ spot.color.setHex(G.streak>=9?0xff5731:G.streak>=3?0xffa45b:0xffd69a);
+}
+function sound(kind){if(!soundOn)return;try{const ac=window._hiloAudio||(window._hiloAudio=new(window.AudioContext||window.webkitAudioContext)());const o=ac.createOscillator(),gain=ac.createGain();o.type='sine';o.frequency.value=kind==='good'?660:kind==='bad'?230:420;gain.gain.setValueAtTime(.035,ac.currentTime);gain.gain.exponentialRampToValueAtTime(.0001,ac.currentTime+.16);o.connect(gain);gain.connect(ac.destination);o.start();o.stop(ac.currentTime+.16)}catch(e){}}
 function pop(msg){const t=$('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),1250)}
-function meshCard(c,i,animate=false){if(cardMeshes[i]){scene.remove(cardMeshes[i]);cardMeshes[i].geometry.dispose();for(let m of cardMeshes[i].material){if(m.map&&m.map!==backTex)m.map.dispose();m.dispose()}}
-if(!c){cardMeshes[i]=null;return}
-const p=slots[i];let face=new THREE.MeshStandardMaterial({map:tex(c),roughness:.82}),back=new THREE.MeshStandardMaterial({map:backTex,roughness:.86}),side=mat(0xd8d1c2,.9);let m=new THREE.Mesh(new THREE.BoxGeometry(1.14,.045,1.6),[side,side,face,back,side,side]);m.position.set(animate?3.18:p.x,animate?.95:.75,animate?-.28:p.z);m.rotation.x=animate?Math.PI:0;m.castShadow=true;m.receiveShadow=true;m.userData.index=i;m.userData.targetY=i===selected?.99:.75;scene.add(m);cardMeshes[i]=m;
-if(animate&&!reduced){animations.push({m,p,start:performance.now(),duration:580})}else{m.position.set(p.x,m.userData.targetY,p.z);m.rotation.x=0}}
-function addCard(done){let i=board.findIndex(x=>!x);if(i<0){done();return}const d=draw();if(d.jokers)pop('🃏 JOKER! +'+d.jokers*5+' CARDS');if(d.c){board[i]=d.c;meshCard(d.c,i,true)}done()}
-function end(){ended=true;lock=false;refresh();$('detail').textContent='Turns: '+turns+' · Correct: '+correct+' · Select ↻ to play again.';showDialog('RUN COMPLETE',score()?'🏆 The deck is clear!':'💀 Out of cards','You made '+correct+' correct predictions in '+turns+' turns. The full Roguelike progression comes after the 3D table prototype.',true)}
-function guess(dir){if(lock||ended||selected<0)return;const i=selected,old=board[i];lock=true;refresh();const d=draw();if(d.jokers){pop('🃏 JOKER! +'+d.jokers*5+' CARDS');$('detail').textContent=d.jokers+' Joker(s) added '+(d.jokers*5)+' normal cards to the deck.'}if(!d.c){end();return}turns++;const good=dir==='higher'?d.c.v>old.v:d.c.v<old.v;const reveal=()=>{if(good){correct++;streak++;board[i]=d.c;meshCard(d.c,i,true);$('detail').textContent='✓ '+R[old.v]+old.s+' → '+R[d.c.v]+d.c.s+' · Streak '+streak;sound('good');if(streak===3||streak>3&&streak%3===0){pop('🔥 ON FIRE! +1 CARD')} }else{streak=0;board[i]=null;meshCard(null,i);$('detail').textContent='✕ '+R[old.v]+old.s+' → '+R[d.c.v]+d.c.s+' · Position lost';sound('bad')}const needsBonus=good&&(streak>0&&streak%3===0||correct%2===0);if(needsBonus)addCard(()=>{});lock=false;refresh();if(score()===0||deck.length===0)end()};if(reduced)reveal();else setTimeout(reveal,260)}
-function newGame(){animations=[];for(let i=0;i<9;i++)meshCard(null,i);deck=makeDeck();board=Array(9).fill(null);selected=0;correct=0;streak=0;turns=0;lock=false;ended=false;const d=draw();board[0]=d.c;meshCard(d.c,0,true);$('detail').textContent='Select a card, then predict the next draw. Ace is low; equal ranks lose.';refresh();if(d.jokers)pop('🃏 JOKER! +'+d.jokers*5+' CARDS')}
-const ray=new THREE.Raycaster(),pointer=new THREE.Vector2();$('scene').addEventListener('pointermove',e=>{pointer.x=e.clientX/innerWidth*2-1;pointer.y=1-e.clientY/innerHeight*2;ray.setFromCamera(pointer,camera);let hits=ray.intersectObjects(cardMeshes.filter(Boolean));$('scene').style.cursor=hits.length?'pointer':'default'});$('scene').addEventListener('click',e=>{if(lock||ended)return;pointer.x=e.clientX/innerWidth*2-1;pointer.y=1-e.clientY/innerHeight*2;ray.setFromCamera(pointer,camera);let hit=ray.intersectObjects(cardMeshes.filter(Boolean))[0];if(hit){selected=hit.object.userData.index;refresh();sound('select')}});
-$('higher').onclick=()=>guess('higher');$('lower').onclick=()=>guess('lower');$('restart').onclick=newGame;
-function showDialog(k,title,body,finish=false){$('modalKick').textContent=k;$('modalTitle').textContent=title;$('modalText').textContent=body;$('modalSettings').style.display=finish?'none':'block';$('modalAction').textContent=finish?'New run':'Close';$('modalAction').onclick=()=>{ $('modal').classList.add('hidden');if(finish)newGame()};$('modal').classList.remove('hidden')}
-$('settings').onclick=()=>showDialog('VISUAL SETTINGS','Adjust the experience','The table is designed to fit your screen at normal browser zoom. Reduced motion skips card flight and flip animations.');$('motion').onchange=e=>reduced=e.target.checked;$('sound').onchange=e=>soundOn=e.target.checked;
-document.addEventListener('keydown',e=>{if($('modal').classList.contains('hidden')){if(e.key.toLowerCase()==='h')guess('higher');if(e.key.toLowerCase()==='l')guess('lower')}});
-let clock=0;function animate(now){requestAnimationFrame(animate);let dt=Math.min(.05,(now-clock)/1000||.016);clock=now;for(let i=animations.length-1;i>=0;i--){const a=animations[i];if(!a.m.parent){animations.splice(i,1);continue}let t=Math.min(1,(now-a.start)/a.duration),q=1-Math.pow(1-t,3);a.m.position.set(THREE.MathUtils.lerp(3.18,a.p.x,q),THREE.MathUtils.lerp(1.3,a.m.userData.targetY,q)+Math.sin(Math.PI*t)*.5,THREE.MathUtils.lerp(-.28,a.p.z,q));a.m.rotation.x=Math.PI*(1-q);if(t===1)animations.splice(i,1)}for(let m of cardMeshes){if(m&&!animations.some(a=>a.m===m)){m.position.y=THREE.MathUtils.damp(m.position.y,m.userData.targetY,12,dt);m.rotation.z=THREE.MathUtils.damp(m.rotation.z,m.userData.index===selected?-.025:0,8,dt)}}renderer.render(scene,camera)}requestAnimationFrame(animate);newGame();$('loading').classList.add('hidden');
+function meshCard(c,i,animate=false){
+ if(cardMeshes[i]){scene.remove(cardMeshes[i]);cardMeshes[i].geometry.dispose();for(const m of cardMeshes[i].material){if(m.map&&m.map!==backTex)m.map.dispose();m.dispose()}}
+ if(!c){cardMeshes[i]=null;return}
+ const p=slots[i],face=new THREE.MeshStandardMaterial({map:tex(c),roughness:.8}),back=new THREE.MeshStandardMaterial({map:backTex,roughness:.86}),side=mat(0xe5dece,.9);
+ const m=new THREE.Mesh(new THREE.BoxGeometry(1.17,.045,1.65),[side,side,face,back,side,side]);m.position.set(animate?3.18:p.x,animate?1.1:.75,animate?-.28:p.z);m.rotation.x=animate?Math.PI:0;m.castShadow=true;m.userData.index=i;m.userData.targetY=i===G?.selected?1.02:.75;scene.add(m);cardMeshes[i]=m;
+ if(animate&&!reduced)animations.push({m,p,start:performance.now(),duration:460});
+ else{m.position.set(p.x,m.userData.targetY,p.z);m.rotation.x=0}
+}
+function guess(dir){
+ if(G.phase!=='playing'||!G.board[G.selected])return;
+ const i=G.selected,old=G.board[i],p=chance(old,dir),c=draw();
+ if(!c){finishStage();return}
+ G.phase='busy';G.turns++;const good=dir==='higher'?c.v>old.v:c.v<old.v;
+ const resolve=()=>{
+  let info='';
+  if(good){
+   G.board[i]=c;meshCard(c,i,true);G.correct++;G.streak++;G.best=Math.max(G.best,G.streak);
+   let pts=Math.max(10,Math.round(100/Math.max(.1,p)));
+   if(G.streak>=9)pts*=3;
+   if(G.ticket==='risk'&&p<=.4){pts=Math.round(pts*2.5);grantTokens(6);G.riskHits++;if(G.riskHits%3===0)G.shields++}
+   else if(has('clover')&&p<=.35)pts*=2;
+   const up=G.upgrades[i];if(up==='amp')pts=Math.round(pts*1.5);
+   if(old.v>=4&&old.v<=8){pts+=Math.round(100/Math.max(.1,p)*.35);grantTokens(2)}
+   if(up==='mint')grantTokens(3);if(up==='kindle')G.streak++;
+   if(has('ember'))pts+=20*Math.min(10,G.streak);
+   if(has('storm')&&G.streak%3===0)pts+=40*cardsLeft();
+   if(G.ticket==='fire'&&G.streak%3===0){pts+=200;G.peeks++}
+   if(has('timekeeper')&&G.correct%10===0)G.peeks++;
+   if(has('compass')&&G.turns%5===0)G.peeks++;
+   if(up==='seed'){G.slotHits[i]++;if(G.slotHits[i]%3===0)refill()}
+   if(up==='scout'){G.slotHits[i]++;if(G.slotHits[i]%4===0)G.peeks++}
+   grantTokens(2);G.score+=pts;
+   if(G.push===1){G.push=2;G.pushScore=pts;info=' · Push 1/2: stay on this position'}
+   else if(G.push===2){G.score+=2*(G.pushScore+pts);G.push=0;info=' · 🎲 PUSH COMPLETE 3×'}
+   if(G.streak%3===0){G.shields++;refill();if(has('phoenix'))refill();info+=' · 🔥 ON FIRE +1 shield and card';if(G.streak===6){G.peeks++;info+=' · SUPER FIRE +Peek'}}
+   else if(G.correct%2===0)refill();
+   G.message='✓ '+rank(old)+' → '+rank(c)+' · +'+pts+' pts';sound('good');
+  }else{
+   G.streak=0;if(G.stage===1)G.score=Math.max(0,G.score-75);
+   const up=G.upgrades[i],pushing=G.push>0;
+   if(!pushing&&has('mirror')&&!G.mirrorUsed){G.mirrorUsed=true;info='🪞 Mirror saved card'}
+   else if(!pushing&&up==='ward'&&!G.wardUsed[i]){G.wardUsed[i]=true;info='🛡️ Ward saved card'}
+   else if(!pushing&&G.protected[i]){G.protected[i]=false;info='🛡️ Shield saved card'}
+   else{G.board[i]=null;meshCard(null,i);info='Position lost';if(G.stage===2&&G.locked.filter(Boolean).length<3){G.locked[i]=true;info+=' · 🔒 Collector locked it'}if(has('salvage')&&!G.salvageUsed){G.salvageUsed=true;refill()}}
+   G.push=0;G.message='✕ '+rank(old)+' → '+rank(c);sound('bad');
+  }
+  G.detail=info||('Streak '+G.streak+' · '+G.deck.length+' cards remaining');
+  if(cardsLeft()===0){endRun(false,'All board positions lost.');return}
+  if(!G.deck.length){finishStage();return}
+  G.phase='playing';refresh();
+ };
+ if(reduced)resolve();else setTimeout(resolve,250);
+}
+$('higher').onclick=()=>guess('higher');$('lower').onclick=()=>guess('lower');
+$('restart').onclick=()=>showDialog('RESTART','Start a new run?','Your current Roguelike progress will be lost.',[],{label:'Restart',click:()=>{hideDialog();newRun()}});
+$('push').onclick=()=>{if(G.phase!=='playing'||G.push)return;G.push=1;G.message='🎲 Push Your Luck: win two guesses on this card for triple points';refresh()};
+$('shield').onclick=()=>{if(!G.shields||G.phase!=='playing'||G.protected[G.selected])return;G.shields--;G.protected[G.selected]=true;G.message='🛡️ Protected '+rank(G.board[G.selected]);refresh()};
+$('peek').onclick=()=>{if(!G.peeks||G.phase!=='playing')return;G.peeks--;const c=[...G.deck].reverse().find(x=>!x.joker);G.message=c?'👁️ Next regular card: '+rank(c):'No regular card left';refresh()};
+$('swap').onclick=()=>{if(!G.swaps||G.phase!=='playing')return;swapFrom=G.selected;G.message='⇄ Select another occupied card to swap';refresh()};
+$('cashout').onclick=()=>{if(G.phase!=='playing'||G.streak<3)return;G.streak=0;G.shields++;G.message='🔥 Streak cashed out · +1 Shield';refresh()};
+const ray=new THREE.Raycaster(),pointer=new THREE.Vector2();
+function hitCard(e){pointer.x=e.clientX/innerWidth*2-1;pointer.y=1-e.clientY/innerHeight*2;ray.setFromCamera(pointer,camera);return ray.intersectObjects(cardMeshes.filter(Boolean))[0]?.object.userData.index??-1}
+$('scene').addEventListener('pointermove',e=>{$('scene').style.cursor=hitCard(e)>=0?'pointer':'default'});
+$('scene').addEventListener('click',e=>{
+ if(G.phase!=='playing'||G.push===2)return;const i=hitCard(e);if(i<0)return;
+ if(swapFrom!==null){if(i!==swapFrom){[G.board[i],G.board[swapFrom]]=[G.board[swapFrom],G.board[i]];[G.protected[i],G.protected[swapFrom]]=[G.protected[swapFrom],G.protected[i]];meshCard(G.board[i],i);meshCard(G.board[swapFrom],swapFrom);G.swaps--;G.message='⇄ Swapped two cards'}swapFrom=null}
+ G.selected=i;refresh();sound('select');
+});
+$('settings').onclick=()=>{
+ showDialog('SETTINGS','Visual & Audio Settings','Change animations or sound without affecting the run.',[
+ {title:'🎞️ Animations: '+(reduced?'OFF':'ON'),desc:'Toggle fast, reduced-motion card draws.',click:()=>{reduced=!reduced;$('settings').click()}},
+ {title:'🔊 Sound: '+(soundOn?'ON':'OFF'),desc:'Toggle all game sound effects.',click:()=>{soundOn=!soundOn;$('settings').click()}}
+ ],{label:'Return to Table',click:hideDialog});
+};
+document.addEventListener('keydown',e=>{if(!$('modal').classList.contains('hidden'))return;if(e.key.toLowerCase()==='h')guess('higher');if(e.key.toLowerCase()==='l')guess('lower')});
+let lastTime=0;
+function animate(now){requestAnimationFrame(animate);const dt=Math.min(.05,(now-lastTime)/1000||.016);lastTime=now;
+ for(let i=animations.length-1;i>=0;i--){const a=animations[i];if(!a.m.parent){animations.splice(i,1);continue}const t=Math.min(1,(now-a.start)/a.duration),q=1-(1-t)**3;
+ a.m.position.set(THREE.MathUtils.lerp(3.18,a.p.x,q),THREE.MathUtils.lerp(1.15,a.m.userData.targetY,q)+Math.sin(Math.PI*t)*.32,THREE.MathUtils.lerp(-.28,a.p.z,q));
+ a.m.rotation.x=Math.PI*(1-q);if(t>=1)animations.splice(i,1);
+ }
+ for(const m of cardMeshes)if(m&&!animations.some(a=>a.m===m)){m.position.y=THREE.MathUtils.damp(m.position.y,m.userData.targetY,12,dt);m.rotation.z=THREE.MathUtils.damp(m.rotation.z,m.userData.index===G?.selected?-.025:0,8,dt)}
+ renderer.render(scene,camera);
+}
+requestAnimationFrame(animate);newRun();$('loading').classList.add('hidden');
 </script></body></html>
