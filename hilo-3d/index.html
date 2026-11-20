@@ -784,6 +784,13 @@ const jokerMesh = addMesh(new THREE.BoxGeometry(.98,.025,1.38),[
  new THREE.MeshBasicMaterial({map:backTex,toneMapped:false}),mat(0xd1bc90),mat(0xd1bc90)
 ],deckX,1.02,deckZ);
 jokerMesh.visible=false;
+let drawRevealUntil=0;
+const drawnCard=new THREE.Mesh(new THREE.PlaneGeometry(1.17,1.65),new THREE.MeshBasicMaterial({transparent:true,toneMapped:false,depthWrite:false}));
+drawnCard.rotation.x=-Math.PI/2;drawnCard.position.set(deckX,1.12,deckZ);drawnCard.visible=false;scene.add(drawnCard);
+function showDrawnCard(card){
+ if(drawnCard.material.map)drawnCard.material.map.dispose();
+ drawnCard.material.map=tex(card);drawnCard.material.needsUpdate=true;drawRevealUntil=performance.now()+2200;
+}
 const dealerHands = [-1,1].map(side=>{
  const hand=new THREE.Group();
  const glove=mat(0xb4ac91,.9);
@@ -813,7 +820,7 @@ function revealJoker(count) {
  $('casinoEvent').textContent='Joker · +'+(count*5)+' cards';
 }
 function resetCasino() {
- casino.jokerUntil=0;
+ casino.jokerUntil=0;drawRevealUntil=0;drawnCard.visible=false;
  for(const p of sparks){p.end=0;p.mesh.visible=false}
  $('fxLayer').replaceChildren();
  casino.dealerUntil=0;
@@ -836,6 +843,7 @@ function animateCasino(now,dt) {
  spot.color.copy(baseSpot).lerp(fireSpot,casino.heat);
  spot.intensity=THREE.MathUtils.damp(spot.intensity,joker?65:140,7,dt);
  jokerMesh.visible=joker;
+ drawnCard.visible=!joker&&now<drawRevealUntil;drawnCard.material.opacity=reduced?1:Math.min(1,Math.max(0,(drawRevealUntil-now)/350));
  if(joker){
   const progress=Math.max(0,1-(casino.jokerUntil-now)/(reduced?650:1350));
   jokerMesh.scale.setScalar(reduced?1.2:1.7);
@@ -1169,7 +1177,7 @@ function lessonGuess(dir){
  if(lesson.step===1&&dir==='higher'){
   G.board[0]={v:8,s:'♦'};meshCard(G.board[0],0,true);G.score=100;G.deck.pop();floatLabel('+100',0);sound('good');flash('positive',0);lesson.step=2;
  }else if(lesson.step===3&&dir==='lower'){
-  G.protected[0]=false;G.deck.pop();sound('shield');flash('ability',0,'SHIELD BLOCK');lesson.step=4;
+  G.protected[0]=false;showDrawnCard(G.deck.pop());sound('shield');flash('ability',0,'SHIELD BLOCK');lesson.step=4;
  }else return;
  refresh();renderLesson();
 }
@@ -1353,6 +1361,7 @@ function guess(dir){
  const run=G;
  const i=G.selected,old=G.board[i],p=chance(old,dir),c=draw();
  if(!c){finishStage();return}
+ showDrawnCard(c);
  G.phase='busy';G.message='Revealing…';refresh();G.turns++;const good=dir==='higher'?c.v>old.v:c.v<old.v;
  const resolve=()=>{
   if(G!==run)return;
