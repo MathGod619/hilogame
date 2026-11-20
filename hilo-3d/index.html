@@ -159,7 +159,7 @@ const BOSSES=[
 {name:'The Final Driver',desc:'Finish the deck with at least two occupied cards. Four Jokers await.'}
 ];
 const LINES=[[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0,4,8],[2,4,6]];
-let G=null,animations=[],reduced=false,soundOn=true,shopOffers=[],hovered=-1,swapFrom=null;
+let G=null,animations=[],reduced=false,soundOn=true,shopOffers=null,hovered=-1,swapFrom=null;
 const has=id=>G?.artifacts.includes(id);
 const cardsLeft=()=>G?.board.filter(Boolean).length||0;
 const rank=c=>c?R[c.v]+c.s:'empty';
@@ -183,16 +183,42 @@ function chooseTicket(){
  showDialog('YOUR RUN STARTS HERE','🎟️ Choose Your Ticket','Pick a starting strategy for your three-boss Roguelike run.',TICKETS.map(t=>({title:t.icon+' '+t.name,desc:t.desc,click:()=>{G.ticket=t.id;shop(1,true)}})));
 }
 function shop(stage,fresh=false){
- G.phase='shop';if(fresh||!shopOffers.length)shopOffers=shuffle(ARTIFACTS.filter(a=>!G.artifacts.includes(a.id))).slice(0,5).map(a=>a.id);
+ G.phase='shop';
+ // A Pit Stop shows precisely four offers: two Artifacts and two board upgrades.
+ // Purchased offers disappear until the player pays to reroll the whole selection.
+ if(fresh||!shopOffers||!shopOffers.artifacts){
+  shopOffers={
+   artifacts:shuffle(ARTIFACTS.filter(a=>!G.artifacts.includes(a.id))).slice(0,2).map(a=>a.id),
+   upgrades:shuffle([...UPGRADES]).slice(0,2).map(u=>u.id)
+  };
+ }
  const opts=[];
- for(const id of shopOffers){const a=ARTIFACTS.find(x=>x.id===id);if(!a)continue;const price=a.cost+15*G.artifacts.length;opts.push({title:a.icon+' '+a.name,desc:a.desc,price,disabled:G.credits<price||G.artifacts.length>=4,click:()=>{G.credits-=price;G.artifacts.push(id);shopOffers=shopOffers.filter(x=>x!==id);shop(stage)}})}
- for(const up of UPGRADES){const price=up.cost+10*G.upgrades.filter(Boolean).length;opts.push({title:up.icon+' '+up.name+' · Board Upgrade',desc:up.desc,price,disabled:G.credits<price||G.upgrades.every(Boolean),click:()=>chooseSlot(stage,up)})}
- opts.push({title:'↻ Reroll Artifact Offers',desc:'Five new random Artifacts',price:15,disabled:G.credits<15,click:()=>{G.credits-=15;shop(stage,true)}});
- showDialog('🚌 PIT STOP · STAGE '+stage,'Build Your Run','🪙 '+G.credits+' tokens · '+G.artifacts.length+'/4 Artifacts · '+G.upgrades.filter(Boolean).length+'/9 upgraded positions. Gameplay rewards cap at 100 tokens per stage; defeated bosses grant 50.',opts,{label:'▶ FACE '+BOSSES[stage-1].name,click:()=>{hideDialog();setupStage(stage)}});
+ for(const id of shopOffers.artifacts){
+  const a=ARTIFACTS.find(x=>x.id===id);if(!a)continue;
+  const price=a.cost+15*G.artifacts.length;
+  opts.push({title:'✨ ARTIFACT · '+a.icon+' '+a.name,desc:a.desc,price,
+   disabled:G.credits<price||G.artifacts.length>=4,
+   click:()=>{if(G.credits<price||G.artifacts.length>=4)return;G.credits-=price;G.artifacts.push(id);shopOffers.artifacts=shopOffers.artifacts.filter(x=>x!==id);shop(stage)}
+  });
+ }
+ for(const id of shopOffers.upgrades){
+  const up=UPGRADES.find(x=>x.id===id);if(!up)continue;
+  const price=up.cost+10*G.upgrades.filter(Boolean).length;
+  opts.push({title:'▦ BOARD · '+up.icon+' '+up.name,desc:up.desc,price,
+   disabled:G.credits<price||G.upgrades.every(Boolean),
+   click:()=>chooseSlot(stage,up)
+  });
+ }
+ opts.push({title:'↻ Reroll All Four Offers',desc:'Refresh both Artifacts and both board upgrades.',price:15,
+  disabled:G.credits<15,click:()=>{if(G.credits<15)return;G.credits-=15;shop(stage,true)}
+ });
+ showDialog('🚌 PIT STOP · STAGE '+stage,'Choose Your Upgrades',
+  'Four offers per visit: 2 Artifacts + 2 board upgrades. Buy what you want, then reroll everything for 15 tokens. 🪙 '+G.credits+' available · '+G.artifacts.length+'/4 Artifacts · '+G.upgrades.filter(Boolean).length+'/9 upgraded positions.',
+  opts,{label:'▶ FACE '+BOSSES[stage-1].name,click:()=>{hideDialog();setupStage(stage)}});
 }
 function chooseSlot(stage,up){
  const price=up.cost+10*G.upgrades.filter(Boolean).length;
- showDialog('BOARD UPGRADE',up.icon+' '+up.name,'Choose a position. Cost: '+price+' tokens. Each slot supports one permanent upgrade.',Array.from({length:9},(_,i)=>({title:'Position '+(i+1),desc:G.upgrades[i]?'Already upgraded':'Apply '+up.name,disabled:!!G.upgrades[i]||G.credits<price,click:()=>{G.credits-=price;G.upgrades[i]=up.id;shop(stage)}})),{label:'← Back to Pit Stop',click:()=>shop(stage)});
+ showDialog('BOARD UPGRADE',up.icon+' '+up.name,'Choose a position. Cost: '+price+' tokens. Each slot supports one permanent upgrade.',Array.from({length:9},(_,i)=>({title:'Position '+(i+1),desc:G.upgrades[i]?'Already upgraded':'Apply '+up.name,disabled:!!G.upgrades[i]||G.credits<price,click:()=>{G.credits-=price;G.upgrades[i]=up.id;shopOffers.upgrades=shopOffers.upgrades.filter(x=>x!==up.id);shop(stage)}})),{label:'← Back to Pit Stop',click:()=>shop(stage)});
 }
 function setupStage(stage){
  G.stage=stage;G.stageEarned=0;G.streak=0;G.phase='playing';G.locked=Array(9).fill(false);G.wardUsed=Array(9).fill(false);G.slotHits=Array(9).fill(0);G.mirrorUsed=false;G.salvageUsed=false;G.riskHits=0;G.protected=Array(9).fill(false);G.board=Array(9).fill(null);G.selected=0;G.deck=shuffle([...normalDeck(),...Array.from({length:stage===3?4:2},()=>({joker:true}))]);G.stageTotal=G.deck.length;G.push=0;G.pushScore=0;G.swapFrom=null;
