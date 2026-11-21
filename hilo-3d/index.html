@@ -802,11 +802,10 @@ function showDrawnCard(card){
 function beginDraw(card,resolve){
  showDrawnCard(card);
  drawRevealUntil=0;
- if(reduced){drawnCard.visible=false;resolve();return}
+ if(reduced){sound('flip');drawnCard.visible=false;resolve();return}
  const now=performance.now();
  revealMotion={start:Math.max(now,casino.jokerUntil),duration:690,slot:G.selected,resolve};
  drawnCard.rotation.x=Math.PI;
- sound('deal');
 }
 const baseSpot = new THREE.Color(0xffd1a0), fireSpot = new THREE.Color(0xffa16a);
 function revealJoker(count) {
@@ -841,6 +840,7 @@ function animateCasino(now,dt) {
  jokerMesh.visible=joker;
  if(revealMotion&&now>=revealMotion.start){
   const r=revealMotion,t=Math.min(1,(now-r.start)/r.duration),slide=Math.min(1,t/.54),flip=Math.max(0,Math.min(1,(t-.54)/.34));
+  if(!r.started){r.started=true;sound('deal')}
   const ease=slide*slide*(3-2*slide);
   const destination=slots[r.slot];
   drawnCard.position.set(THREE.MathUtils.lerp(deckX,destination.x,ease),THREE.MathUtils.lerp(.98,.82,ease),THREE.MathUtils.lerp(deckZ,destination.z,ease));
@@ -870,12 +870,8 @@ function animateCasino(now,dt) {
  });
  if(musicGain){
   const pulse=reduced?1:.85+Math.sin(now*.0018)*.15;
-  const volume=musicOn&&active&&!joker?.045*pulse+casino.heat*.025:0;
+  const volume=musicOn&&active&&!joker?.034*pulse+casino.heat*.014:0;
   musicGain.gain.setTargetAtTime(volume,audioContext.currentTime,.2);
- }
- if(ambientLevel){
-  ambientLevel.gain.setTargetAtTime(joker?.006:.05+casino.heat*.025,audioContext.currentTime,.15);
-  ambientFilter.frequency.setTargetAtTime(275+casino.heat*180,audioContext.currentTime,.3);
  }
 }
 
@@ -885,7 +881,7 @@ const BOSS_PRESENTATION = [
  {mark:'♣',name:'The Final Driver',rule:'Finish with at least two cards. Four Jokers.',color:'#d78774',felt:'#4d2730',edge:'#221923',notes:[82.41,123.47,174.61]}
 ];
 let bossEntryTimer, pendingBoss=null, entryGeneration=0;
-let musicOn=true, musicGain, musicVoices=[];
+let musicOn=false, musicGain, musicVoices=[];
 function applyBossStyle(stage) {
  const theme=BOSS_PRESENTATION[stage-1];
  document.body.dataset.boss=String(stage);
@@ -998,7 +994,7 @@ const cardsLeft=()=>G?.board.filter(Boolean).length||0;
 const rank=c=>c?R[c.v]+c.s:'empty';
 function shuffle(a){for(let i=a.length-1;i>0;i--){let j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a}
 const normalDeck=()=>S.flatMap(s=>R.map((_,v)=>({v,s})));
-function draw(){let jokers=0;while(G.deck.length){const c=G.deck.pop();if(c.joker){G.deck.push(...shuffle(normalDeck()).slice(0,5));shuffle(G.deck);G.stageTotal+=5;jokers++;continue}if(jokers){revealJoker(jokers);sound('joker');flash('negative');}return c}return null}
+function draw(){let jokers=0;while(G.deck.length){const c=G.deck.pop();if(c.joker){G.deck.push(...shuffle(normalDeck()).slice(0,5));shuffle(G.deck);G.stageTotal+=5;jokers++;continue}if(jokers){revealJoker(jokers);sound(G.stage===3?'rev':'joker');flash('negative');}return c}return null}
 function creditTokens(n){const paid=Math.min(n,G.tollDebt);G.tollDebt-=paid;G.credits+=n-paid;return n-paid}
 function grantTokens(n){const give=Math.max(0,Math.min(n,100-G.stageEarned));G.stageEarned+=give;return creditTokens(give)}
 function lineState(){return LINES.map(l=>l.every(i=>G.board[i]))}
@@ -1125,6 +1121,7 @@ function setupStage(stage){
  G.stage=stage;G.stageEarned=0;G.streak=0;G.phase='playing';G.locked=Array(9).fill(false);G.wardUsed=Array(9).fill(false);G.slotHits=Array(9).fill(0);G.mirrorUsed=false;G.salvageUsed=false;G.cloverUsed=false;G.protected=Array(9).fill(false);G.board=Array(9).fill(null);G.selected=0;G.deck=shuffle([...normalDeck(),...Array.from({length:stage===3?4:2},()=>({joker:true}))]);G.stageTotal=G.deck.length;G.push=0;G.swapFrom=null;
  G.shields=1;
  if(G.ticket==='lucky')G.swaps++;
+ sound('shuffle');
  animations=[];for(let i=0;i<9;i++)meshCard(null,i);
  for(let i=0;i<4-stage+(has('anchor')?1:0);i++){const c=draw();if(c){G.board[i]=c;meshCard(c,i,true)}}
  G.message='Choose a card';G.detail=BOSSES[stage-1].name+' · '+BOSSES[stage-1].desc;refresh();
@@ -1213,133 +1210,125 @@ function refresh(){
  for(let i=0;i<9;i++){pads[i].material.emissive.setHex(i===G.selected&&ready?0x537c36:G.locked[i]?0x58212a:0x000000);pads[i].material.emissiveIntensity=i===G.selected&&ready?.18:G.locked[i]?.8:0;const m=cardMeshes[i];if(m)m.userData.targetY=i===G.selected&&ready?1.02:.75}
  
 }
-let audioContext, audioBus, roomTone, noiseBuffer, ambientLevel, ambientFilter;
+let audioContext, audioBus;
+const foley = {
+ deal: {clips:['deal-1','deal-2','deal-3'], gain:.37, gap:.055},
+ land: {clips:['land-1','land-2'], gain:.38, gap:.055},
+ flip: {clips:['flip'], gain:.32, rate:1.12},
+ discard: {clips:['discard'], gain:.43},
+ shuffle: {clips:['shuffle'], gain:.36},
+ select: {clips:['deal-2'], gain:.16, rate:1.4},
+ purchase: {clips:['purchase'], gain:.45},
+ cashout: {clips:['tokens'], gain:.44},
+ toll: {clips:['chip'], gain:.58, rate:.76},
+ lock: {clips:['latch'], gain:.65},
+ joker: {clips:['shuffle'], gain:.45, rate:.7},
+ rev: {clips:['rev'], gain:.68},
+ entrance1: {clips:['register'], gain:.67},
+ entrance2: {clips:['latch'], gain:.78, rate:.83},
+ entrance3: {clips:['ignition'], gain:.72}
+};
+const assetNames = new Set(Object.values(foley).flatMap(cue => cue.clips));
+const soundBytes = new Map([...assetNames].map(name => [
+ name, fetch('./sfx/' + name + '.mp3')
+  .then(response => response.ok ? response.arrayBuffer() : null).catch(() => null)
+]));
+const soundBuffers = new Map();
+const soundLoading = new Map();
+const cueLastPlayed = new Map();
+const cueVariant = new Map();
+
 function openAudio() {
- if (!soundOn) return false;
- if (!audioContext) {
+ if(!soundOn)return false;
+ if(!audioContext){
   const Audio = window.AudioContext || window.webkitAudioContext;
-  if (!Audio) return false;
+  if(!Audio)return false;
   audioContext = new Audio();
   audioBus = audioContext.createGain();
   audioBus.gain.value = .76;
   audioBus.connect(audioContext.destination);
- startBossMusic();
-  noiseBuffer = audioContext.createBuffer(1, audioContext.sampleRate * 2, audioContext.sampleRate);
-  const samples = noiseBuffer.getChannelData(0);
-  let seed = 193;
-  for (let i = 0; i < samples.length; i++) {
-   seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0;
-   samples[i] = seed / 2147483648 - 1;
-  }
+  startBossMusic();
+  for(const name of assetNames)loadSound(name);
  }
- if (audioContext.state !== 'running') audioContext.resume().catch(() => {});
- if (!roomTone) {
-  roomTone = audioContext.createBufferSource();
-  roomTone.buffer = noiseBuffer;
-  roomTone.loop = true;
-  const filter = audioContext.createBiquadFilter();
-  ambientFilter=filter;
-  filter.type = 'bandpass';
-  filter.frequency.value = 275;
-  filter.Q.value = .3;
-  const level = audioContext.createGain();
-  ambientLevel=level;
-  level.gain.value = .05;
-  roomTone.connect(filter).connect(level).connect(audioBus);
-  roomTone.start();
- }
+ if(audioContext.state!=='running')audioContext.resume().catch(()=>{});
  return true;
 }
+
+function loadSound(name) {
+ if(!soundLoading.has(name)){
+  const task = soundBytes.get(name)
+   .then(bytes => bytes ? audioContext.decodeAudioData(bytes) : null)
+   .then(buffer => {
+    if(buffer)soundBuffers.set(name,buffer);
+    return buffer;
+   }).catch(()=>null);
+  soundLoading.set(name,task);
+ }
+ return soundLoading.get(name);
+}
+
+function playSample(kind, cue) {
+ const now=performance.now();
+ if(now-(cueLastPlayed.get(kind)??-Infinity)<(cue.gap??0)*1000)return;
+ cueLastPlayed.set(kind,now);
+ const index=cueVariant.get(kind)??0;
+ const name=cue.clips[index%cue.clips.length];
+ cueVariant.set(kind,index+1);
+ const play=buffer=>{
+  if(!buffer||!soundOn||performance.now()-now>500)return;
+  const source=audioContext.createBufferSource();
+  const level=audioContext.createGain();
+  source.buffer=buffer;
+  source.playbackRate.value=cue.rate??1;
+  level.gain.value=cue.gain;
+  source.connect(level).connect(audioBus);
+  source.start();
+ };
+ const buffer=soundBuffers.get(name);
+ if(buffer)play(buffer);
+ else loadSound(name).then(play).catch(()=>{});
+}
+
 function toggleSound() {
- soundOn = !soundOn;
- if (audioBus) audioBus.gain.setTargetAtTime(soundOn ? .76 : 0, audioContext.currentTime, .014);
- if (soundOn) sound('select');
+ soundOn=!soundOn;
+ if(audioBus)audioBus.gain.setTargetAtTime(soundOn?.76:0,audioContext.currentTime,.014);
+ if(soundOn)sound('select');
 }
-function playFoley(at, period, from, to, volume) {
- const source = audioContext.createBufferSource();
- const filter = audioContext.createBiquadFilter();
- const level = audioContext.createGain();
- source.buffer = noiseBuffer;
- filter.type = 'bandpass';
- filter.Q.value = .68;
- filter.frequency.setValueAtTime(from, at);
- filter.frequency.exponentialRampToValueAtTime(to, at + period);
- level.gain.setValueAtTime(.0001, at);
- level.gain.linearRampToValueAtTime(volume, at + .008);
- level.gain.exponentialRampToValueAtTime(.0001, at + period);
- source.connect(filter).connect(level).connect(audioBus);
- source.start(at);
- source.stop(at + period);
-}
+
 function sound(kind) {
  try {
-  if (openAudio()) playSound(kind);
- } catch (error) {
-  console.debug('HiLo audio unavailable', error);
+  if(!openAudio())return;
+  if(Object.hasOwn(foley,kind)){playSample(kind,foley[kind]);return}
+  const cues={
+   good:[540,740,.10],bad:[220,150,.09],shield:[420,660,.15],
+   peek:[740,990,.11],swap:[400,630,.11],push:[260,430,.09],
+   line:[580,900,.14]
+  };
+  const t=audioContext.currentTime;
+  if(kind==='victory'||kind==='defeat'){
+   const notes=kind==='victory'?[220,277.18,329.63,440]:[146.83,110,82.41];
+   notes.forEach((note,i)=>playTone(t+i*.12,note,note,.45,.075));
+  }else if(Object.hasOwn(cues,kind)){
+   const [from,to,volume]=cues[kind];
+   playTone(t,from,to,.12,volume);
+  }
+ }catch(error){
+  console.debug('HiLo audio unavailable',error);
  }
 }
-const lastFoley = {deal: -1, land: -1};
-function playSound(kind) {
- const t = audioContext.currentTime;
- if(kind.startsWith('entrance')||kind==='victory'||kind==='defeat'){
-  const notes=kind==='victory'?[220,277.18,329.63,440]:kind==='defeat'?[146.83,110,82.41]:BOSS_PRESENTATION[Number(kind.slice(-1))-1].notes;
-  for(let i=0;i<notes.length;i++){
-   const voice=audioContext.createOscillator(),gain=audioContext.createGain();
-   const start=t+i*.12;
-   voice.type='sine';voice.frequency.value=notes[i];
-   gain.gain.setValueAtTime(.0001,start);gain.gain.linearRampToValueAtTime(.09,start+.025);gain.gain.exponentialRampToValueAtTime(.0001,start+.8);
-   voice.connect(gain).connect(audioBus);voice.start(start);voice.stop(start+.85);
-  }
-  return;
- }
- if (kind in lastFoley) {
-  if (t - lastFoley[kind] < .037) return;
-  lastFoley[kind] = t;
- }
- switch (kind) {
-  case 'deal':
-   playFoley(t, .10, 2100, 760, .18);
-   playFoley(t + .11, .046, 4380, 1220, .15);
-   return;
-  case 'land':
-   playFoley(t, .065, 650, 150, .37);
-   return;
-  case 'discard':
-   playFoley(t, .24, 1450, 340, .22);
-   return;
-  case 'flip':
-   playFoley(t, .085, 3200, 720, .2);
-   return;
-  case 'tap':
-   playFoley(t, .055, 340, 115, .3);
-   return;
-  case 'select':
-   playFoley(t, .045, 2300, 630, .12);
-   return;
-  case 'purchase':
-   playFoley(t, .065, 4200, 1200, .28);
-   playFoley(t + .05, .035, 3600, 1100, .19);
-   break;
- }
- const tones = {
-  good:[520,880,.07,'sine',.19],bad:[330,130,.08,'triangle',.25],
-  shield:[450,1040,.07,'sine',.26],peek:[750,1230,.045,'sine',.23],
-  swap:[400,680,.06,'triangle',.2],push:[260,530,.06,'sawtooth',.17],
-  cashout:[620,930,.07,'sine',.24],line:[580,960,.08,'sine',.3],
-  joker:[210,95,.09,'sawtooth',.36],purchase:[710,1030,.022,'triangle',.11]
- };
- const p = tones[kind];
- if (!p) return;
- const oscillator = audioContext.createOscillator(), level = audioContext.createGain();
- oscillator.type = p[3];
- oscillator.frequency.setValueAtTime(p[0], t);
- oscillator.frequency.exponentialRampToValueAtTime(p[1], t + p[4]);
- level.gain.setValueAtTime(.0001, t);
- level.gain.linearRampToValueAtTime(p[2], t + .012);
- level.gain.exponentialRampToValueAtTime(.0001, t + p[4]);
- oscillator.connect(level).connect(audioBus);
- oscillator.start(t);
- oscillator.stop(t + p[4] + .02);
+
+function playTone(at, from, to, duration, volume) {
+ const voice=audioContext.createOscillator();
+ const gain=audioContext.createGain();
+ voice.type='sine';
+ voice.frequency.setValueAtTime(from,at);
+ voice.frequency.exponentialRampToValueAtTime(to,at+duration);
+ gain.gain.setValueAtTime(.0001,at);
+ gain.gain.linearRampToValueAtTime(volume,at+.014);
+ gain.gain.exponentialRampToValueAtTime(.0001,at+duration);
+ voice.connect(gain).connect(audioBus);
+ voice.start(at);
+ voice.stop(at+duration+.01);
 }
 let toastTimeout;
 function pop(msg, art) {
@@ -1415,10 +1404,10 @@ function guess(dir){
    if(!pushing&&has('mirror')&&!G.mirrorUsed){G.mirrorUsed=true;info=' Mirror saved card';sound('shield');flash('ability',i,' MIRROR SAVED')}
    else if(!pushing&&up==='ward'&&!G.wardUsed[i]){G.wardUsed[i]=true;upgradeTrigger('ward',i);info=' Ward saved card';sound('shield');flash('ability',i,' WARD BLOCK')}
    else if(!pushing&&G.protected[i]){G.protected[i]=false;info='Shield used · card saved';sound('shield');flash('ability',i,' SHIELD BLOCK')}
-   else{G.board[i]=null;discardCard(i);info='Position lost';if(G.stage===2&&G.locked.filter(Boolean).length<3){G.locked[i]=true;info+=' ·  Collector locked it'}if(has('salvage')&&!G.salvageUsed){G.salvageUsed=true;refill()}}
+   else{G.board[i]=null;discardCard(i);info='Position lost';if(G.stage===2&&G.locked.filter(Boolean).length<3){G.locked[i]=true;sound('lock');info+=' ·  Collector locked it'}if(has('salvage')&&!G.salvageUsed){G.salvageUsed=true;refill()}}
    G.push=0;
    const saved=G.board[i]!==null;
-   if(!saved&&G.stage===1){const paid=Math.min(10,G.credits);G.credits-=paid;G.tollDebt+=10-paid;info+=' · Tollkeeper -10 tokens'}
+   if(!saved&&G.stage===1){const paid=Math.min(10,G.credits);G.credits-=paid;G.tollDebt+=10-paid;sound('toll');info+=' · Tollkeeper -10 tokens'}
    G.message=saved?info:rank(old)+' → '+rank(c)+' · Card lost'+(G.stage===1?' · Toll -10 tokens'+(G.tollDebt?' ('+G.tollDebt+' owed)':''):'');
    if(!saved){sound('bad');flash('negative',i);}
   }
@@ -1461,7 +1450,7 @@ $('settings').onclick=()=>{
  const replay=document.createElement('button');replay.id='replayTutorial';replay.textContent='Practice tutorial';replay.onclick=startLesson;replay.disabled=G.phase==='busy';$('modal').querySelector('.modalbox').append(replay);
  for(const [label,checked,change] of [
   ['Sound',soundOn,()=>toggleSound()],
-  ['Music',musicOn,()=>{musicOn=!musicOn}],
+  ['Ambient tones',musicOn,()=>{musicOn=!musicOn}],
   ['Reduced motion',reduced,()=>{reduced=!reduced}]
  ]){
   const row=document.createElement('label');row.className='settingRow';
