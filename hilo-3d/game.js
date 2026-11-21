@@ -105,17 +105,22 @@ const UPGRADE_COLORS={ward:0x66cfff,amp:0xc18aff,kindle:0xff8854,mint:0x57e0c0,s
 const hex = n => '#' + n.toString(16).padStart(6, '0');
 const TICKETS=[
 {id:'lucky',icon:'star',name:'Lucky Ticket',desc:'Start each stage with one Swap.'},
-{id:'fire',icon:'flame',name:'Fire Ticket',desc:'Each three-win streak milestone grants a Peek.'},
+{id:'fire',icon:'flame',name:'Fire Ticket',desc:'Each seven-win streak milestone grants a Peek.'},
 {id:'risk',icon:'dice',name:'Risk Ticket',desc:'Wins at 40% odds or less earn 6 extra tokens.'}
 ];
 const BOSSES=[
-{name:'The Tollkeeper',desc:'Each lost position costs 10 tokens. Unpaid tolls come out of future earnings.'},
-{name:'The Collector',desc:'Unprotected misses lock empty positions, up to three per stage.'},
-{name:'The Final Driver',desc:'Finish the deck with at least two occupied cards. Four Jokers await.'}
+{id:'toll',name:'The Tollkeeper',desc:'Each lost position costs 10 tokens. Unpaid tolls come out of future earnings.',start:3,jokers:2},
+{id:'collector',name:'The Collector',desc:'Unprotected misses lock empty positions, up to three per stage.',start:2,jokers:2},
+{id:'sharp',name:'The Cardsharp',desc:'Every fourth guess is a Double Draw: both cards must be higher, or both lower, than your card. The tray lights up one guess early.',start:2,jokers:2},
+{id:'elevator',name:'The Elevator Operator',desc:'The board runs as three lanes. Only the front card in each lane can be played. A miss clears it and exposes the card behind.',start:3,jokers:2},
+{id:'roller',name:'The High Roller',desc:'One card is the stake. Win on it to refill an empty slot. Miss and lose the stake and its marked neighbor too.',start:3,jokers:2},
+{id:'house',name:'The House',desc:'Stamp all four suits before the deck runs out. A correct guess stamps the suit of the card you played.',start:2,jokers:2},
+{id:'driver',name:'The Final Driver',desc:'Finish the deck with at least two occupied cards. Four Jokers await.',start:1,jokers:4}
 ];
+const FINAL=BOSSES.length;
 const LINES=[[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0,4,8],[2,4,6]];
 const brief = {
- 'Lucky Ticket':'+1 Swap each stage','Fire Ticket':'3-win streak → Peek','Risk Ticket':'Low odds → +6 tokens',
+ 'Lucky Ticket':'+1 Swap each stage','Fire Ticket':'7-win streak → Peek','Risk Ticket':'Low odds → +6 tokens',
  'The Compass':'5 correct → Swap','Phoenix Feather':'3-win streak → refill','Mirror Trick':'First miss saved each stage',
  'Lucky Clover':'First low-odds win → refill','Timekeeper':'10 correct → Peek','Storm Lantern':'3-win streak → Swap',
  'Iron Anchor':'+1 starting board card','Salvage Kit':'First lost card → refill','Ember Engine':'5-win streak → Peek',
@@ -124,13 +129,22 @@ const brief = {
  'Mint':'+3 tokens per correct guess','Seedbed':'3 correct here → refill','Watchtower':'4 correct here → Peek'
 };
 const BOSS_PRESENTATION = [
- {mark:'♠',name:'The Tollkeeper',rule:'Each lost position costs 10 tokens. Unpaid tolls carry forward.',accent:'#e8c27a',felt:'#1f5a36',light:0xffcf94,notes:[110,164.81,220],
+ {id:'toll',mark:'♠',name:'The Tollkeeper',rule:'Each lost position costs 10 tokens. Unpaid tolls carry forward.',accent:'#e8c27a',felt:'#1f5a36',light:0xffcf94,notes:[110,164.81,220],
   base:0x3a1d0e,rail:[0x2c170b,.55,0],trim:[0xc99a4c,.3,1],band:[0xb8893f,.32,1],chips:[['#d8a73e','#8a6420','coin'],['#c9973a','#7a5618','coin'],['#e0b44c','#94692a','coin']]},
- {mark:'♦',name:'The Collector',rule:'Lost positions lock. Up to three.',accent:'#cfd8e3',felt:'#1a2a52',light:0xe2ebff,notes:[98,146.83,207.65],
+ {id:'collector',mark:'♦',name:'The Collector',rule:'Lost positions lock. Up to three.',accent:'#cfd8e3',felt:'#1a2a52',light:0xe2ebff,notes:[98,146.83,207.65],
   base:0x23272d,rail:[0x6d7680,.32,.9],trim:[0xe3e9f0,.2,1],band:[0xa3acb6,.28,1],chips:[['#c9d0d8','#4a5563','chip'],['#1b2a52','#c9d0d8','chip'],['#8e98a4','#20262e','chip']]},
- {mark:'♣',name:'The Final Driver',rule:'Finish with at least two cards. Four Jokers.',accent:'#ff4a3d',felt:'#62121f',light:0xffc0b0,notes:[82.41,123.47,174.61],
+ {id:'sharp',mark:'♥',name:'The Cardsharp',rule:'Every fourth guess is a Double Draw. Watch the tray.',accent:'#e0b866',felt:'#4a1838',light:0xffd6b8,notes:[103.83,155.56,207.65],
+  base:0x2a0c1e,rail:[0x3b1230,.85,0],trim:[0xc99a4c,.3,1],band:[0xb8893f,.32,1],chips:[['#5a1a46','#e0b866','chip'],['#e0b866','#3b1230','chip'],['#1a1216','#e0b866','chip']]},
+ {id:'elevator',mark:'♣',name:'The Elevator Operator',rule:'Three lanes. Only the front card of each lane plays.',accent:'#e2c06a',felt:'#103a3b',light:0xfff0c8,notes:[92.5,138.59,185],
+  base:0x0d2526,rail:[0x2a5a55,.38,.7],trim:[0xd8b45a,.28,1],band:[0xc9a24a,.3,1],chips:[['#1f5a58','#e2c06a','chip'],['#e2c06a','#123c3c','chip'],['#efe6d0','#1f5a58','chip']]},
+ {id:'roller',mark:'♦',name:'The High Roller',rule:'Win the stake to refill. Miss it and lose two.',accent:'#f2c35a',felt:'#141d3c',light:0xffe2b4,notes:[116.54,174.61,233.08],
+  base:0x3a080d,rail:[0x6a0f18,.16,.3],trim:[0xf0c35a,.22,1],band:[0xe0b04a,.24,1],chips:[['#e0b04a','#6a0f18','coin'],['#141418','#f2c35a','chip'],['#9e1622','#f7e6c0','chip']]},
+ {id:'house',mark:'♠',name:'The House',rule:'Stamp all four suits before the deck runs out.',accent:'#d4b06a',felt:'#163a25',light:0xfff0d4,notes:[87.31,130.81,174.61],
+  base:0x251f15,rail:[0x6a5634,.42,.85],trim:[0xc9a35a,.3,1],band:[0xa8874a,.35,1],chips:[['#efe6d0','#163a25','chip'],['#163a25','#efe6d0','chip'],['#1a1612','#d4b06a','chip']]},
+ {id:'driver',mark:'♣',name:'The Final Driver',rule:'Finish with at least two cards. Four Jokers.',accent:'#ff4a3d',felt:'#62121f',light:0xffc0b0,notes:[82.41,123.47,174.61],
   base:0x0b0b0d,rail:[0x18181b,.22,.35],trim:[0xd8202c,.25,.6],band:[0xc4c8ce,.2,1],chips:[['#d8202c','#ffffff','chip'],['#141418','#ff4a3d','chip'],['#e8e8ea','#141418','chip']]}
 ];
+const ART = {toll:{face:'big',portrait:'coin'},collector:{face:'big',portrait:'collector'},sharp:{face:'classic',portrait:'classic'},elevator:{face:'classic',portrait:'classic'},roller:{face:'classic',portrait:'coin'},house:{face:'classic',portrait:'classic'},driver:{face:'big',portrait:'racing'}};
 
 /* --------------------------- renderer ----------------------------- */
 const isSmall = Math.min(innerWidth, innerHeight) < 600;
@@ -235,57 +249,57 @@ const PIP_LAYOUT = {
   9:[[-1,-1],[1,-1],[-1,-.33],[1,-.33],[0,0],[-1,.33],[1,.33],[-1,1],[1,1]],
   10:[[-1,-1],[1,-1],[0,-.66],[-1,-.33],[1,-.33],[-1,.33],[1,.33],[0,.66],[-1,1],[1,1]]
 };
-let artStage = 1; // which boss style new card faces are painted in
+let artBoss = 'toll'; // which boss style new card faces are painted in
 const INK = '#1c1916', SKIN = '#f1d7b2', GOLDI = '#d4a240';
 function bustPath(g) {
   g.beginPath(); g.moveTo(408, 250); g.bezierCurveTo(390, 226, 330, 222, 300, 250); g.bezierCurveTo(284, 266, 280, 290, 276, 312);
   g.lineTo(254, 352); g.lineTo(276, 362); g.lineTo(272, 384); g.lineTo(282, 392); g.bezierCurveTo(280, 412, 290, 428, 318, 436);
   g.bezierCurveTo(330, 440, 350, 440, 372, 430); g.lineTo(380, 470); g.lineTo(436, 470); g.bezierCurveTo(446, 410, 452, 296, 408, 250); g.closePath();
 }
-function paintPortrait(g, card, stage, ink) {
-  const red = ink === RED, cloth = red ? '#b3262c' : '#24304d', trim = stage === 3 ? '#e8e8ea' : GOLDI;
+function paintPortrait(g, card, style, ink) {
+  const red = ink === RED, cloth = red ? '#b3262c' : '#24304d', trim = style === 'racing' ? '#e8e8ea' : GOLDI;
   const fillStroke = (fill, w = 6) => { g.fillStyle = fill; g.fill(); g.lineWidth = w; g.strokeStyle = INK; g.stroke(); };
   g.save(); g.lineJoin = 'round'; g.lineCap = 'round';
   // shoulders
   g.beginPath(); g.moveTo(176, 700); g.bezierCurveTo(186, 560, 250, 500, 320, 486); g.lineTo(430, 486); g.bezierCurveTo(476, 500, 500, 560, 504, 700); g.closePath(); fillStroke(cloth);
-  if (stage === 3) { // checkered racing collar
+  if (style === 'racing') { // checkered racing collar
     g.save(); g.beginPath(); g.moveTo(300, 492); g.lineTo(450, 492); g.lineTo(470, 560); g.lineTo(280, 560); g.closePath(); g.clip();
     for (let x = 270; x < 480; x += 18) for (let y = 488; y < 566; y += 18) { g.fillStyle = ((x - 270) / 18 + (y - 488) / 18) % 2 ? '#f4f0e8' : INK; g.fillRect(x, y, 18, 18); }
     g.restore(); g.beginPath(); g.moveTo(300, 492); g.lineTo(450, 492); g.lineTo(470, 560); g.lineTo(280, 560); g.closePath(); g.lineWidth = 5; g.strokeStyle = INK; g.stroke();
   } else { g.beginPath(); g.moveTo(330, 488); g.lineTo(372, 560); g.lineTo(420, 488); fillStroke(trim, 5); }
   // hood behind the head (Collector's queen)
-  if (stage === 2 && card.v === 11) { g.beginPath(); g.moveTo(262, 520); g.bezierCurveTo(230, 360, 260, 200, 360, 196); g.bezierCurveTo(470, 196, 486, 330, 470, 520); g.closePath(); fillStroke(red ? '#9a1f25' : '#2a3658'); }
+  if (style === 'collector' && card.v === 11) { g.beginPath(); g.moveTo(262, 520); g.bezierCurveTo(230, 360, 260, 200, 360, 196); g.bezierCurveTo(470, 196, 486, 330, 470, 520); g.closePath(); fillStroke(red ? '#9a1f25' : '#2a3658'); }
   // long hair for queens
-  if (card.v === 11 && stage !== 2) { g.beginPath(); g.moveTo(330, 236); g.bezierCurveTo(440, 220, 480, 320, 468, 480); g.lineTo(400, 480); g.bezierCurveTo(410, 400, 400, 330, 360, 300); g.closePath(); fillStroke(stage === 3 ? '#c8913a' : '#5a3418'); }
+  if (card.v === 11 && style !== 'collector') { g.beginPath(); g.moveTo(330, 236); g.bezierCurveTo(440, 220, 480, 320, 468, 480); g.lineTo(400, 480); g.bezierCurveTo(410, 400, 400, 330, 360, 300); g.closePath(); fillStroke(style === 'racing' ? '#c8913a' : '#5a3418'); }
   bustPath(g); fillStroke(SKIN);
   g.beginPath(); g.ellipse(386, 342, 14, 22, .1, 0, 7); fillStroke(SKIN, 4);
   g.lineWidth = 5; g.beginPath(); g.moveTo(286, 318); g.lineTo(306, 316); g.stroke(); g.beginPath(); g.moveTo(282, 300); g.lineTo(310, 296); g.stroke();
   g.beginPath(); g.moveTo(276, 380); g.lineTo(288, 378); g.stroke();
-  if (card.v === 12) { g.beginPath(); g.moveTo(282, 390); g.bezierCurveTo(284, 440, 306, 470, 340, 470); g.bezierCurveTo(372, 470, 384, 440, 384, 400); g.lineTo(350, 392); g.lineTo(310, 380); g.closePath(); fillStroke(stage === 3 ? '#d9d9dc' : '#6b4424'); }
+  if (card.v === 12) { g.beginPath(); g.moveTo(282, 390); g.bezierCurveTo(284, 440, 306, 470, 340, 470); g.bezierCurveTo(372, 470, 384, 440, 384, 400); g.lineTo(350, 392); g.lineTo(310, 380); g.closePath(); fillStroke(style === 'racing' ? '#d9d9dc' : '#6b4424'); }
   // headgear
-  if (card.v === 12 && stage !== 3) { // crown
+  if (card.v === 12 && style !== 'racing') { // crown
     g.beginPath(); g.moveTo(296, 262); g.lineTo(290, 196); g.lineTo(322, 226); g.lineTo(352, 178); g.lineTo(382, 222); g.lineTo(414, 192); g.lineTo(416, 262); g.closePath(); fillStroke(GOLDI, 5);
     for (const [x, y] of [[290, 194], [352, 176], [414, 190]]) { g.beginPath(); g.arc(x, y, 8, 0, 7); fillStroke(red ? '#c8303a' : '#3b5aa8', 4); }
   } else if (card.v === 12) { // driver king: swept hair + shades
     g.beginPath(); g.moveTo(296, 270); g.bezierCurveTo(300, 210, 380, 196, 440, 236); g.bezierCurveTo(430, 260, 410, 266, 400, 300); g.lineTo(300, 272); g.closePath(); fillStroke('#e6e6e8', 5);
-  } else if (card.v === 11 && stage === 1) { g.beginPath(); g.moveTo(300, 254); g.bezierCurveTo(320, 214, 380, 212, 402, 246); g.lineTo(392, 256); g.lineTo(304, 262); g.closePath(); fillStroke(GOLDI, 5); g.beginPath(); g.arc(350, 228, 9, 0, 7); fillStroke(red ? '#c8303a' : '#3b5aa8', 4); }
-  else if (card.v === 10 && stage !== 3) { // flat cap
-    g.beginPath(); g.moveTo(268, 272); g.bezierCurveTo(260, 222, 330, 200, 400, 214); g.bezierCurveTo(440, 224, 446, 262, 430, 284); g.lineTo(300, 272); g.closePath(); fillStroke(stage === 2 ? '#2b2f36' : '#3a2a1c');
+  } else if (card.v === 11 && style !== 'collector' && style !== 'racing') { g.beginPath(); g.moveTo(300, 254); g.bezierCurveTo(320, 214, 380, 212, 402, 246); g.lineTo(392, 256); g.lineTo(304, 262); g.closePath(); fillStroke(GOLDI, 5); g.beginPath(); g.arc(350, 228, 9, 0, 7); fillStroke(red ? '#c8303a' : '#3b5aa8', 4); }
+  else if (card.v === 10 && style !== 'racing') { // flat cap
+    g.beginPath(); g.moveTo(268, 272); g.bezierCurveTo(260, 222, 330, 200, 400, 214); g.bezierCurveTo(440, 224, 446, 262, 430, 284); g.lineTo(300, 272); g.closePath(); fillStroke(style === 'collector' ? '#2b2f36' : '#3a2a1c');
     g.beginPath(); g.moveTo(240, 286); g.quadraticCurveTo(262, 266, 300, 272); g.lineTo(296, 284); g.closePath(); fillStroke(INK, 4);
-  } else if (stage === 3) { // racing cap / helmet with goggles
+  } else if (style === 'racing') { // racing cap / helmet with goggles
     g.beginPath(); g.moveTo(290, 276); g.bezierCurveTo(286, 214, 360, 196, 420, 220); g.bezierCurveTo(450, 240, 452, 290, 436, 320); g.lineTo(400, 300); g.lineTo(296, 280); g.closePath(); fillStroke(card.v === 10 ? '#c8202a' : '#d9a23c', 5);
   }
-  if (stage === 3) { // goggles / shades
+  if (style === 'racing') { // goggles / shades
     if (card.v === 12) { g.beginPath(); g.roundRect(270, 300, 70, 26, 8); fillStroke('#141418', 4); g.beginPath(); g.moveTo(340, 312); g.lineTo(388, 318); g.lineWidth = 6; g.stroke(); }
     else { for (const x of [312, 356]) { g.beginPath(); g.arc(x, 252, 20, 0, 7); fillStroke('#9fd4ea', 5); } g.lineWidth = 6; g.beginPath(); g.moveTo(332, 252); g.lineTo(336, 252); g.stroke(); }
   }
   // held prop: coin (Tollkeeper), key (Collector)
-  if (stage === 1 || (stage === 2 && card.v !== 11)) { g.beginPath(); g.arc(260, 570, 40, 0, 7); fillStroke(GOLDI, 5); g.beginPath(); g.arc(260, 570, 27, 0, 7); g.lineWidth = 3; g.stroke(); g.beginPath(); g.ellipse(296, 590, 26, 18, -.5, 0, 7); fillStroke(SKIN, 5); }
-  if (stage === 2 && card.v === 11) { g.lineWidth = 12; g.strokeStyle = GOLDI; g.beginPath(); g.moveTo(250, 640); g.lineTo(250, 540); g.stroke(); g.beginPath(); g.arc(250, 522, 22, 0, 7); g.lineWidth = 9; g.stroke(); g.fillStyle = GOLDI; g.fillRect(250, 610, 24, 10); g.fillRect(250, 628, 18, 10); g.beginPath(); g.ellipse(268, 584, 26, 18, -.4, 0, 7); fillStroke(SKIN, 5); }
+  if (style === 'coin' || (style === 'collector' && card.v !== 11)) { g.beginPath(); g.arc(260, 570, 40, 0, 7); fillStroke(GOLDI, 5); g.beginPath(); g.arc(260, 570, 27, 0, 7); g.lineWidth = 3; g.stroke(); g.beginPath(); g.ellipse(296, 590, 26, 18, -.5, 0, 7); fillStroke(SKIN, 5); }
+  if (style === 'collector' && card.v === 11) { g.lineWidth = 12; g.strokeStyle = GOLDI; g.beginPath(); g.moveTo(250, 640); g.lineTo(250, 540); g.stroke(); g.beginPath(); g.arc(250, 522, 22, 0, 7); g.lineWidth = 9; g.stroke(); g.fillStyle = GOLDI; g.fillRect(250, 610, 24, 10); g.fillRect(250, 628, 18, 10); g.beginPath(); g.ellipse(268, 584, 26, 18, -.4, 0, 7); fillStroke(SKIN, 5); }
   g.restore();
 }
 function cardFace(g, card) {
-  const joker = !!card.joker, stage = artStage;
+  const joker = !!card.joker, art = ART[artBoss] || ART.toll;
   const paper = g.createLinearGradient(0, 0, CARD_W, CARD_H);
   paper.addColorStop(0, '#fbf3e2'); paper.addColorStop(1, '#ecdfc4');
   g.fillStyle = paper; g.fillRect(0, 0, CARD_W, CARD_H);
@@ -305,13 +319,33 @@ function cardFace(g, card) {
     return;
   }
   const r = R[card.v];
+  if (art.face === 'classic') { paintClassic(g, card, ink, art); return; }
   if (card.v >= 10) {
-    paintPortrait(g, card, stage, ink);
+    paintPortrait(g, card, art.portrait, ink);
     g.fillStyle = ink; g.font = '900 168px "Playfair Display", Georgia, serif'; g.fillText(r, 34, 176);
     suitAt(g, card.s, 92, 250, 92, ink);
   } else {
     g.fillStyle = ink; g.font = `900 ${r.length > 1 ? 196 : 236}px "Playfair Display", Georgia, serif`; g.fillText(r, 40, 246);
     suitAt(g, card.s, 318, 498, 270, ink);
+  }
+}
+function paintClassic(g, card, ink, art) {
+  const r = R[card.v];
+  if (card.v >= 10) {
+    g.save(); rr(g, 92, 92, 328, 532, 10); g.fillStyle = card.s === '♥' || card.s === '♦' ? '#f6e4c8' : '#e9e4d6'; g.fill(); g.clip();
+    g.translate(-46, -50); paintPortrait(g, card, art.portrait, ink); g.restore();
+    g.strokeStyle = ink; g.lineWidth = 4; rr(g, 92, 92, 328, 532, 10); g.stroke();
+    g.strokeStyle = GOLD; g.lineWidth = 2; rr(g, 100, 100, 312, 516, 8); g.stroke();
+  } else if (card.v === 0) {
+    suitAt(g, card.s, 256, 358, 210, ink);
+  } else {
+    for (const [lx, ly] of PIP_LAYOUT[card.v + 1]) suitAt(g, card.s, 256 + lx * 86, 358 + ly * 188, 80, ink, ly > 0);
+  }
+  for (const inv of [false, true]) {
+    g.save(); if (inv) { g.translate(512, 716); g.rotate(Math.PI); }
+    g.fillStyle = ink; g.textAlign = 'center'; g.font = `900 ${r.length > 1 ? 64 : 76}px "Playfair Display", Georgia, serif`;
+    g.fillText(r, 52, 98); suitAt(g, card.s, 52, 136, 44, ink);
+    g.restore();
   }
 }
 function paintPanel(g, top, bottom) {
@@ -321,13 +355,13 @@ function paintPanel(g, top, bottom) {
   g.strokeStyle = GOLD; g.lineWidth = 6; rr(g, x, y, w, h, 26); g.stroke();
 }
 const tex = card => canvasTexture(CARD_W, CARD_H, g => cardFace(g, card));
-function paintBack(g, stage) {
+function paintBack(g, id) {
   const frame = (base, line, rim) => {
     g.fillStyle = rim; g.fillRect(0, 0, 512, 716);
     rr(g, 18, 18, 476, 680, 26); g.fillStyle = base; g.fill();
     g.strokeStyle = line; g.lineWidth = 4; rr(g, 40, 40, 432, 636, 16); g.stroke(); g.lineWidth = 1.5; rr(g, 52, 52, 408, 612, 12); g.stroke();
   };
-  if (stage === 1) {
+  if (id === 'toll') {
     frame('#1d4a2c', '#d8ad5a', '#14301d');
     const v = g.createRadialGradient(256, 358, 30, 256, 358, 380); v.addColorStop(0, 'rgba(255,230,160,.14)'); v.addColorStop(1, 'rgba(0,0,0,.25)'); g.fillStyle = v; g.fillRect(18, 18, 476, 680);
     g.strokeStyle = '#d8ad5a'; g.fillStyle = '#d8ad5a';
@@ -336,7 +370,7 @@ function paintBack(g, stage) {
     g.lineWidth = 2.5; for (const x of [186, 326]) { g.beginPath(); g.moveTo(x, 300); g.lineTo(x - 30, 380); g.moveTo(x, 300); g.lineTo(x + 30, 380); g.stroke(); g.beginPath(); g.ellipse(x, 380, 34, 12, 0, 0, Math.PI); g.fill(); }
     starPath(g, 256, 266, 16, 7); g.fill();
     starPath(g, 256, 112, 14, 6); g.fill(); starPath(g, 256, 604, 14, 6); g.fill();
-  } else if (stage === 2) {
+  } else if (id === 'collector') {
     frame('#15214a', '#c9d2dc', '#0d1430');
     g.save(); g.translate(256, 358); g.strokeStyle = 'rgba(201,210,220,.45)'; g.lineWidth = 2;
     for (let i = 0; i < 64; i++) { g.rotate(Math.PI / 32); g.beginPath(); g.moveTo(0, 70); g.lineTo(0, i % 2 ? 170 : 220); g.stroke(); }
@@ -345,6 +379,39 @@ function paintBack(g, stage) {
     g.beginPath(); g.moveTo(232, 360); g.lineTo(280, 360); g.lineTo(296, 452); g.lineTo(216, 452); g.closePath(); g.fill();
     g.fillStyle = '#0d1430'; g.beginPath(); g.arc(256, 330, 24, 0, 7); g.fill(); g.beginPath(); g.moveTo(246, 340); g.lineTo(266, 340); g.lineTo(276, 420); g.lineTo(236, 420); g.closePath(); g.fill();
     for (const [x, y] of [[70, 70], [442, 70], [70, 646], [442, 646]]) { g.fillStyle = '#c9d2dc'; g.beginPath(); g.arc(x, y, 7, 0, 7); g.fill(); }
+  } else if (id === 'sharp') {
+    frame('#3b1230', '#e0b866', '#24081c');
+    g.save(); rr(g, 52, 52, 408, 612, 12); g.clip();
+    g.fillStyle = '#c99a4c'; g.beginPath(); g.moveTo(256, 52); g.lineTo(460, 52); g.lineTo(460, 664); g.lineTo(256, 664); g.closePath(); g.fill();
+    g.strokeStyle = 'rgba(60,20,40,.35)'; g.lineWidth = 2; for (let d = -700; d < 700; d += 14) { g.beginPath(); g.moveTo(256 + d, 52); g.lineTo(256 + d + 612, 664); g.stroke(); g.beginPath(); g.moveTo(256 + d + 612, 52); g.lineTo(256 + d, 664); g.stroke(); }
+    g.restore();
+    for (const [w, col, lw] of [[150, '#e0b866', 8], [110, '#3b1230', 6], [70, '#e0b866', 5]]) { g.strokeStyle = col; g.lineWidth = lw; g.beginPath(); g.moveTo(256, 358 - w * 1.4); g.lineTo(256 + w, 358); g.lineTo(256, 358 + w * 1.4); g.lineTo(256 - w, 358); g.closePath(); g.stroke(); }
+    g.fillStyle = '#f6e7c4'; g.beginPath(); g.moveTo(256, 310); g.lineTo(286, 358); g.lineTo(256, 406); g.lineTo(226, 358); g.closePath(); g.fill();
+  } else if (id === 'elevator') {
+    frame('#123c3c', '#e2c06a', '#0a2626');
+    g.save(); g.translate(256, 420); g.strokeStyle = 'rgba(226,192,106,.55)'; g.lineWidth = 3;
+    for (let k = 0; k <= 12; k++) { const a = Math.PI + k / 12 * Math.PI; g.beginPath(); g.moveTo(Math.cos(a) * 60, Math.sin(a) * 60); g.lineTo(Math.cos(a) * 170, Math.sin(a) * 170); g.stroke(); }
+    g.lineWidth = 5; for (const rad of [60, 170, 190]) { g.beginPath(); g.arc(0, 0, rad, Math.PI, 0); g.stroke(); }
+    g.restore();
+    g.fillStyle = '#e2c06a'; g.beginPath(); g.moveTo(256, 300); g.lineTo(290, 350); g.lineTo(222, 350); g.closePath(); g.fill();
+    g.strokeStyle = '#e2c06a'; g.lineWidth = 4; g.strokeRect(150, 440, 212, 150); g.beginPath(); g.moveTo(256, 440); g.lineTo(256, 590); g.stroke();
+    for (let x = 160; x < 360; x += 16) { g.lineWidth = 1.5; g.beginPath(); g.moveTo(x, 450); g.lineTo(x, 580); g.stroke(); }
+  } else if (id === 'roller') {
+    frame('#0f0d0b', '#f2c35a', '#2a0508');
+    g.save(); g.translate(256, 380); g.strokeStyle = 'rgba(242,195,90,.35)'; g.lineWidth = 3;
+    for (let k = 0; k < 28; k++) { const a = -Math.PI + k / 27 * Math.PI; g.beginPath(); g.moveTo(Math.cos(a) * 110, Math.sin(a) * 110); g.lineTo(Math.cos(a) * 300, Math.sin(a) * 300); g.stroke(); }
+    g.restore();
+    const chipAt = (x, y, n) => { for (let k = n - 1; k >= 0; k--) { g.fillStyle = '#b98a2e'; g.beginPath(); g.ellipse(x, y - k * 14 + 6, 48, 18, 0, 0, 7); g.fill(); g.fillStyle = '#f2c35a'; g.beginPath(); g.ellipse(x, y - k * 14, 48, 18, 0, 0, 7); g.fill(); g.strokeStyle = '#6a4a12'; g.lineWidth = 2; g.stroke(); } };
+    chipAt(196, 470, 4); chipAt(316, 480, 3); chipAt(256, 420, 5);
+    g.font = '900 40px Cinzel, Georgia'; g.textAlign = 'center'; g.fillStyle = '#f2c35a'; g.fillText('HIGH ROLLER', 256, 600);
+  } else if (id === 'house') {
+    frame('#f1e6cc', '#1d1a14', '#d8c9a4');
+    g.strokeStyle = 'rgba(29,26,20,.35)'; g.lineWidth = 1.5;
+    for (let y = 70; y < 650; y += 22) for (let x = 70; x < 450; x += 22) { g.beginPath(); g.arc(x, y, 6, 0, 7); g.stroke(); }
+    g.fillStyle = '#f1e6cc'; g.beginPath(); g.arc(256, 358, 150, 0, 7); g.fill();
+    g.strokeStyle = '#1d1a14'; g.lineWidth = 5; g.beginPath(); g.arc(256, 358, 150, 0, 7); g.stroke(); g.lineWidth = 2; g.beginPath(); g.arc(256, 358, 136, 0, 7); g.stroke();
+    g.beginPath(); g.moveTo(256, 230); g.lineTo(256, 486); g.moveTo(128, 358); g.lineTo(384, 358); g.stroke();
+    [['♥', 256, 278], ['♠', 196, 358], ['♣', 316, 358], ['♦', 256, 438]].forEach(([su, x, y]) => suitAt(g, su, x, y, 58, '#1d1a14'));
   } else {
     frame('#111114', '#d8202c', '#2a2a2e');
     for (const y0 of [60, 616]) for (let row = 0; row < 2; row++) for (let x = 0; x < 13; x++) { g.fillStyle = (x + row) % 2 ? '#d8202c' : '#141418'; g.fillRect(52 + x * 31.4, y0 + row * 20, 31.4, 20); }
@@ -357,7 +424,7 @@ function paintBack(g, stage) {
     g.font = 'italic 44px "Racing Sans One", Anton'; g.textAlign = 'center'; g.fillStyle = '#f2f2f2'; g.fillText('HI·LO', 256, 470);
   }
 }
-const backTextures = [1, 2, 3].map(stage => canvasTexture(CARD_W, CARD_H, g => paintBack(g, stage)));
+const backTextures = BOSS_PRESENTATION.map(t => canvasTexture(CARD_W, CARD_H, g => paintBack(g, t.id)));
 const backTex = backTextures[0];
 
 // soft white glow shapes (tinted per use)
@@ -460,7 +527,7 @@ const backMat = new THREE.MeshStandardMaterial({map: backTex, roughness: .42, me
 const shieldRingGeo = new THREE.PlaneGeometry(1.62, 2.12).rotateX(-Math.PI / 2);
 function makeCard(card, faceMat) {
   const group = new THREE.Group();
-  const face = faceMat || new THREE.MeshBasicMaterial({map: card ? tex(card) : null, toneMapped: false, transparent: true});
+  const face = faceMat || new THREE.MeshBasicMaterial({map: card ? tex(card) : null, toneMapped: false});
   const f = new THREE.Mesh(faceGeo, face), b = new THREE.Mesh(backGeo, backMat), e = new THREE.Mesh(edgeGeo, edgeMat);
   e.castShadow = true; b.castShadow = true;
   group.add(f, b, e); group.userData.face = face; group.userData.ownsFace = !faceMat;
@@ -475,9 +542,10 @@ let G = null, animations = [], reduced = matchMedia('(prefers-reduced-motion: re
 let discards = [], pile = [], highlights = Array(9).fill(null), feedbackTimeout;
 const cardMeshes = Array(9).fill(null);
 const deckTopY = () => FELT_Y + deckThick() + CT / 2 + .002;
+const PILE_MAX = 8, PILE_STEP = CT + .004, pileY = k => FELT_Y + CT / 2 + .003 + k * PILE_STEP;
 function pilePose() {
-  const n = Math.min(pile.length, 14);
-  return {pos: new THREE.Vector3(discardX + (crand() - .5) * .14, FELT_Y + CT / 2 + .003 + n * .006, discardZ + (crand() - .5) * .14), rotY: (crand() - .5) * .55};
+  const n = Math.min(pile.length + discards.length, PILE_MAX - 1);
+  return {pos: new THREE.Vector3(discardX + (crand() - .5) * .14, pileY(n), discardZ + (crand() - .5) * .14), rotY: (crand() - .5) * .55};
 }
 function tossGroup(m) {
   if (m.userData.shield) m.userData.shield.visible = false;
@@ -485,7 +553,7 @@ function tossGroup(m) {
   if (reduced) { m.position.copy(target.pos); m.rotation.set(0, target.rotY, 0); addToPile(m); return; }
   discards.push({m, from: m.position.clone(), rz: m.rotation.z, ry: m.rotation.y, target, start: performance.now(), duration: 520});
 }
-function addToPile(m) { pile.push(m); while (pile.length > 14) disposeCard(pile.shift()); }
+function addToPile(m) { pile.push(m); while (pile.length > PILE_MAX) disposeCard(pile.shift()); pile.forEach((c, k) => { c.position.y = pileY(k); }); }
 function tossCard(card, from) {
   const m = makeCard(card); scene.add(m);
   m.position.copy(from || new THREE.Vector3(slots[G.selected]?.x ?? 0, CARD_Y + .6, slots[G.selected]?.z ?? 0));
@@ -565,6 +633,45 @@ const selGlows = slots.map(p => { const m = addMesh(new THREE.PlaneGeometry(1.95
 const upRings = slots.map(p => { const m = addMesh(new THREE.PlaneGeometry(1.7, 2.18).rotateX(-Math.PI / 2), additive(0xffffff, ringTex), p.x, FELT_Y + .003, p.z); m.visible = false; return m; });
 const lockMeshes = slots.map(p => { const m = addMesh(new THREE.PlaneGeometry(.7, .7).rotateX(-Math.PI / 2), new THREE.MeshBasicMaterial({map: lockTex, transparent: true, depthWrite: false, toneMapped: false}), p.x, FELT_Y + .005, p.z); m.visible = false; return m; });
 const slotEffects = slots.map(() => ({label: null, id: null}));
+// The Elevator Operator: brass lane rails, corner brackets and lamps on playable cards.
+const bracketTex = canvasTexture(256, 320, g => { g.strokeStyle = '#fff'; g.lineWidth = 12; g.lineCap = 'round'; const L = 50; for (const [x, y, dx, dy] of [[18, 18, 1, 1], [238, 18, -1, 1], [18, 302, 1, -1], [238, 302, -1, -1]]) { g.beginPath(); g.moveTo(x + dx * L, y); g.lineTo(x, y); g.lineTo(x, y + dy * L); g.stroke(); } });
+const brackets = slots.map(p => { const m = addMesh(new THREE.PlaneGeometry(1.52, 2.0).rotateX(-Math.PI / 2), additive(0xfff0c0, bracketTex), p.x, FELT_Y + .006, p.z); m.visible = false; m.renderOrder = 3; return m; });
+const laneDeco = new THREE.Group(); scene.add(laneDeco); laneDeco.visible = false;
+for (const x of [-.77, .77]) {
+  const rod = new THREE.Mesh(new THREE.BoxGeometry(.07, .09, 5.9), brassMat); rod.position.set(x, FELT_Y + .045, .14); rod.castShadow = true; laneDeco.add(rod);
+  for (const z of [-2.8, 3.08]) { const cap = new THREE.Mesh(new THREE.CylinderGeometry(.08, .08, .14, 16), brassMat); cap.position.set(x, FELT_Y + .07, z); laneDeco.add(cap); }
+}
+const lamps = [0, 1, 2].map(() => { const sp = new THREE.Sprite(new THREE.SpriteMaterial({map: dotTex, color: 0xffd98a, blending: THREE.AdditiveBlending, depthWrite: false, transparent: true, toneMapped: false})); sp.scale.setScalar(.55); sp.renderOrder = 7; laneDeco.add(sp); return sp; });
+// The High Roller: gold ring around the stake card, red ring around its marked neighbor.
+const stakeRing = addMesh(new THREE.PlaneGeometry(1.86, 2.4).rotateX(-Math.PI / 2), additive(0xffc94a, ringTex), 0, FELT_Y + .007, 0); stakeRing.visible = false;
+const mateRing = addMesh(new THREE.PlaneGeometry(1.74, 2.24).rotateX(-Math.PI / 2), additive(0xff3b3b, ringTex), 0, FELT_Y + .007, 0); mateRing.visible = false;
+const stakeLabel = addMesh(new THREE.PlaneGeometry(.9, .22).rotateX(-Math.PI / 2), new THREE.MeshBasicMaterial({transparent: true, depthWrite: false, toneMapped: false, map: canvasTexture(256, 64, g => { rr(g, 4, 4, 248, 56, 28); g.fillStyle = '#1a0a04'; g.fill(); g.strokeStyle = '#f2c35a'; g.lineWidth = 4; g.stroke(); g.fillStyle = '#f2c35a'; g.font = '900 34px Cinzel, Georgia'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText('STAKE', 128, 34); })}), 0, FELT_Y + .008, 0); stakeLabel.visible = false;
+const mateLabel = addMesh(new THREE.PlaneGeometry(.9, .22).rotateX(-Math.PI / 2), new THREE.MeshBasicMaterial({transparent: true, depthWrite: false, toneMapped: false, map: canvasTexture(256, 64, g => { rr(g, 4, 4, 248, 56, 28); g.fillStyle = '#1a0406'; g.fill(); g.strokeStyle = '#ff5a4a'; g.lineWidth = 4; g.stroke(); g.fillStyle = '#ff8a7a'; g.font = '900 30px Cinzel, Georgia'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText('AT RISK', 128, 34); })}), 0, FELT_Y + .008, 0); mateLabel.visible = false;
+function animateBossProps(now, dt) {
+  const id = G ? bossId() : '', ready = G?.phase === 'playing' || G?.phase === 'busy';
+  const lanes = id === 'elevator' && !lesson;
+  laneDeco.visible = lanes;
+  for (let i = 0; i < 9; i++) {
+    const on = lanes && ready && playable(i);
+    brackets[i].visible = on;
+    if (on) brackets[i].material.opacity = (i === G.selected ? .95 : .55) + Math.sin(now * .004 + i) * .08;
+  }
+  if (lanes) for (let col = 0; col < 3; col++) {
+    let front = -1; for (let r = 2; r >= 0; r--) if (G.board[r * 3 + col]) { front = r * 3 + col; break; }
+    const lamp = lamps[col]; lamp.visible = front >= 0 && ready;
+    if (front >= 0) { const p = slots[front]; lamp.position.set(p.x, CARD_Y + .5, p.z - CH / 2 - .18); lamp.material.opacity = .75 + Math.sin(now * .006 + col) * .15; }
+  }
+  const stake = id === 'roller' && ready && !lesson && G.stake >= 0 && G.board[G.stake];
+  for (const m of [stakeRing, stakeLabel]) m.visible = !!stake;
+  for (const m of [mateRing, mateLabel]) m.visible = !!stake && G.stakeMate >= 0 && !!G.board[G.stakeMate];
+  if (stake) {
+    const a = slots[G.stake]; stakeRing.position.x = stakeLabel.position.x = a.x; stakeRing.position.z = a.z; stakeLabel.position.z = a.z - CH / 2 - .125;
+    stakeRing.material.opacity = .8 + Math.sin(now * .008) * .2; stakeRing.scale.setScalar(1 + Math.sin(now * .004) * .02);
+    if (G.stakeMate >= 0) { const b = slots[G.stakeMate]; mateRing.position.x = mateLabel.position.x = b.x; mateRing.position.z = b.z; mateLabel.position.z = b.z - CH / 2 - .125; mateRing.material.opacity = .55 + Math.sin(now * .008 + 2) * .25; }
+  }
+  // back-lane cards sit in shadow behind the cage
+  for (const m of cardMeshes) if (m) { const f = m.userData.face, target = lanes && !playable(m.userData.index) ? .42 : 1; const v = reduced ? target : THREE.MathUtils.damp(f.color.r, target, 8, dt); f.color.setScalar(v); }
+}
 function syncSlotEffects() {
   if (!G) return;
   slotEffects.forEach((fx, i) => {
@@ -630,9 +737,11 @@ function kick(amount) { if (!reduced) shake = Math.max(shake, amount); }
 /* ------------------------- presentation --------------------------- */
 const casino = {heat: 0, jokerUntil: 0, dealerUntil: 0, shieldUntil: Array(9).fill(0), lineUntil: Array(8).fill(0)};
 const jokerMesh = makeCard({joker: true}); jokerMesh.visible = false; scene.add(jokerMesh);
-let drawRevealUntil = 0, revealMotion = null, revealPos = null;
+let drawRevealUntil = 0, revealMotion = null, revealPos = null, revealPos2 = null;
 const drawnFace = new THREE.MeshBasicMaterial({transparent: true, toneMapped: false});
 const drawnCard = makeCard(null, drawnFace); drawnCard.visible = false; scene.add(drawnCard);
+const drawnFace2 = new THREE.MeshBasicMaterial({toneMapped: false});
+const drawnCard2 = makeCard(null, drawnFace2); drawnCard2.visible = false; scene.add(drawnCard2);
 function showDrawnCard(card) {
   if (drawnFace.map) drawnFace.map.dispose();
   drawnFace.map = tex(card); drawnFace.needsUpdate = true;
@@ -640,13 +749,15 @@ function showDrawnCard(card) {
   drawnCard.rotation.set(0, 0, 0); drawnCard.position.set(p.x, CARD_Y + .7, p.z + .3);
   drawnFace.opacity = 1; drawRevealUntil = performance.now() + 1600;
 }
-function beginDraw(card, resolve) {
+function beginDraw(card, resolve, card2 = null) {
   showDrawnCard(card);
-  drawRevealUntil = 0; revealPos = null;
+  drawRevealUntil = 0; revealPos = null; revealPos2 = null;
+  if (card2) { drawnFace2.map?.dispose(); drawnFace2.map = tex(card2); drawnFace2.needsUpdate = true; }
   if (reduced) { sound('flip'); drawnCard.visible = false; resolve(); return; }
   const now = performance.now();
-  revealMotion = {start: Math.max(now, casino.jokerUntil), duration: 900, slot: G.selected, resolve};
+  revealMotion = {start: Math.max(now, casino.jokerUntil), duration: 900, slot: G.selected, resolve, two: !!card2};
   drawnCard.position.set(deckX, deckTopY(), deckZ); drawnCard.rotation.set(0, 0, Math.PI);
+  drawnCard2.position.copy(drawnCard.position); drawnCard2.rotation.set(0, 0, Math.PI);
 }
 function revealJoker(count) {
   casino.jokerUntil = performance.now() + (reduced ? 650 : 1500);
@@ -689,12 +800,12 @@ let bossEntryTimer, pendingBoss = null, entryGeneration = 0, bossBegin = null;
 let musicOn = false, musicGain, musicVoices = [], currentTheme = -1;
 function applyBossStyle(stage) {
   const theme = BOSS_PRESENTATION[stage - 1];
-  document.body.dataset.boss = String(stage);
+  document.body.dataset.boss = theme.id;
   if (currentTheme !== stage) {
     currentTheme = stage;
     const old = feltMat.map; feltMat.map = paintFelt(theme); feltMat.needsUpdate = true; old?.dispose();
     spot.color.setHex(theme.light); baseSpot.setHex(theme.light);
-    artStage = stage; backMat.map = backTextures[stage - 1]; backMat.needsUpdate = true;
+    artBoss = theme.id; backMat.map = backTextures[stage - 1]; backMat.needsUpdate = true;
     woodMat.color.setHex(theme.base);
     const [rc, rr_, rm] = theme.rail; leatherMat.color.setHex(rc); leatherMat.roughness = rr_; leatherMat.metalness = rm;
     trimMat.color.setHex(theme.trim[0]); trimMat.roughness = theme.trim[1]; trimMat.metalness = theme.trim[2];
@@ -734,7 +845,7 @@ function enterBoss(stage) {
   const wait = reduced ? 1800 : 4200;
   const node = html(`<div class="bossIntro" style="--wait:${wait}ms">
     <div class="biBars"><i></i><i></i></div>
-    <div class="biStage">Stage ${stage} of 3</div>
+    <div class="biStage">Boss ${stage} of ${FINAL}</div>
     <div class="biEmblem">${suitSVG(theme.mark)}</div>
     <div class="biKicker">The house sends</div>
     <h2 class="biName">${esc(theme.name)}</h2>
@@ -744,17 +855,39 @@ function enterBoss(stage) {
   </div>`);
   node.querySelector('[data-a=deal]').onclick = begin;
   openScreen('entrance', node);
-  sound('entrance' + stage);
+  sound('entrance-' + theme.id);
   bossEntryTimer = setTimeout(begin, wait);
 }
 
 /* --------------------------- game logic --------------------------- */
 const has = id => G?.artifacts.includes(id);
+const bossId = () => BOSSES[(G?.stage || 1) - 1]?.id;
+function playable(i) {
+  if (!G?.board[i]) return false;
+  if (bossId() !== 'elevator' || lesson) return true;
+  for (let r = Math.floor(i / 3) + 1; r < 3; r++) if (G.board[r * 3 + i % 3]) return false;
+  return true;
+}
+const isDoubleNext = () => bossId() === 'sharp' && !lesson && (G.stageGuesses + 1) % 4 === 0;
+function neighbors(i) { const r = Math.floor(i / 3), c = i % 3, n = []; if (r > 0) n.push(i - 3); if (r < 2) n.push(i + 3); if (c > 0) n.push(i - 1); if (c < 2) n.push(i + 1); return n; }
+function pickStake() {
+  G.stake = -1; G.stakeMate = -1;
+  const cands = [];
+  for (let i = 0; i < 9; i++) if (G.board[i]) { const ns = neighbors(i).filter(j => G.board[j]); if (ns.length) cands.push([i, ns]); }
+  if (!cands.length) return;
+  const [i, ns] = cands[Math.floor(Math.random() * cands.length)];
+  G.stake = i; G.stakeMate = ns[Math.floor(Math.random() * ns.length)];
+}
+function ensureStake(played = -1) {
+  if (bossId() !== 'roller' || lesson) { if (G) { G.stake = -1; G.stakeMate = -1; } return; }
+  const ok = G.stake >= 0 && G.board[G.stake] && G.stakeMate >= 0 && G.board[G.stakeMate] && played !== G.stake;
+  if (!ok) pickStake();
+}
 const cardsLeft = () => G?.board.filter(Boolean).length || 0;
 const rank = c => c ? R[c.v] + c.s : 'empty';
 function shuffle(a){for(let i=a.length-1;i>0;i--){let j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a}
 const normalDeck=()=>S.flatMap(s=>R.map((_,v)=>({v,s})));
-function draw(){let jokers=0;while(G.deck.length){const c=G.deck.pop();if(c.joker){G.deck.push(...shuffle(normalDeck()).slice(0,5));shuffle(G.deck);G.stageTotal+=5;jokers++;continue}if(jokers){revealJoker(jokers);sound(G.stage===3?'rev':'joker');flash('negative');}return c}return null}
+function draw(){let jokers=0;while(G.deck.length){const c=G.deck.pop();if(c.joker){G.deck.push(...shuffle(normalDeck()).slice(0,5));shuffle(G.deck);G.stageTotal+=5;jokers++;continue}if(jokers){revealJoker(jokers);sound(bossId()==='driver'?'rev':'joker');flash('negative');}return c}return null}
 function creditTokens(n){const paid=Math.min(n,G.tollDebt);G.tollDebt-=paid;G.credits+=n-paid;return n-paid}
 function grantTokens(n){const give=Math.max(0,Math.min(n,100-G.stageEarned));G.stageEarned+=give;return creditTokens(give)}
 function lineState(){return LINES.map(l=>l.every(i=>G.board[i]))}
@@ -779,18 +912,20 @@ function setupStage(stage){
  applyBossStyle(stage);
  resetCasino();
  clearPile();
- G.stage=stage;G.stageEarned=0;G.streak=0;G.phase='playing';G.locked=Array(9).fill(false);G.wardUsed=Array(9).fill(false);G.slotHits=Array(9).fill(0);G.mirrorUsed=false;G.salvageUsed=false;G.cloverUsed=false;G.protected=Array(9).fill(false);G.board=Array(9).fill(null);G.selected=0;G.deck=shuffle([...normalDeck(),...Array.from({length:stage===3?4:2},()=>({joker:true}))]);G.stageTotal=G.deck.length;G.push=0;G.swapFrom=null;
+ G.stage=stage;G.stageEarned=0;G.streak=0;G.phase='playing';G.locked=Array(9).fill(false);G.wardUsed=Array(9).fill(false);G.slotHits=Array(9).fill(0);G.mirrorUsed=false;G.salvageUsed=false;G.cloverUsed=false;G.protected=Array(9).fill(false);G.board=Array(9).fill(null);G.selected=0;G.deck=shuffle([...normalDeck(),...Array.from({length:BOSSES[stage-1].jokers},()=>({joker:true}))]);G.stageTotal=G.deck.length;G.push=0;G.swapFrom=null;G.stageGuesses=0;G.stamps={};G.stake=-1;G.stakeMate=-1;
  G.shields=1;
  if(G.ticket==='lucky')G.swaps++;
  sound('shuffle');
  animations=[];for(let i=0;i<9;i++)meshCard(null,i);
- for(let i=0;i<4-stage+(has('anchor')?1:0);i++){const c=draw();if(c){G.board[i]=c;meshCard(c,i,true)}}
+ for(let i=0;i<BOSSES[stage-1].start+(has('anchor')?1:0);i++){const c=draw();if(c){G.board[i]=c;meshCard(c,i,true)}}
+ ensureStake();
  G.message='Choose a card';G.detail=BOSSES[stage-1].name+' · '+BOSSES[stage-1].desc;refresh();
 }
 function finishStage(){
  if(cardsLeft()===0){endRun(false,'You lost every card on the board.');return}
  if(G.deck.length)return;
- if(G.stage===3){endRun(cardsLeft()>=2,cardsLeft()<2?'The Final Driver required two remaining cards.':'');return}
+ if(bossId()==='house'&&Object.keys(G.stamps).length<4){endRun(false,'The House needed all four suits stamped before the deck ran out.');return}
+ if(G.stage===FINAL){endRun(cardsLeft()>=2,cardsLeft()<2?'The Final Driver required two remaining cards.':'');return}
  const cleared=G.stage;creditTokens(50);G.score+=500*cleared;G.phase='shop';
  banner('DECK CLEARED','positive','+'+(500*cleared)+' points · +50 tokens');
  setTimeout(()=>{if(G.phase==='shop'&&G.stage===cleared)shop(cleared+1,true)},reduced?200:1300);
@@ -814,11 +949,19 @@ function newRun(){
 function chance(card,dir){const a=G.deck.filter(c=>!c.joker);return a.length?a.filter(c=>dir==='higher'?c.v>card.v:c.v<card.v).length/a.length:0}
 function guess(dir){
  if(lesson){lessonGuess(dir);return}
- if(G.phase!=='playing'||!G.board[G.selected])return;
- const run=G;
- const i=G.selected,old=G.board[i],p=chance(old,dir),c=draw();
+ if(G.phase!=='playing'||!G.board[G.selected]||!playable(G.selected))return;
+ const run=G,boss=bossId();
+ const dbl=isDoubleNext();
+ const i=G.selected,old=G.board[i];let p=chance(old,dir);const c=draw();
  if(!c){finishStage();return}
- G.phase='busy';G.message='Revealing…';refresh();G.turns++;const good=dir==='higher'?c.v>old.v:c.v<old.v;
+ // The Cardsharp: every fourth guess draws two cards; both must beat your card.
+ const c2=dbl?draw():null;
+ if(boss==='sharp')G.stageGuesses++;
+ if(c2)p=p*p;
+ const beats=x=>dir==='higher'?x.v>old.v:x.v<old.v;
+ const win=c2||c,shown=c2?rank(c)+' + '+rank(c2):rank(c);
+ const isStake=boss==='roller'&&i===G.stake;
+ G.phase='busy';G.message=c2?'Double Draw…':'Revealing…';refresh();G.turns++;const good=beats(c)&&(!c2||beats(c2));
  pressGuess(dir);
  const resolve=()=>{
   if(G!==run)return;
@@ -826,7 +969,7 @@ function guess(dir){
   if(good){
    const streakBefore=G.streak;
    const wasFull=G.board.every(Boolean);
-   G.board[i]=c;meshCard(c,i,false,{tossOld:true,from:revealPos});G.correct++;G.streak++;
+   G.board[i]=win;meshCard(win,i,false,{tossOld:true,from:c2?revealPos2:revealPos});if(c2)tossCard(c,revealPos);G.correct++;G.streak++;
    let pts=Math.max(10,Math.round(100/Math.max(.1,p)));
    if(G.streak>=9)pts*=3;
    if(G.ticket==='risk'&&p<=.4){const earned=grantTokens(6);if(earned)info+=' · Risk +'+earned+' tokens'}
@@ -836,7 +979,7 @@ function guess(dir){
    if(up==='mint')grantTokens(3);if(up==='kindle')G.streak++;
    const fireMilestone=Math.floor(G.streak/3)>Math.floor(streakBefore/3);
    if(has('storm')&&fireMilestone){G.swaps++;info+=' · Storm +Swap'}
-   if(G.ticket==='fire'&&fireMilestone){G.peeks++;info+=' · Fire +Peek'}
+   if(G.ticket==='fire'&&Math.floor(G.streak/7)>Math.floor(streakBefore/7)){G.peeks++;info+=' · Fire +Peek'}
    if(has('ember')&&streakBefore<5&&G.streak>=5){G.peeks++;info+=' · Ember +Peek'}
    if(has('timekeeper')&&G.correct%10===0)G.peeks++;
    if(has('compass')&&G.correct%5===0)G.swaps++;
@@ -844,6 +987,9 @@ function guess(dir){
    if(up==='seed'){G.slotHits[i]++;if(G.slotHits[i]%3===0)refill()}
    if(up==='scout'){G.slotHits[i]++;if(G.slotHits[i]%4===0)G.peeks++}
    grantTokens(2);G.score+=pts;floatLabel('+'+pts,i,p<=.35?'#ffb3ff':'#ffe3a1');
+   if(c2)banner('DOUBLE DRAW WON','positive','+'+pts+' points');
+   if(boss==='house'&&!G.stamps[old.s]){G.stamps[old.s]=true;info+=' · '+old.s+' stamped';banner(old.s+' STAMPED','positive',Object.keys(G.stamps).length+' of 4 suits')}
+   if(isStake){refill();info+=' · Stake won: refill';banner('STAKE WON','positive','A slot refills')}
    if(up==='mint'||up==='kindle'||up==='amp'&&G.slotHits[i]%3===0||up==='seed'&&G.slotHits[i]%3===0||up==='scout'&&G.slotHits[i]%4===0)upgradeTrigger(up,i);
    if(G.push===1){G.push=2;info+=' · Push 1/2: stay on this position'}
    else if(G.push===2){G.peeks++;G.push=0;info+=' · Push +Peek'}
@@ -856,32 +1002,40 @@ function guess(dir){
     pop('FULL BOARD · +1 Peek'+(has('twin')?' +1 Swap':''),null,'positive');
    }
    G.best=Math.max(G.best,G.streak);
-   G.message='✓ '+rank(old)+' → '+rank(c)+info;sound('good');flash('positive',i);
+   G.message='✓ '+rank(old)+' → '+shown+info;sound('good');flash('positive',i);
   }else{
    G.streak=0;
    const up=G.upgrades[i],pushing=G.push>0;
    if(!pushing&&has('mirror')&&!G.mirrorUsed){G.mirrorUsed=true;info=' Mirror saved card';sound('shield');flash('ability',i,' MIRROR SAVED')}
    else if(!pushing&&up==='ward'&&!G.wardUsed[i]){G.wardUsed[i]=true;upgradeTrigger('ward',i);info=' Ward saved card';sound('shield');flash('ability',i,' WARD BLOCK')}
    else if(!pushing&&G.protected[i]){G.protected[i]=false;info='Shield used · card saved';sound('shield');flash('ability',i,' SHIELD BLOCK')}
-   else{G.board[i]=null;discardCard(i);info='Position lost';if(G.stage===2&&G.locked.filter(Boolean).length<3){G.locked[i]=true;sound('lock');info+=' ·  Collector locked it'}if(has('salvage')&&!G.salvageUsed){G.salvageUsed=true;refill()}}
+   else{
+    G.board[i]=null;discardCard(i);info='Position lost';
+    // The High Roller: an unblocked miss on the stake also takes its marked neighbor.
+    if(isStake&&G.stakeMate>=0&&G.board[G.stakeMate]){const m=G.stakeMate;if(G.protected[m]){G.protected[m]=false;info+=' · Shield saved the neighbor';flash('ability',m)}else{G.board[m]=null;discardCard(m);info+=' · Stake neighbor lost';banner('STAKE LOST','negative','Two cards gone')}}
+    if(boss==='collector'&&G.locked.filter(Boolean).length<3){G.locked[i]=true;sound('lock');info+=' ·  Collector locked it'}
+    if(has('salvage')&&!G.salvageUsed){G.salvageUsed=true;refill()}
+   }
    G.push=0;
    const saved=G.board[i]!==null;
-   if(!saved&&G.stage===1){const paid=Math.min(10,G.credits);G.credits-=paid;G.tollDebt+=10-paid;sound('toll');info+=' · Tollkeeper -10 tokens'}
-   G.message=saved?info:rank(old)+' → '+rank(c)+' · Card lost'+(G.stage===1?' · Toll -10 tokens'+(G.tollDebt?' ('+G.tollDebt+' owed)':''):'');
+   if(!saved&&boss==='toll'){const paid=Math.min(10,G.credits);G.credits-=paid;G.tollDebt+=10-paid;sound('toll');info+=' · Tollkeeper -10 tokens'}
+   G.message=saved?info:rank(old)+' → '+shown+' · Card lost'+(boss==='toll'?' · Toll -10 tokens'+(G.tollDebt?' ('+G.tollDebt+' owed)':''):'')+(info.includes('neighbor')?' · '+info.split(' · ').pop():'');
    if(!saved){sound('bad');flash('negative',i);floatLabel('MISS',i,'#ff8a7a')}
-   tossCard(c,revealPos);
+   tossCard(c,revealPos);if(c2)tossCard(c2,revealPos2);
   }
-  drawnCard.visible=false;revealPos=null;
+  drawnCard.visible=false;drawnCard2.visible=false;revealPos=null;revealPos2=null;
+  if(boss==='roller')ensureStake(i);
   G.detail=info||('Streak '+G.streak+' · '+G.deck.length+' cards remaining');
   if(cardsLeft()===0){endRun(false,'All board positions lost.');return}
   if(!G.deck.length){finishStage();return}
   G.phase='playing';refresh();
  };
- beginDraw(c,resolve);
+ beginDraw(c,resolve,c2);
 }
 function selectSlot(i){
  if(!G||G.phase!=='playing'||G.push===2)return;if(i<0||!G.board[i])return;
- if(swapFrom!==null){if(i!==swapFrom){[G.board[i],G.board[swapFrom]]=[G.board[swapFrom],G.board[i]];[G.protected[i],G.protected[swapFrom]]=[G.protected[swapFrom],G.protected[i]];const a=cardMeshes[i]?.position.clone(),b=cardMeshes[swapFrom]?.position.clone();meshCard(G.board[i],i,false,{from:b});meshCard(G.board[swapFrom],swapFrom,false,{from:a});G.swaps--;G.message='⇄ Swapped two cards';sound('swap');flash('ability',i,'⇄ SWAPPED')}swapFrom=null}
+ if(swapFrom===null&&!playable(i)){banner('NOT THE FRONT CARD','info','Only lit cards can be played');return}
+ if(swapFrom!==null){if(i!==swapFrom){[G.board[i],G.board[swapFrom]]=[G.board[swapFrom],G.board[i]];[G.protected[i],G.protected[swapFrom]]=[G.protected[swapFrom],G.protected[i]];const a=cardMeshes[i]?.position.clone(),b=cardMeshes[swapFrom]?.position.clone();meshCard(G.board[i],i,false,{from:b});meshCard(G.board[swapFrom],swapFrom,false,{from:a});G.swaps--;ensureStake();G.message='⇄ Swapped two cards';sound('swap');flash('ability',i,'⇄ SWAPPED')}swapFrom=null}
  G.selected=i;refresh();sound('select');flash('ability',i);
  if(lesson){if(lesson.step===0)lesson.step=1;renderLesson()}
 }
@@ -909,8 +1063,8 @@ function renderLoadout() {
   }).join('');
 }
 function refresh(){
- if(!G)return;syncSlotEffects();if(!G.board[G.selected])G.selected=G.board.findIndex(Boolean);
- $('stageLabel').textContent='Stage '+G.stage+' / 3';
+ if(!G)return;syncSlotEffects();if(!G.board[G.selected]||!playable(G.selected)){const k=G.board.findIndex((c,j)=>c&&playable(j));G.selected=k>=0?k:G.board.findIndex(Boolean)}
+ $('stageLabel').textContent='Boss '+G.stage+' / '+FINAL;
  document.querySelectorAll('#bossChip .pips i').forEach((p,k)=>p.classList.toggle('on',k<G.stage));
  if(hud.lastCredits!==null&&G.credits!==hud.lastCredits&&!lesson)tokenDelta(G.credits-hud.lastCredits);
  hud.lastCredits=G.credits;
@@ -927,6 +1081,7 @@ function refresh(){
  const lockedN=G.locked?.filter(Boolean).length||0;document.querySelectorAll('#locks .lk').forEach((l,k)=>l.classList.toggle('on',k<lockedN));
  $('needle').style.transform='rotate('+(-110+Math.min(9,G.streak)/9*220)+'deg)';
  renderLoadout();
+ renderMech();
  $('message').innerHTML=fmt(G.message||((G.board[G.selected]?'Selected: '+rank(G.board[G.selected]):'Select a card')));
  $('detail').innerHTML=fmt(G.detail);
  const ready=G.phase==='playing'&&!!G.board[G.selected];$('higher').disabled=!ready;$('lower').disabled=!ready;
@@ -942,6 +1097,15 @@ function refresh(){
  $('swap').classList.toggle('armed',swapFrom!==null);
  setTool('cashout','Cash out',null);
  syncChips(Math.max(0,Math.min(30,Math.ceil(G.credits/6))));
+}
+function renderMech(){
+ const id=bossId(),el=$('mech');let h='';
+ if(lesson||!['sharp','elevator','roller','house'].includes(id)){el.innerHTML='';el.hidden=true;return}
+ if(id==='sharp'){const n=G.stageGuesses%4,next=isDoubleNext();h=`<span class="mTray ${next?'lit':''}"><b>${next?'Double Draw next':'Double Draw'}</b><span class="mPips">${[0,1,2,3].map(k=>`<i class="${k<n||next&&k<3?'on':''}${k===3?' dd':''}"></i>`).join('')}</span></span>`}
+ else if(id==='house'){h=`<span class="mStamps">${['♠','♥','♦','♣'].map(x=>`<i class="${G.stamps?.[x]?'on':''} ${x==='♥'||x==='♦'?'red':''}" title="${G.stamps?.[x]?'Stamped':'Not stamped yet'}">${suitSVG(x)}</i>`).join('')}</span>`}
+ else if(id==='roller'){const st=G.board[G.stake],mt=G.board[G.stakeMate];h=st?`<span class="mStake"><b>Stake</b> ${fmt(rank(st))}${mt?` <em>risks ${fmt(rank(mt))}</em>`:''}</span>`:'<span class="mStake"><b>Stake</b> waiting for two cards</span>'}
+ else if(id==='elevator'){h='<span class="mLanes"><b>3 lanes</b> front cards only</span>'}
+ el.innerHTML=h;el.hidden=false;
 }
 function pressGuess(dir){const b=$(dir);b.classList.remove('fired');void b.offsetWidth;b.classList.add('fired');}
 
@@ -960,9 +1124,13 @@ const foley = {
  lock: {clips:['latch'], gain:.65},
  joker: {clips:['shuffle'], gain:.45, rate:.7},
  rev: {clips:['rev'], gain:.68},
- entrance1: {clips:['register'], gain:.67},
- entrance2: {clips:['latch'], gain:.78, rate:.83},
- entrance3: {clips:['ignition'], gain:.72},
+ 'entrance-toll': {clips:['register'], gain:.67},
+ 'entrance-collector': {clips:['latch'], gain:.78, rate:.83},
+ 'entrance-sharp': {clips:['shuffle'], gain:.55, rate:1.25},
+ 'entrance-elevator': {clips:['latch'], gain:.6, rate:1.35},
+ 'entrance-roller': {clips:['tokens'], gain:.6},
+ 'entrance-house': {clips:['register'], gain:.67, rate:.8},
+ 'entrance-driver': {clips:['ignition'], gain:.72},
  ui: {clips:['chip'], gain:.22, rate:1.5, gap:.04}
 };
 const assetNames = new Set(Object.values(foley).flatMap(cue => cue.clips));
@@ -1054,7 +1222,7 @@ function showTitle() {
       </div>
     </div>
     ${best ? `<div class="bestScore">${icon('trophy')} Best run <b>${best.toLocaleString()}</b></div>` : ''}
-    <div class="titleFoot">Higher or lower · 3 bosses · 9 positions · Ace is low, ties lose</div>
+    <div class="titleFoot">Higher or lower · 7 bosses · 9 positions · Ace is low, ties lose</div>
   </div>`);
   node.querySelector('[data-a=start]').onclick = () => { sound('purchase'); chooseTicket(); };
   node.querySelector('[data-a=learn]').onclick = startLesson;
@@ -1064,7 +1232,7 @@ function chooseTicket() {
   const node = html(`<div class="sheet ticketSheet">
     <div class="kicker">New run · Choose a perk</div>
     <h2>Pick your ticket</h2>
-    <p class="sub">Your ticket rides with you for all three bosses.</p>
+    <p class="sub">Your ticket rides with you for all seven bosses.</p>
     <div class="tickets">${TICKETS.map(t => `<button class="ticket t-${t.id}" data-id="${t.id}">
       <span class="stub">${icon(t.icon)}<small>No. ${t.id === 'lucky' ? '007' : t.id === 'fire' ? '333' : '040'}</small></span>
       <span class="tbody"><span class="tname">${esc(t.name)}</span><span class="tbrief">${esc(brief[t.name])}</span><span class="tdesc">${esc(t.desc)}</span><span class="tfoot">Admit one · Midnight Table</span></span>
@@ -1102,7 +1270,7 @@ function renderShop(stage) {
   const t = TICKETS.find(x => x.id === G.ticket);
   const node = html(`<div class="sheet shopSheet">
     <div class="shopHead">
-      <div><div class="kicker">Before stage ${stage} of 3</div><h2>The Pit Stop</h2></div>
+      <div><div class="kicker">Before boss ${stage} of ${FINAL}</div><h2>The Pit Stop</h2></div>
       <div class="wallet">${icon('chip')}<b>${G.credits}</b><small>tokens${G.tollDebt ? ' · ' + G.tollDebt + ' owed' : ''}</small></div>
     </div>
     <div class="shopCols">
@@ -1153,7 +1321,7 @@ function confetti() {
   }
 }
 function showRunResult(win, reason, best, isNew) {
-  const stats = [['Correct', G.correct], ['Best streak', G.best], ['Stage', G.stage + ' / 3'], ['Tokens', G.credits]];
+  const stats = [['Correct', G.correct], ['Best streak', G.best], ['Boss', G.stage + ' / ' + FINAL], ['Tokens', G.credits]];
   const node = html(`<div class="sheet resultSheet ${win ? 'win' : 'lose'}">
     <div class="resultIcon">${icon(win ? 'trophy' : 'bust')}</div>
     <div class="kicker">${win ? 'The Final Driver is defeated' : 'End of the road'}</div>
@@ -1179,7 +1347,7 @@ function showRunInfo() {
   const upgrades = G.upgrades.map((id, i) => id ? {i, up: UPGRADES.find(u => u.id === id)} : null).filter(Boolean);
   const node = html(`<div class="sheet infoSheet">
     <button class="closeX" data-a="close" aria-label="Close">${icon('close')}</button>
-    <div class="infoBoss"><span class="emblem">${suitSVG(boss.mark)}</span><div><div class="kicker">Stage ${G.stage} of 3 · Current boss</div><h2>${esc(boss.name)}</h2><p class="sub">${esc(BOSSES[G.stage - 1].desc)}</p></div></div>
+    <div class="infoBoss"><span class="emblem">${suitSVG(boss.mark)}</span><div><div class="kicker">Boss ${G.stage} of ${FINAL}</div><h2>${esc(boss.name)}</h2><p class="sub">${esc(BOSSES[G.stage - 1].desc)}</p></div></div>
     <div class="infoGrid">
       <section><h3>How it works</h3><ul class="rules">
         <li><b>Pick a card</b> on the table, then call the next card <b>Higher</b> or <b>Lower</b>.</li>
@@ -1250,7 +1418,7 @@ function renderLesson(){
  ['Higher or lower?','Will the next card beat 4? Press Higher. Aces are low; ties lose.'],
  ['Protect your position','The 9 replaced your card. Press Shield to protect it from one miss.'],
  ['Try a protected miss','Press Lower. This practice draw is a King, so your shield will block the miss.'],
- ['You’re ready','Without protection, a miss removes that position. Clear three decks to win; keep two cards for the final boss. Each boss gives you one Shield. Streaks refill slots. Fill all nine slots to earn a Peek.']
+ ['You’re ready','Without protection, a miss removes that position. Clear seven decks to win; keep two cards for the final boss. Each boss gives you one Shield. Streaks refill slots. Fill all nine slots to earn a Peek.']
  ];
  const [title,copy]=steps[lesson.step];$('lessonStep').textContent='Practice · '+(lesson.step+1)+' / 5';$('lessonTitle').textContent=title;$('lessonCopy').textContent=copy;
  $('lessonDots').innerHTML=steps.map((_,k)=>`<i class="${k<=lesson.step?'on':''}"></i>`).join('');
@@ -1349,17 +1517,24 @@ function animateCasino(now, dt) {
   }
   // draw reveal
   if (revealMotion && now >= revealMotion.start) {
-    const r = revealMotion, t = Math.min(1, (now - r.start) / r.duration);
-    const slide = Math.min(1, t / .42), flip = Math.max(0, Math.min(1, (t - .42) / .3));
+    const r = revealMotion, dest = slots[r.slot];
     if (!r.started) { r.started = true; sound('deal'); }
-    const ease = 1 - (1 - slide) ** 3, dest = slots[r.slot];
-    const fe = flip * flip * (3 - 2 * flip);
-    drawnCard.position.set(THREE.MathUtils.lerp(deckX, dest.x, ease), THREE.MathUtils.lerp(deckTopY(), CARD_Y + .62, ease) + Math.sin(Math.PI * slide) * .5 + Math.sin(Math.PI * flip) * .35, THREE.MathUtils.lerp(deckZ, dest.z + .32, ease));
-    drawnCard.rotation.set(-.32 * ease, 0, Math.PI * (1 - fe));
-    if (!r.slid && slide >= 1) { r.slid = true; sound('land'); }
-    if (!r.flipped && flip > .5) { r.flipped = true; sound('flip'); }
-    if (t >= 1) { revealMotion = null; drawRevealUntil = 0; revealPos = drawnCard.position.clone(); r.resolve(); }
+    const fly = (card, t, ox) => {
+      const slide = Math.min(1, t / .42), flip = Math.max(0, Math.min(1, (t - .42) / .3));
+      const ease = 1 - (1 - slide) ** 3, fe = flip * flip * (3 - 2 * flip);
+      card.position.set(THREE.MathUtils.lerp(deckX, dest.x + ox, ease), THREE.MathUtils.lerp(deckTopY(), CARD_Y + .62, ease) + Math.sin(Math.PI * slide) * .5 + Math.sin(Math.PI * flip) * .35, THREE.MathUtils.lerp(deckZ, dest.z + .32, ease));
+      card.rotation.set(-.32 * ease, ox * -.15 * ease, Math.PI * (1 - fe));
+      return {slide, flip};
+    };
+    const t = Math.min(1, (now - r.start) / r.duration);
+    const a1 = fly(drawnCard, t, r.two ? -.42 : 0);
+    let done = t >= 1;
+    if (r.two) { const t2 = Math.min(1, (now - r.start - 260) / r.duration); fly(drawnCard2, Math.max(0, t2), .42); done = t2 >= 1; if (!r.second && t2 > .45) { r.second = true; sound('land'); } }
+    if (!r.slid && a1.slide >= 1) { r.slid = true; sound('land'); }
+    if (!r.flipped && a1.flip > .5) { r.flipped = true; sound('flip'); }
+    if (done) { revealMotion = null; drawRevealUntil = 0; revealPos = drawnCard.position.clone(); revealPos2 = drawnCard2.position.clone(); r.resolve(); }
   }
+  drawnCard2.visible = !!(revealMotion && revealMotion.two && now >= revealMotion.start + 260);
   drawnCard.visible = !joker && (revealMotion ? now >= revealMotion.start : now < drawRevealUntil);
   drawnFace.opacity = revealMotion || reduced ? 1 : Math.min(1, Math.max(0, (drawRevealUntil - now) / 300));
   if (!revealMotion && now < drawRevealUntil) drawnCard.rotation.set(-.32, 0, 0);
@@ -1430,6 +1605,7 @@ function animate(now) {
   for (const c of chips) c.position.y = THREE.MathUtils.damp(c.position.y, c.userData.rest.y, 9, dt);
   syncDeck(now, dt);
   animateCasino(now, dt);
+  animateBossProps(now, dt);
   // score count-up
   if (G) {
     hud.score += (G.score - hud.score) * Math.min(1, dt * 7);
@@ -1449,11 +1625,12 @@ function animate(now) {
 /* ------------------------------ boot ------------------------------ */
 document.querySelectorAll('[data-icon]').forEach(n => n.insertAdjacentHTML('afterbegin', icon(n.dataset.icon)));
 document.querySelectorAll('#streakMeter .segs').forEach(n => n.innerHTML = '<i></i>'.repeat(9));
+document.querySelector('#bossChip .pips').innerHTML = '<i></i>'.repeat(FINAL);
 $('locks').innerHTML = ('<span class="lk">' + icon('lock') + '</span>').repeat(3);
 $('gaugeTicks').innerHTML = Array.from({length: 10}, (_, k) => { const a = (-110 + k / 9 * 220 - 90) * Math.PI / 180, c = Math.cos(a), s2 = Math.sin(a); return `<line x1="${100 + c * 70}" y1="${100 + s2 * 70}" x2="${100 + c * 82}" y2="${100 + s2 * 82}" class="${k >= 6 ? 'red' : ''}"/><text x="${100 + c * 56}" y="${104 + s2 * 56}">${k}</text>`; }).join('');
 resizeScene();
 newRun();
 showTitle();
-if (/[?&]debug/.test(location.search)) window.hilo = {enterBoss, setupStage, state: () => G, face: (card, stage) => { const prev = artStage; artStage = stage; const c = document.createElement('canvas'); c.width = CARD_W; c.height = CARD_H; cardFace(c.getContext('2d'), card); artStage = prev; return c.toDataURL(); }, back: s => backTextures[s - 1].image.toDataURL()};
+if (/[?&]debug/.test(location.search)) window.hilo = {enterBoss, setupStage, state: () => G, setBoard: b => { G.board = b; b.forEach((c, i) => meshCard(c, i)); ensureStake(); refresh(); }, face: (card, id) => { const prev = artBoss; artBoss = id; const c = document.createElement('canvas'); c.width = CARD_W; c.height = CARD_H; cardFace(c.getContext('2d'), card); artBoss = prev; return c.toDataURL(); }, back: id => backTextures[BOSS_PRESENTATION.findIndex(t => t.id === id)].image.toDataURL()};
 requestAnimationFrame(animate);
 requestAnimationFrame(() => { positionCamera(); $('loading').classList.add('hidden'); });

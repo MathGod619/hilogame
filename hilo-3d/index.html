@@ -6,7 +6,7 @@
 <title>HiLo — Midnight Table</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Anton&family=Cinzel:wght@700;900&family=Outfit:wght@400;500;600;700;800&family=Playfair+Display:wght@900&family=Racing+Sans+One&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=3">
+<link rel="stylesheet" href="style.css?v=4">
 <script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.1/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.1/examples/jsm/"}}</script>
 </head>
 <body data-boss="1">
@@ -42,6 +42,7 @@
     <button id="ticketBadge" class="ticketBadge empty" aria-label="Your ticket"></button>
     <div id="artifacts" class="artifacts"></div>
     <div id="locks" class="locks" title="Collector locks used (max 3)"></div>
+    <div id="mech" class="mech" hidden></div>
     <div class="boardCount" title="Cards on the board"><span data-icon="grid"></span><b id="boardCount">0/9</b></div>
   </div>
   <div id="callout"><div id="message" aria-live="polite"></div><div id="detail"></div></div>
@@ -77,5 +78,5 @@
 </aside>
 <div id="screen" class="screen hidden" role="dialog" aria-modal="true"></div>
 <div id="loading"><div class="ldLogo">HI<span>·</span>LO</div><div class="ldBar"><i></i></div><small>Shuffling the midnight deck…</small></div>
-<script type="module" src="game.js?v=3"></script>
+<script type="module" src="game.js?v=4"></script>
 </body></html>
