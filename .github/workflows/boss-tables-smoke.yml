@@ -4,6 +4,7 @@ on:
     branches: ['qa/boss-tables-release']
 permissions:
   contents: read
+  pages: read
 jobs:
   playthrough:
     runs-on: ubuntu-24.04
@@ -16,13 +17,20 @@ jobs:
       - run: npm install --no-save --no-package-lock playwright@1.56.1
       - run: google-chrome --version
       - run: |
-          base=https://hilo.seshrecs.com/hilo-3d/
+          gh api repos/MathGod619/hilogame/pages --jq '{html_url,cname,https_certificate,https_enforced,status}' || true
+          gh api repos/MathGod619/hilogame/pages/health --jq '{domain,alt_domain}' || true
+          dig +short hilo.seshrecs.com CNAME
+          dig +short hilo.seshrecs.com A
+          base=https://mathgod619.github.io/hilogame/hilo-3d/
+          curl --silent --show-error --head "$base"
           for asset in index.html game.js boss-machines.js; do
             curl --fail --silent --show-error --location --retry 2 "${base}${asset}?release=7c94dae" --output "/tmp/${asset}"
             cmp "hilo-3d/${asset}" "/tmp/${asset}"
           done
           echo 'PASS public deployment matches the tested index, game and boss machines'
           BETA_BASE="$base" node beta-browser.cjs
+        env:
+          GH_TOKEN: ${{ github.token }}
       - uses: actions/upload-artifact@v4
         if: always()
         with:
