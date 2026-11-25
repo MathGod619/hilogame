@@ -114,7 +114,7 @@ const BOSSES=[
 {id:'toll',name:'The Tollkeeper',desc:'Each lost position costs 10 tokens. Unpaid tolls come out of future earnings.',start:3,jokers:2},
 {id:'collector',name:'The Collector',desc:'Unprotected misses lock empty positions, up to three per stage.',start:2,jokers:2},
 {id:'sharp',name:'The Cardsharp',desc:'Every fourth guess is a Double Draw: both cards must be higher, or both lower, than your card. The tray lights up one guess early.',start:2,jokers:2},
-{id:'elevator',name:'The Elevator Operator',desc:'The board runs as three lanes. Only the front card in each lane can be played. A miss clears it and exposes the card behind.',start:3,jokers:2},
+{id:'elevator',name:'The Elevator Operator',desc:'The board runs as three lanes. The lowest card in each column is playable. In the left column, losing the front card opens the one behind it.',start:3,jokers:2},
 {id:'roller',name:'The High Roller',desc:'One card is the stake. Win on it to refill an empty slot. Miss and lose the stake and its marked neighbor too.',start:3,jokers:2},
 {id:'house',name:'The House',desc:'Stamp all four suits before the deck runs out. A correct guess stamps the suit of the card you played.',start:2,jokers:2},
 {id:'driver',name:'The Final Driver',desc:'Finish the deck with at least two occupied cards. Four Jokers await.',start:1,jokers:4}
@@ -814,6 +814,7 @@ function revealJoker(count) {
   banner('JOKER!', 'joker', '+' + (count * 5) + ' cards shuffled in');
 }
 function resetCasino() {
+  swapFrom = null;
   register.reset(); bossMachines.reset();
   casino.jokerUntil = 0; drawRevealUntil = 0; revealMotion = null; drawnCard.visible = false;
   for (const p of sparks) { p.life = 0; p.s.visible = false; }
@@ -965,12 +966,20 @@ function setupStage(stage){
  applyBossStyle(stage);
  resetCasino();
  clearPile();
- G.stage=stage;G.stageCorrect=0;G.stageEarned=0;G.streak=0;G.phase='playing';G.locked=Array(9).fill(false);G.wardUsed=Array(9).fill(false);G.slotHits=Array(9).fill(0);G.mirrorUsed=false;G.salvageUsed=false;G.cloverUsed=false;G.protected=Array(9).fill(false);G.board=Array(9).fill(null);G.selected=0;G.deck=shuffle([...normalDeck(),...Array.from({length:BOSSES[stage-1].jokers},()=>({joker:true}))]);G.stageTotal=G.deck.length;G.push=0;G.swapFrom=null;G.stageGuesses=0;G.stamps={};G.stake=-1;G.stakeMate=-1;
+ G.stage=stage;G.stageCorrect=0;G.stageEarned=0;G.streak=0;G.phase='playing';G.locked=Array(9).fill(false);G.wardUsed=Array(9).fill(false);G.slotHits=Array(9).fill(0);G.mirrorUsed=false;G.salvageUsed=false;G.cloverUsed=false;G.protected=Array(9).fill(false);G.board=Array(9).fill(null);G.selected=0;G.deck=shuffle([...normalDeck(),...Array.from({length:BOSSES[stage-1].jokers},()=>({joker:true}))]);G.stageTotal=G.deck.length;G.push=0;G.stageGuesses=0;G.stamps={};G.stake=-1;G.stakeMate=-1;
  G.shields=1;
  if(G.ticket==='lucky')G.swaps++;
  sound('shuffle');
  animations=[];for(let i=0;i<9;i++)meshCard(null,i);
- for(let i=0;i<BOSSES[stage-1].start+(has('anchor')?1:0);i++){const c=draw();if(c){G.board[i]=c;meshCard(c,i,true)}}
+ const openingCount = BOSSES[stage - 1].start + (has('anchor') ? 1 : 0);
+ // Pair the first two Elevator cards in one lane. Iron Anchor fills the third lane.
+ const elevatorOpening = [0, 3, 1, 2];
+ for (let deal = 0; deal < openingCount; deal++) {
+   const slot = bossId() === 'elevator' ? elevatorOpening[deal] : deal;
+   const card = draw();
+   if (card) { G.board[slot] = card; meshCard(card, slot, true); }
+ }
+ if (bossId() === 'elevator') G.selected = frontOfLane(0);
  ensureStake();
  G.message='Choose a card';G.detail=BOSSES[stage-1].name+' · '+BOSSES[stage-1].desc;refresh();
 }
@@ -1003,6 +1012,7 @@ function chance(card,dir){const a=G.deck.filter(c=>!c.joker);return a.length?a.f
 function guess(dir){
  if(lesson){lessonGuess(dir);return}
  if(G.phase!=='playing'||!G.board[G.selected]||!playable(G.selected))return;
+ swapFrom=null;
  const run=G,boss=bossId();
  const dbl=isDoubleNext();
  const i=G.selected,old=G.board[i];let p=chance(old,dir);const c=draw();
