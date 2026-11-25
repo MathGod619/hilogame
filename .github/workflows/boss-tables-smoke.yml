@@ -16,8 +16,13 @@ jobs:
       - run: npm install --no-save --no-package-lock playwright@1.56.1
       - run: google-chrome --version
       - run: |
-          python3 -m http.server 8080 --bind 127.0.0.1 > /tmp/hilo-http.log 2>&1 &
-          node beta-browser.cjs
+          base=https://hilo.seshrecs.com/hilo-3d/
+          for asset in index.html game.js boss-machines.js; do
+            curl --fail --silent --show-error --location --retry 2 "${base}${asset}?release=7c94dae" --output "/tmp/${asset}"
+            cmp "hilo-3d/${asset}" "/tmp/${asset}"
+          done
+          echo 'PASS public deployment matches the tested index, game and boss machines'
+          BETA_BASE="$base" node beta-browser.cjs
       - uses: actions/upload-artifact@v4
         if: always()
         with:
