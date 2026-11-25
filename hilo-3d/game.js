@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import {makeRegister, makeFlexibleCard} from './tollkeeper.js';
 import {RoomEnvironment} from 'three/addons/environments/RoomEnvironment.js';
 
 /* =====================================================================
@@ -144,7 +145,8 @@ const BOSS_PRESENTATION = [
  {id:'driver',mark:'♣',name:'The Final Driver',rule:'Finish with at least two cards. Four Jokers.',accent:'#ff4a3d',felt:'#62121f',light:0xffc0b0,notes:[82.41,123.47,174.61],
   base:0x0b0b0d,rail:[0x18181b,.22,.35],trim:[0xd8202c,.25,.6],band:[0xc4c8ce,.2,1],chips:[['#d8202c','#ffffff','chip'],['#141418','#ff4a3d','chip'],['#e8e8ea','#141418','chip']]}
 ];
-const ART = {toll:{face:'big',portrait:'coin'},collector:{face:'big',portrait:'collector'},sharp:{face:'classic',portrait:'classic'},elevator:{face:'classic',portrait:'classic'},roller:{face:'classic',portrait:'coin'},house:{face:'classic',portrait:'classic'},driver:{face:'big',portrait:'racing'}};
+const PORTRAIT = {toll:'coin',collector:'collector',sharp:'classic',elevator:'classic',roller:'coin',house:'classic',driver:'racing'};
+
 
 /* --------------------------- renderer ----------------------------- */
 const isSmall = Math.min(innerWidth, innerHeight) < 600;
@@ -242,13 +244,6 @@ function starPath(g, cx, cy, R1, r1, n = 5, rot = -Math.PI / 2) {
   g.closePath();
 }
 const CARD_W = 512, CARD_H = 716, RED = '#c51f38', BLK = '#15203a', GOLD = '#d9a944';
-const PIP_LAYOUT = {
-  2:[[0,-1],[0,1]],3:[[0,-1],[0,0],[0,1]],4:[[-1,-1],[1,-1],[-1,1],[1,1]],
-  5:[[-1,-1],[1,-1],[0,0],[-1,1],[1,1]],6:[[-1,-1],[1,-1],[-1,0],[1,0],[-1,1],[1,1]],
-  7:[[-1,-1],[1,-1],[0,-.5],[-1,0],[1,0],[-1,1],[1,1]],8:[[-1,-1],[1,-1],[0,-.5],[-1,0],[1,0],[0,.5],[-1,1],[1,1]],
-  9:[[-1,-1],[1,-1],[-1,-.33],[1,-.33],[0,0],[-1,.33],[1,.33],[-1,1],[1,1]],
-  10:[[-1,-1],[1,-1],[0,-.66],[-1,-.33],[1,-.33],[-1,.33],[1,.33],[0,.66],[-1,1],[1,1]]
-};
 let artBoss = 'toll'; // which boss style new card faces are painted in
 const INK = '#1c1916', SKIN = '#f1d7b2', GOLDI = '#d4a240';
 function bustPath(g) {
@@ -299,7 +294,7 @@ function paintPortrait(g, card, style, ink) {
   g.restore();
 }
 function cardFace(g, card) {
-  const joker = !!card.joker, art = ART[artBoss] || ART.toll;
+  const joker = !!card.joker;
   const paper = g.createLinearGradient(0, 0, CARD_W, CARD_H);
   paper.addColorStop(0, '#fbf3e2'); paper.addColorStop(1, '#ecdfc4');
   g.fillStyle = paper; g.fillRect(0, 0, CARD_W, CARD_H);
@@ -319,33 +314,13 @@ function cardFace(g, card) {
     return;
   }
   const r = R[card.v];
-  if (art.face === 'classic') { paintClassic(g, card, ink, art); return; }
   if (card.v >= 10) {
-    paintPortrait(g, card, art.portrait, ink);
+    paintPortrait(g, card, PORTRAIT[artBoss], ink);
     g.fillStyle = ink; g.font = '900 168px "Playfair Display", Georgia, serif'; g.fillText(r, 34, 176);
     suitAt(g, card.s, 92, 250, 92, ink);
   } else {
     g.fillStyle = ink; g.font = `900 ${r.length > 1 ? 196 : 236}px "Playfair Display", Georgia, serif`; g.fillText(r, 40, 246);
     suitAt(g, card.s, 318, 498, 270, ink);
-  }
-}
-function paintClassic(g, card, ink, art) {
-  const r = R[card.v];
-  if (card.v >= 10) {
-    g.save(); rr(g, 92, 92, 328, 532, 10); g.fillStyle = card.s === '♥' || card.s === '♦' ? '#f6e4c8' : '#e9e4d6'; g.fill(); g.clip();
-    g.translate(-46, -50); paintPortrait(g, card, art.portrait, ink); g.restore();
-    g.strokeStyle = ink; g.lineWidth = 4; rr(g, 92, 92, 328, 532, 10); g.stroke();
-    g.strokeStyle = GOLD; g.lineWidth = 2; rr(g, 100, 100, 312, 516, 8); g.stroke();
-  } else if (card.v === 0) {
-    suitAt(g, card.s, 256, 358, 210, ink);
-  } else {
-    for (const [lx, ly] of PIP_LAYOUT[card.v + 1]) suitAt(g, card.s, 256 + lx * 86, 358 + ly * 188, 80, ink, ly > 0);
-  }
-  for (const inv of [false, true]) {
-    g.save(); if (inv) { g.translate(512, 716); g.rotate(Math.PI); }
-    g.fillStyle = ink; g.textAlign = 'center'; g.font = `900 ${r.length > 1 ? 64 : 76}px "Playfair Display", Georgia, serif`;
-    g.fillText(r, 52, 98); suitAt(g, card.s, 52, 136, 44, ink);
-    g.restore();
   }
 }
 function paintPanel(g, top, bottom) {
@@ -469,6 +444,23 @@ const woodMat = mat(0x2a160d, .55, 0, {envMapIntensity: .5});
 const leatherMat = mat(0x1a120e, .62, 0, {envMapIntensity: .6});
 const brassMat = mat(0xc9a050, .28, 1, {envMapIntensity: 1.2});
 const trimMat = mat(0xc9a050, .3, 1, {envMapIntensity: 1.2, emissive: 0xff6a1a, emissiveIntensity: 0});
+const walnut = new THREE.TextureLoader().load(new URL('./art/walnut.jpg',import.meta.url).href);
+walnut.colorSpace = THREE.SRGBColorSpace;
+walnut.wrapS = walnut.wrapT = THREE.MirroredRepeatWrapping;
+const walnutAmount = {value:0};
+for (const rail of [woodMat,leatherMat]) {
+  rail.onBeforeCompile = shader => {
+    shader.uniforms.walnutMap = {value:walnut}; shader.uniforms.walnutAmount = walnutAmount;
+    shader.vertexShader = 'varying vec3 timberPos;\n' + shader.vertexShader.replace('#include <begin_vertex>','#include <begin_vertex>\ntimberPos = position;');
+    shader.fragmentShader = 'uniform sampler2D walnutMap; uniform float walnutAmount; varying vec3 timberPos;\n' + shader.fragmentShader.replace('#include <color_fragment>', `
+      #include <color_fragment>
+      float side = smoothstep(-.36,.36,abs(timberPos.x)-abs(timberPos.z)-.2);
+      vec2 grain = mix(timberPos.xz,timberPos.zx,side)*vec2(.75,2.1);
+      vec3 wood = texture2D(walnutMap,grain+vec2(.1,timberPos.y*1.8)).rgb;
+      diffuseColor.rgb = mix(diffuseColor.rgb,wood*1.35,walnutAmount);
+    `);
+  };
+}
 const feltMat = mat(0xffffff, 1, 0, {envMapIntensity: .25});
 addMesh(slab(FW + 1.25, FD + 1.25, 1.05, .45, .05), woodMat, FCX, .08, FCZ, {cast: true});
 addMesh(slab(FW + 1.1, FD + 1.1, .98, .14, .07, [FW + .02, FD + .02, .5]), leatherMat, FCX, .66, FCZ, {cast: true});
@@ -525,10 +517,12 @@ const edgeGeo = new THREE.ExtrudeGeometry(cardShape(), {depth: CT, bevelEnabled:
 const edgeMat = mat(0xf3ecdc, .7);
 const backMat = new THREE.MeshStandardMaterial({map: backTex, roughness: .42, metalness: 0, envMapIntensity: .7});
 const shieldRingGeo = new THREE.PlaneGeometry(1.62, 2.12).rotateX(-Math.PI / 2);
+const flexibleCard = makeFlexibleCard(CW, CH, CT);
 function makeCard(card, faceMat) {
   const group = new THREE.Group();
   const face = faceMat || new THREE.MeshBasicMaterial({map: card ? tex(card) : null, toneMapped: false});
-  const f = new THREE.Mesh(faceGeo, face), b = new THREE.Mesh(backGeo, backMat), e = new THREE.Mesh(edgeGeo, edgeMat);
+  const [front, back, edge] = faceMat ? flexibleCard : [faceGeo,backGeo,edgeGeo];
+  const f = new THREE.Mesh(front, face), b = new THREE.Mesh(back, backMat), e = new THREE.Mesh(edge, edgeMat);
   e.castShadow = true; b.castShadow = true;
   group.add(f, b, e); group.userData.face = face; group.userData.ownsFace = !faceMat;
   return group;
@@ -647,8 +641,36 @@ const stakeRing = addMesh(new THREE.PlaneGeometry(1.86, 2.4).rotateX(-Math.PI / 
 const mateRing = addMesh(new THREE.PlaneGeometry(1.74, 2.24).rotateX(-Math.PI / 2), additive(0xff3b3b, ringTex), 0, FELT_Y + .007, 0); mateRing.visible = false;
 const stakeLabel = addMesh(new THREE.PlaneGeometry(.9, .22).rotateX(-Math.PI / 2), new THREE.MeshBasicMaterial({transparent: true, depthWrite: false, toneMapped: false, map: canvasTexture(256, 64, g => { rr(g, 4, 4, 248, 56, 28); g.fillStyle = '#1a0a04'; g.fill(); g.strokeStyle = '#f2c35a'; g.lineWidth = 4; g.stroke(); g.fillStyle = '#f2c35a'; g.font = '900 34px Cinzel, Georgia'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText('STAKE', 128, 34); })}), 0, FELT_Y + .008, 0); stakeLabel.visible = false;
 const mateLabel = addMesh(new THREE.PlaneGeometry(.9, .22).rotateX(-Math.PI / 2), new THREE.MeshBasicMaterial({transparent: true, depthWrite: false, toneMapped: false, map: canvasTexture(256, 64, g => { rr(g, 4, 4, 248, 56, 28); g.fillStyle = '#1a0406'; g.fill(); g.strokeStyle = '#ff5a4a'; g.lineWidth = 4; g.stroke(); g.fillStyle = '#ff8a7a'; g.font = '900 30px Cinzel, Georgia'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText('AT RISK', 128, 34); })}), 0, FELT_Y + .008, 0); mateLabel.visible = false;
+const register = makeRegister({
+  scene, slab, canvasTexture, chipGeometry:chipGeo, chipMaterial:chipMatSets[0][0], glow:dotTex,
+  imageURL:new URL('./art/toll-register.jpg',import.meta.url).href
+});
+const latchSteel = mat(0xb8c5cf,.24,.88), latchBase = mat(0x34404d,.47,.74);
+const latchPlate = slab(.26,.34,.045,.045,.012), latchTongue = slab(.13,.34,.03,.055,.009);
+const latchPin = new THREE.CylinderGeometry(.033,.033,.014,12);
+const clasps = slots.map(p => {
+  const pair = new THREE.Group(); pair.visible = false; scene.add(pair);
+  const tongues = [-1,1].map(sign => {
+    const mount = new THREE.Group(); pair.add(mount);
+    mount.position.set(p.x + sign*(CW/2-.035),FELT_Y+.01,p.z + sign*(CH/2-.08));
+    mount.rotation.y = sign < 0 ? Math.PI*.24 : Math.PI*1.24;
+    const base = new THREE.Mesh(latchPlate,latchBase); mount.add(base);
+    const tongue = new THREE.Mesh(latchTongue,latchSteel); tongue.position.y = .05; tongue.castShadow = true; mount.add(tongue);
+    const pin = new THREE.Mesh(latchPin,latchSteel); pin.position.set(0,.114,0); mount.add(pin);
+    return tongue;
+  });
+  return {pair,tongues,start:0};
+});
 function animateBossProps(now, dt) {
   const id = G ? bossId() : '', ready = G?.phase === 'playing' || G?.phase === 'busy';
+  register.update(currentTheme === 1 && !lesson, G?.tollDebt || 0, ready ? G.streak : 0, now, reduced);
+  for (let i=0;i<clasps.length;i++) {
+    const latch = clasps[i], locked = id === 'collector' && !!G.locked[i] && !G.board[i] && !lesson;
+    if (!locked) { latch.pair.visible = false; continue; }
+    if (!latch.pair.visible) { latch.pair.visible = true; latch.start = now; }
+    const t = reduced ? 1 : Math.min(1,(now-latch.start)/200);
+    for (const tongue of latch.tongues) tongue.position.z = .23*(1-(1-t)**3);
+  }
   const lanes = id === 'elevator' && !lesson;
   laneDeco.visible = lanes;
   for (let i = 0; i < 9; i++) {
@@ -670,7 +692,7 @@ function animateBossProps(now, dt) {
     if (G.stakeMate >= 0) { const b = slots[G.stakeMate]; mateRing.position.x = mateLabel.position.x = b.x; mateRing.position.z = b.z; mateLabel.position.z = b.z - CH / 2 - .125; mateRing.material.opacity = .55 + Math.sin(now * .008 + 2) * .25; }
   }
   // back-lane cards sit in shadow behind the cage
-  for (const m of cardMeshes) if (m) { const f = m.userData.face, target = lanes && !playable(m.userData.index) ? .42 : 1; const v = reduced ? target : THREE.MathUtils.damp(f.color.r, target, 8, dt); f.color.setScalar(v); }
+  for (const m of cardMeshes) if (m) { const f = m.userData.face, target = lanes && !playable(m.userData.index) ? .72 : 1; const v = reduced ? target : THREE.MathUtils.damp(f.color.r, target, 8, dt); f.color.setScalar(v); }
 }
 function syncSlotEffects() {
   if (!G) return;
@@ -742,9 +764,17 @@ const drawnFace = new THREE.MeshBasicMaterial({transparent: true, toneMapped: fa
 const drawnCard = makeCard(null, drawnFace); drawnCard.visible = false; scene.add(drawnCard);
 const drawnFace2 = new THREE.MeshBasicMaterial({toneMapped: false});
 const drawnCard2 = makeCard(null, drawnFace2); drawnCard2.visible = false; scene.add(drawnCard2);
+// A narrow varnish highlight follows the bent corner while the printed face stays bright.
+for (const material of [drawnFace,drawnFace2]) {
+  material.onBeforeCompile = shader => {
+    shader.vertexShader = 'varying float paperCurl;\n' + shader.vertexShader.replace('#include <morphtarget_vertex>', '#include <morphtarget_vertex>\npaperCurl = max(0.0, transformed.y - position.y);');
+    shader.fragmentShader = 'varying float paperCurl;\n' + shader.fragmentShader.replace('#include <opaque_fragment>', 'outgoingLight += vec3(.32,.23,.12) * smoothstep(.025,.12,paperCurl) * (1.0-smoothstep(.12,.34,paperCurl));\n#include <opaque_fragment>');
+  };
+}
 function showDrawnCard(card) {
   if (drawnFace.map) drawnFace.map.dispose();
   drawnFace.map = tex(card); drawnFace.needsUpdate = true;
+  for (const card of [drawnCard, drawnCard2]) for (const layer of card.children) layer.morphTargetInfluences[0] = 0;
   const p = slots[G?.selected] || slots[0];
   drawnCard.rotation.set(0, 0, 0); drawnCard.position.set(p.x, CARD_Y + .7, p.z + .3);
   drawnFace.opacity = 1; drawRevealUntil = performance.now() + 1600;
@@ -766,6 +796,7 @@ function revealJoker(count) {
   banner('JOKER!', 'joker', '+' + (count * 5) + ' cards shuffled in');
 }
 function resetCasino() {
+  register.reset();
   casino.jokerUntil = 0; drawRevealUntil = 0; revealMotion = null; drawnCard.visible = false;
   for (const p of sparks) { p.life = 0; p.s.visible = false; }
   $('fxLayer').replaceChildren();
@@ -803,6 +834,7 @@ function applyBossStyle(stage) {
   document.body.dataset.boss = theme.id;
   if (currentTheme !== stage) {
     currentTheme = stage;
+    walnutAmount.value = theme.id === 'toll' ? 1 : 0;
     const old = feltMat.map; feltMat.map = paintFelt(theme); feltMat.needsUpdate = true; old?.dispose();
     spot.color.setHex(theme.light); baseSpot.setHex(theme.light);
     artBoss = theme.id; backMat.map = backTextures[stage - 1]; backMat.needsUpdate = true;
@@ -1018,7 +1050,7 @@ function guess(dir){
    }
    G.push=0;
    const saved=G.board[i]!==null;
-   if(!saved&&boss==='toll'){const paid=Math.min(10,G.credits);G.credits-=paid;G.tollDebt+=10-paid;sound('toll');info+=' · Tollkeeper -10 tokens'}
+   if(!saved&&boss==='toll'){const paid=Math.min(10,G.credits);G.credits-=paid;G.tollDebt+=10-paid;register.collect(performance.now(),paid);sound('toll');info+=' · Tollkeeper -10 tokens'}
    G.message=saved?info:rank(old)+' → '+shown+' · Card lost'+(boss==='toll'?' · Toll -10 tokens'+(G.tollDebt?' ('+G.tollDebt+' owed)':''):'')+(info.includes('neighbor')?' · '+info.split(' · ').pop():'');
    if(!saved){sound('bad');flash('negative',i);floatLabel('MISS',i,'#ff8a7a')}
    tossCard(c,revealPos);if(c2)tossCard(c2,revealPos2);
@@ -1201,7 +1233,7 @@ function openScreen(name, node) {
 function hideDialog() { const s = $('screen'); s.className = 'screen hidden'; s.replaceChildren(); screenName = ''; document.body.dataset.screen = ''; }
 const cardImgCache = new Map();
 function cardImage(card) {
-  const key = card.joker ? 'J' : card.v + card.s;
+  const key = card.joker ? 'J' : artBoss + ':' + card.v + card.s;
   if (!cardImgCache.has(key)) { const c = document.createElement('canvas'); c.width = CARD_W; c.height = CARD_H; cardFace(c.getContext('2d'), card); cardImgCache.set(key, c.toDataURL('image/png')); }
   return cardImgCache.get(key);
 }
@@ -1484,6 +1516,7 @@ addEventListener('resize', resizeScene);
 const baseSpot = new THREE.Color(0xffd9a8), fireSpot = new THREE.Color(0xffa060);
 const tmpV = new THREE.Vector3();
 let lastTime = 0, orbit = 0;
+const clamp01 = x => THREE.MathUtils.clamp(x,0,1);
 function animateCasino(now, dt) {
   animateSparks(dt);
   const active = G?.phase === 'playing' || G?.phase === 'busy';
@@ -1524,12 +1557,15 @@ function animateCasino(now, dt) {
       const ease = 1 - (1 - slide) ** 3, fe = flip * flip * (3 - 2 * flip);
       card.position.set(THREE.MathUtils.lerp(deckX, dest.x + ox, ease), THREE.MathUtils.lerp(deckTopY(), CARD_Y + .62, ease) + Math.sin(Math.PI * slide) * .5 + Math.sin(Math.PI * flip) * .35, THREE.MathUtils.lerp(deckZ, dest.z + .32, ease));
       card.rotation.set(-.32 * ease, ox * -.15 * ease, Math.PI * (1 - fe));
+      // Lift the leading corner just before the main flip and let it fall flat on reveal.
+      const bend = clamp01((t-.28)/.17) * (1-clamp01((t-.51)/.20));
+      for (const layer of card.children) layer.morphTargetInfluences[0] = reduced ? 0 : bend;
       return {slide, flip};
     };
     const t = Math.min(1, (now - r.start) / r.duration);
-    const a1 = fly(drawnCard, t, r.two ? -.42 : 0);
+    const a1 = fly(drawnCard, t, r.two ? -(CW + .12)/2 : 0);
     let done = t >= 1;
-    if (r.two) { const t2 = Math.min(1, (now - r.start - 260) / r.duration); fly(drawnCard2, Math.max(0, t2), .42); done = t2 >= 1; if (!r.second && t2 > .45) { r.second = true; sound('land'); } }
+    if (r.two) { const t2 = Math.min(1, (now - r.start - 260) / r.duration); fly(drawnCard2, Math.max(0, t2), (CW + .12)/2); done = t2 >= 1; if (!r.second && t2 > .45) { r.second = true; sound('land'); } }
     if (!r.slid && a1.slide >= 1) { r.slid = true; sound('land'); }
     if (!r.flipped && a1.flip > .5) { r.flipped = true; sound('flip'); }
     if (done) { revealMotion = null; drawRevealUntil = 0; revealPos = drawnCard.position.clone(); revealPos2 = drawnCard2.position.clone(); r.resolve(); }
