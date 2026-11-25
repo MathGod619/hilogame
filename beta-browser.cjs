@@ -2,7 +2,7 @@ const {chromium, devices}=require('playwright');
 const assert=require('node:assert/strict');
 const fs=require('node:fs');
 (async()=>{
- const browser=await chromium.launch({args:['--use-gl=angle','--use-angle=swiftshader','--enable-unsafe-swiftshader']});
+ const browser=await chromium.launch({channel:'chrome',args:['--use-gl=angle','--use-angle=swiftshader','--enable-unsafe-swiftshader']});
  try {
  for(const phone of [false,true]){
   const label=phone?'phone':'desktop';
@@ -14,7 +14,7 @@ const fs=require('node:fs');
    const res=await route.fetch();
    await route.fulfill({response:res,body:await res.text()+'\nwindow.qaCardCenter = i => project(slots[i].x, CARD_Y + .12, slots[i].z);'});
   });
-  await page.goto('http://127.0.0.1:8080/hilo-3d/?debug',{waitUntil:'domcontentloaded'});
+  await page.goto((process.env.BETA_BASE || 'http://127.0.0.1:8080/hilo-3d/')+'?debug',{waitUntil:'domcontentloaded'});
   const state=()=>page.evaluate(()=>window.hilo.state());
   const action=async selector=>{const button=page.locator(selector);await (phone?button.tap():button.click())};
   const tapCard=async i=>{const [x,y]=await page.evaluate(i=>window.qaCardCenter(i),i);if(phone)await page.touchscreen.tap(x,y);else await page.mouse.click(x,y)};
