@@ -572,3 +572,8 @@ body[data-boss="roller"] .bossPlaque { box-shadow: 0 0 0 2px var(--plaque-rim2),
 .mStake em { font-style: normal; color: #ff8a7a; margin-left: 4px; }
 @media (min-width: 900px) and (min-aspect-ratio: 5/4) { .mech { flex-basis: 100%; margin: 6px 0 0; } }
 @media not all and (min-width: 900px) and (min-aspect-ratio: 5/4) { .mech { overflow: hidden; } .mStake, .mLanes, .mTray { font-size: 11px; } #loadout .artifacts { flex: none; } }
+
+.boss-preview{margin:12px auto 0;max-width:32rem;color:#e8cf9b;font:600 .86rem Outfit,sans-serif;text-align:center}
+.boss-preview summary{cursor:pointer;padding:.45rem;text-decoration:underline;text-underline-offset:.2rem}
+.boss-preview div{display:flex;flex-wrap:wrap;justify-content:center;gap:.35rem}
+.boss-preview .btn{font-size:.78rem;min-height:32px;padding:.35rem .65rem}

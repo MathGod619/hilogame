@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import {makeBossMachines} from './boss-machines.js';
 import {makeRegister, makeFlexibleCard} from './tollkeeper.js';
 import {RoomEnvironment} from 'three/addons/environments/RoomEnvironment.js';
 
@@ -134,12 +135,12 @@ const BOSS_PRESENTATION = [
   base:0x3a1d0e,rail:[0x2c170b,.55,0],trim:[0xc99a4c,.3,1],band:[0xb8893f,.32,1],chips:[['#d8a73e','#8a6420','coin'],['#c9973a','#7a5618','coin'],['#e0b44c','#94692a','coin']]},
  {id:'collector',mark:'♦',name:'The Collector',rule:'Lost positions lock. Up to three.',accent:'#cfd8e3',felt:'#1a2a52',light:0xe2ebff,notes:[98,146.83,207.65],
   base:0x23272d,rail:[0x6d7680,.32,.9],trim:[0xe3e9f0,.2,1],band:[0xa3acb6,.28,1],chips:[['#c9d0d8','#4a5563','chip'],['#1b2a52','#c9d0d8','chip'],['#8e98a4','#20262e','chip']]},
- {id:'sharp',mark:'♥',name:'The Cardsharp',rule:'Every fourth guess is a Double Draw. Watch the tray.',accent:'#e0b866',felt:'#4a1838',light:0xffd6b8,notes:[103.83,155.56,207.65],
-  base:0x2a0c1e,rail:[0x3b1230,.85,0],trim:[0xc99a4c,.3,1],band:[0xb8893f,.32,1],chips:[['#5a1a46','#e0b866','chip'],['#e0b866','#3b1230','chip'],['#1a1216','#e0b866','chip']]},
+ {id:'sharp',mark:'♥',name:'The Cardsharp',rule:'Every fourth guess is a Double Draw. Watch the tray.',accent:'#e0b866',felt:'#51182a',light:0xffd6b8,notes:[103.83,155.56,207.65],
+  base:0x2a0c1e,rail:[0x431421,.90,0],trim:[0xc99a4c,.3,1],band:[0xb8893f,.32,1],chips:[['#5a1a46','#e0b866','chip'],['#e0b866','#3b1230','chip'],['#1a1216','#e0b866','chip']]},
  {id:'elevator',mark:'♣',name:'The Elevator Operator',rule:'Three lanes. Only the front card of each lane plays.',accent:'#e2c06a',felt:'#103a3b',light:0xfff0c8,notes:[92.5,138.59,185],
-  base:0x0d2526,rail:[0x2a5a55,.38,.7],trim:[0xd8b45a,.28,1],band:[0xc9a24a,.3,1],chips:[['#1f5a58','#e2c06a','chip'],['#e2c06a','#123c3c','chip'],['#efe6d0','#1f5a58','chip']]},
- {id:'roller',mark:'♦',name:'The High Roller',rule:'Win the stake to refill. Miss it and lose two.',accent:'#f2c35a',felt:'#141d3c',light:0xffe2b4,notes:[116.54,174.61,233.08],
-  base:0x3a080d,rail:[0x6a0f18,.16,.3],trim:[0xf0c35a,.22,1],band:[0xe0b04a,.24,1],chips:[['#e0b04a','#6a0f18','coin'],['#141418','#f2c35a','chip'],['#9e1622','#f7e6c0','chip']]},
+  base:0x0d2526,rail:[0x234843,.32,.45],trim:[0xd8b45a,.28,1],band:[0xc9a24a,.3,1],chips:[['#1f5a58','#e2c06a','chip'],['#e2c06a','#123c3c','chip'],['#efe6d0','#1f5a58','chip']]},
+ {id:'roller',mark:'♦',name:'The High Roller',rule:'Win the stake to refill. Miss it and lose two.',accent:'#f2c35a',felt:'#1c1722',light:0xffe2b4,notes:[116.54,174.61,233.08],
+  base:0x3a080d,rail:[0x690f10,.16,.3],trim:[0xf0c35a,.22,1],band:[0xe0b04a,.24,1],chips:[['#e0b04a','#6a0f18','coin'],['#141418','#f2c35a','chip'],['#9e1622','#f7e6c0','chip']]},
  {id:'house',mark:'♠',name:'The House',rule:'Stamp all four suits before the deck runs out.',accent:'#d4b06a',felt:'#163a25',light:0xfff0d4,notes:[87.31,130.81,174.61],
   base:0x251f15,rail:[0x6a5634,.42,.85],trim:[0xc9a35a,.3,1],band:[0xa8874a,.35,1],chips:[['#efe6d0','#163a25','chip'],['#163a25','#efe6d0','chip'],['#1a1612','#d4b06a','chip']]},
  {id:'driver',mark:'♣',name:'The Final Driver',rule:'Finish with at least two cards. Four Jokers.',accent:'#ff4a3d',felt:'#62121f',light:0xffc0b0,notes:[82.41,123.47,174.61],
@@ -476,6 +477,17 @@ function paintFelt(theme) {
     const img = g.getImageData(0, 0, cw, ch), d = img.data; let seed = 7;
     for (let i = 0; i < d.length; i += 4) { seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0; const n = (seed / 4294967296 - .5) * 16; d[i] += n; d[i + 1] += n; d[i + 2] += n; }
     g.putImageData(img, 0, 0);
+    if (theme.id === 'sharp') {
+      // Velvet nap catches the lamplight along the cushions.
+      for (let edge=0;edge<2;edge++) {
+        g.save(); if (edge) {g.translate(cw,ch);g.rotate(Math.PI);}
+        for (let band=0;band<7;band++) {
+          g.beginPath();g.moveTo(0,band*5);g.bezierCurveTo(cw*.22,15+band*5,cw*.60,band*3,cw,22+band*3);
+          g.strokeStyle=band%2?'rgba(255,177,150,.13)':'rgba(51,0,15,.65)';g.lineWidth=2;g.stroke();
+        }
+        g.restore();
+      }
+    }
     const [gx, gz] = P(.4, .14);
     const pool = g.createRadialGradient(gx, gz, 40, gx, gz, cw * .62); pool.addColorStop(0, 'rgba(255,240,200,.13)'); pool.addColorStop(.6, 'rgba(0,0,0,0)'); pool.addColorStop(1, 'rgba(0,0,0,.45)');
     g.fillStyle = pool; g.fillRect(0, 0, cw, ch);
@@ -641,6 +653,8 @@ const stakeRing = addMesh(new THREE.PlaneGeometry(1.86, 2.4).rotateX(-Math.PI / 
 const mateRing = addMesh(new THREE.PlaneGeometry(1.74, 2.24).rotateX(-Math.PI / 2), additive(0xff3b3b, ringTex), 0, FELT_Y + .007, 0); mateRing.visible = false;
 const stakeLabel = addMesh(new THREE.PlaneGeometry(.9, .22).rotateX(-Math.PI / 2), new THREE.MeshBasicMaterial({transparent: true, depthWrite: false, toneMapped: false, map: canvasTexture(256, 64, g => { rr(g, 4, 4, 248, 56, 28); g.fillStyle = '#1a0a04'; g.fill(); g.strokeStyle = '#f2c35a'; g.lineWidth = 4; g.stroke(); g.fillStyle = '#f2c35a'; g.font = '900 34px Cinzel, Georgia'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText('STAKE', 128, 34); })}), 0, FELT_Y + .008, 0); stakeLabel.visible = false;
 const mateLabel = addMesh(new THREE.PlaneGeometry(.9, .22).rotateX(-Math.PI / 2), new THREE.MeshBasicMaterial({transparent: true, depthWrite: false, toneMapped: false, map: canvasTexture(256, 64, g => { rr(g, 4, 4, 248, 56, 28); g.fillStyle = '#1a0406'; g.fill(); g.strokeStyle = '#ff5a4a'; g.lineWidth = 4; g.stroke(); g.fillStyle = '#ff8a7a'; g.font = '900 30px Cinzel, Georgia'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText('AT RISK', 128, 34); })}), 0, FELT_Y + .008, 0); mateLabel.visible = false;
+const bossMachines = makeBossMachines({scene,slab,slots,canvasTexture});
+const frontSlots = [-1,-1,-1];
 const register = makeRegister({
   scene, slab, canvasTexture, chipGeometry:chipGeo, chipMaterial:chipMatSets[0][0], glow:dotTex,
   imageURL:new URL('./art/toll-register.jpg',import.meta.url).href
@@ -672,14 +686,18 @@ function animateBossProps(now, dt) {
     for (const tongue of latch.tongues) tongue.position.z = .23*(1-(1-t)**3);
   }
   const lanes = id === 'elevator' && !lesson;
-  laneDeco.visible = lanes;
+  laneDeco.visible = lanes && ready;
+  bossMachines.show(!lesson && G && currentTheme === G.stage && G.phase !== 'ticket' ? id : '');
+  if (lanes) for (let col=0;col<3;col++) frontSlots[col] = frontOfLane(col);
+  const doubleDraw = id === 'sharp' && (G.phase === 'busy' ? G.stageGuesses % 4 === 0 : isDoubleNext());
+  bossMachines.update(G,now,dt,reduced,sound,frontSlots,doubleDraw);
   for (let i = 0; i < 9; i++) {
     const on = lanes && ready && playable(i);
     brackets[i].visible = on;
     if (on) brackets[i].material.opacity = (i === G.selected ? .95 : .55) + Math.sin(now * .004 + i) * .08;
   }
   if (lanes) for (let col = 0; col < 3; col++) {
-    let front = -1; for (let r = 2; r >= 0; r--) if (G.board[r * 3 + col]) { front = r * 3 + col; break; }
+    const front = frontSlots[col];
     const lamp = lamps[col]; lamp.visible = front >= 0 && ready;
     if (front >= 0) { const p = slots[front]; lamp.position.set(p.x, CARD_Y + .5, p.z - CH / 2 - .18); lamp.material.opacity = .75 + Math.sin(now * .006 + col) * .15; }
   }
@@ -687,7 +705,7 @@ function animateBossProps(now, dt) {
   for (const m of [stakeRing, stakeLabel]) m.visible = !!stake;
   for (const m of [mateRing, mateLabel]) m.visible = !!stake && G.stakeMate >= 0 && !!G.board[G.stakeMate];
   if (stake) {
-    const a = slots[G.stake]; stakeRing.position.x = stakeLabel.position.x = a.x; stakeRing.position.z = a.z; stakeLabel.position.z = a.z - CH / 2 - .125;
+    const a = slots[G.stake]; stakeRing.position.x = stakeLabel.position.x = a.x; stakeRing.position.z = a.z; stakeLabel.position.z = a.z - CH / 2 - .125; stakeLabel.position.y = .765;
     stakeRing.material.opacity = .8 + Math.sin(now * .008) * .2; stakeRing.scale.setScalar(1 + Math.sin(now * .004) * .02);
     if (G.stakeMate >= 0) { const b = slots[G.stakeMate]; mateRing.position.x = mateLabel.position.x = b.x; mateRing.position.z = b.z; mateLabel.position.z = b.z - CH / 2 - .125; mateRing.material.opacity = .55 + Math.sin(now * .008 + 2) * .25; }
   }
@@ -796,7 +814,7 @@ function revealJoker(count) {
   banner('JOKER!', 'joker', '+' + (count * 5) + ' cards shuffled in');
 }
 function resetCasino() {
-  register.reset();
+  register.reset(); bossMachines.reset();
   casino.jokerUntil = 0; drawRevealUntil = 0; revealMotion = null; drawnCard.visible = false;
   for (const p of sparks) { p.life = 0; p.s.visible = false; }
   $('fxLayer').replaceChildren();
@@ -894,11 +912,14 @@ function enterBoss(stage) {
 /* --------------------------- game logic --------------------------- */
 const has = id => G?.artifacts.includes(id);
 const bossId = () => BOSSES[(G?.stage || 1) - 1]?.id;
+function frontOfLane(col) {
+  for (let i=col+6;i>=0;i-=3) if (G.board[i]) return i;
+  return -1;
+}
 function playable(i) {
   if (!G?.board[i]) return false;
   if (bossId() !== 'elevator' || lesson) return true;
-  for (let r = Math.floor(i / 3) + 1; r < 3; r++) if (G.board[r * 3 + i % 3]) return false;
-  return true;
+  return i === frontOfLane(i % 3);
 }
 const isDoubleNext = () => bossId() === 'sharp' && !lesson && (G.stageGuesses + 1) % 4 === 0;
 function neighbors(i) { const r = Math.floor(i / 3), c = i % 3, n = []; if (r > 0) n.push(i - 3); if (r < 2) n.push(i + 3); if (c > 0) n.push(i - 1); if (c < 2) n.push(i + 1); return n; }
@@ -944,7 +965,7 @@ function setupStage(stage){
  applyBossStyle(stage);
  resetCasino();
  clearPile();
- G.stage=stage;G.stageEarned=0;G.streak=0;G.phase='playing';G.locked=Array(9).fill(false);G.wardUsed=Array(9).fill(false);G.slotHits=Array(9).fill(0);G.mirrorUsed=false;G.salvageUsed=false;G.cloverUsed=false;G.protected=Array(9).fill(false);G.board=Array(9).fill(null);G.selected=0;G.deck=shuffle([...normalDeck(),...Array.from({length:BOSSES[stage-1].jokers},()=>({joker:true}))]);G.stageTotal=G.deck.length;G.push=0;G.swapFrom=null;G.stageGuesses=0;G.stamps={};G.stake=-1;G.stakeMate=-1;
+ G.stage=stage;G.stageCorrect=0;G.stageEarned=0;G.streak=0;G.phase='playing';G.locked=Array(9).fill(false);G.wardUsed=Array(9).fill(false);G.slotHits=Array(9).fill(0);G.mirrorUsed=false;G.salvageUsed=false;G.cloverUsed=false;G.protected=Array(9).fill(false);G.board=Array(9).fill(null);G.selected=0;G.deck=shuffle([...normalDeck(),...Array.from({length:BOSSES[stage-1].jokers},()=>({joker:true}))]);G.stageTotal=G.deck.length;G.push=0;G.swapFrom=null;G.stageGuesses=0;G.stamps={};G.stake=-1;G.stakeMate=-1;
  G.shields=1;
  if(G.ticket==='lucky')G.swaps++;
  sound('shuffle');
@@ -973,7 +994,7 @@ function newRun(){
  applyBossStyle(1);
  resetCasino();
  clearPile();
- G={deck:[],board:Array(9).fill(null),selected:0,correct:0,streak:0,best:0,turns:0,score:0,stage:1,stageTotal:54,credits:65,tollDebt:0,stageEarned:0,shields:0,peeks:0,swaps:0,protected:Array(9).fill(false),locked:Array(9).fill(false),wardUsed:Array(9).fill(false),slotHits:Array(9).fill(0),artifacts:[],upgrades:Array(9).fill(null),ticket:'',cloverUsed:false,phase:'ticket',message:'Choose your Ticket',detail:'',push:0};
+ G={deck:[],board:Array(9).fill(null),selected:0,correct:0,stageCorrect:0,streak:0,best:0,turns:0,score:0,stage:1,stageTotal:54,credits:65,tollDebt:0,stageEarned:0,shields:0,peeks:0,swaps:0,protected:Array(9).fill(false),locked:Array(9).fill(false),wardUsed:Array(9).fill(false),slotHits:Array(9).fill(0),artifacts:[],upgrades:Array(9).fill(null),ticket:'',cloverUsed:false,phase:'ticket',message:'Choose your Ticket',detail:'',push:0};
  for(let i=0;i<9;i++)meshCard(null,i);
  hud.score=0;hud.credits=G.credits;
  refresh();chooseTicket();
@@ -1001,7 +1022,7 @@ function guess(dir){
   if(good){
    const streakBefore=G.streak;
    const wasFull=G.board.every(Boolean);
-   G.board[i]=win;meshCard(win,i,false,{tossOld:true,from:c2?revealPos2:revealPos});if(c2)tossCard(c,revealPos);G.correct++;G.streak++;
+   G.board[i]=win;meshCard(win,i,false,{tossOld:true,from:c2?revealPos2:revealPos});if(c2)tossCard(c,revealPos);G.correct++;G.stageCorrect++;G.streak++;
    let pts=Math.max(10,Math.round(100/Math.max(.1,p)));
    if(G.streak>=9)pts*=3;
    if(G.ticket==='risk'&&p<=.4){const earned=grantTokens(6);if(earned)info+=' · Risk +'+earned+' tokens'}
@@ -1021,12 +1042,12 @@ function guess(dir){
    grantTokens(2);G.score+=pts;floatLabel('+'+pts,i,p<=.35?'#ffb3ff':'#ffe3a1');
    if(c2)banner('DOUBLE DRAW WON','positive','+'+pts+' points');
    if(boss==='house'&&!G.stamps[old.s]){G.stamps[old.s]=true;info+=' · '+old.s+' stamped';banner(old.s+' STAMPED','positive',Object.keys(G.stamps).length+' of 4 suits')}
-   if(isStake){refill();info+=' · Stake won: refill';banner('STAKE WON','positive','A slot refills')}
+   if(isStake){refill();bossMachines.ring(performance.now());sound('service-bell');info+=' · Stake won: refill';banner('STAKE WON','positive','A slot refills')}
    if(up==='mint'||up==='kindle'||up==='amp'&&G.slotHits[i]%3===0||up==='seed'&&G.slotHits[i]%3===0||up==='scout'&&G.slotHits[i]%4===0)upgradeTrigger(up,i);
    if(G.push===1){G.push=2;info+=' · Push 1/2: stay on this position'}
    else if(G.push===2){G.peeks++;G.push=0;info+=' · Push +Peek'}
    if(fireMilestone){refill();if(has('phoenix'))refill();if(streakBefore<6&&G.streak>=6){G.peeks++;info+=' · Super Fire +Peek'}banner(G.streak>=9?'INFERNO':G.streak>=6?'SUPER FIRE':'ON FIRE','fire',G.streak+' in a row'+(G.streak>=9?' · 3× points':''))}
-   else if(G.correct%2===0)refill();
+   else if(G.stage <= 2 ? G.correct % 2 === 0 : G.stageCorrect % 4 === 0)refill();
    if(!wasFull&&G.board.every(Boolean)){
     G.peeks++;
     if(has('twin'))G.swaps++;
@@ -1154,6 +1175,8 @@ const foley = {
  cashout: {clips:['tokens'], gain:.44},
  toll: {clips:['chip'], gain:.58, rate:.76},
  lock: {clips:['latch'], gain:.65},
+ 'floor-relay': {clips:['latch'],gain:.28,rate:1.48,gap:.12},
+ 'stamp-feed': {clips:['register'],gain:.24,rate:1.45,gap:.12},
  joker: {clips:['shuffle'], gain:.45, rate:.7},
  rev: {clips:['rev'], gain:.68},
  'entrance-toll': {clips:['register'], gain:.67},
@@ -1209,7 +1232,9 @@ function sound(kind) {
   if(Object.hasOwn(foley,kind)){playSample(kind,foley[kind]);return}
   const cues={good:[540,740,.10],bad:[220,150,.09],shield:[420,660,.15],peek:[740,990,.11],swap:[400,630,.11],push:[260,430,.09],line:[580,900,.14]};
   const t=audioContext.currentTime;
-  if(kind==='victory'||kind==='defeat'){
+  if(kind==='service-bell'){
+   for(const [frequency,length,volume] of [[1035,.55,.078],[2630,.24,.025],[3910,.12,.014]])playTone(t,frequency,frequency*.998,length,volume);
+  }else if(kind==='victory'||kind==='defeat'){
    const notes=kind==='victory'?[220,277.18,329.63,440]:[146.83,110,82.41];
    notes.forEach((note,i)=>playTone(t+i*.12,note,note,.45,.075));
   }else if(Object.hasOwn(cues,kind)){const [from,to,volume]=cues[kind];playTone(t,from,to,.12,volume);}
@@ -1254,13 +1279,17 @@ function showTitle() {
       </div>
     </div>
     ${best ? `<div class="bestScore">${icon('trophy')} Best run <b>${best.toLocaleString()}</b></div>` : ''}
+    ${document.body.dataset.tablePreview ? `<details class="boss-preview"><summary>Try a boss table</summary><div>${[4,3,5,6].map(stage => `<button class="btn ghost" data-preview-stage="${stage}">${esc(BOSSES[stage-1].name)}</button>`).join('')}</div></details>` : ''}
     <div class="titleFoot">Higher or lower · 7 bosses · 9 positions · Ace is low, ties lose</div>
   </div>`);
   node.querySelector('[data-a=start]').onclick = () => { sound('purchase'); chooseTicket(); };
   node.querySelector('[data-a=learn]').onclick = startLesson;
+  node.querySelectorAll('[data-preview-stage]').forEach(button => {
+    button.onclick = () => chooseTicket(Number(button.dataset.previewStage));
+  });
   openScreen('title', node);
 }
-function chooseTicket() {
+function chooseTicket(firstStage = 1) {
   const node = html(`<div class="sheet ticketSheet">
     <div class="kicker">New run · Choose a perk</div>
     <h2>Pick your ticket</h2>
@@ -1270,7 +1299,7 @@ function chooseTicket() {
       <span class="tbody"><span class="tname">${esc(t.name)}</span><span class="tbrief">${esc(brief[t.name])}</span><span class="tdesc">${esc(t.desc)}</span><span class="tfoot">Admit one · Midnight Table</span></span>
     </button>`).join('')}</div>
   </div>`);
-  node.querySelectorAll('.ticket').forEach(b => b.onclick = () => { sound('purchase'); G.ticket = b.dataset.id; shop(1, true); });
+  node.querySelectorAll('.ticket').forEach(b => b.onclick = () => { sound('purchase'); G.ticket = b.dataset.id; shop(firstStage, true); });
   openScreen('ticket', node);
 }
 function renderShop(stage) {
@@ -1385,7 +1414,7 @@ function showRunInfo() {
         <li><b>Pick a card</b> on the table, then call the next card <b>Higher</b> or <b>Lower</b>.</li>
         <li><b>Ace is low. Ties lose.</b> A miss removes that position.</li>
         <li>Riskier calls pay more points. Middle cards (5–9) pay a bonus.</li>
-        <li>Every 3 wins in a row refills a slot. Fill rows, columns or diagonals for line bonuses.</li>
+        <li>Regular refills come every 2 correct calls in bosses 1–2, then every 4 correct calls within each boss. Every 3 wins in a row also earns a refill. When both milestones coincide, they share one refill.</li>
         <li>Each <b>Joker</b> shuffles five extra cards into the deck.</li>
         <li>Clear the deck to beat the boss. Lose every card and the run ends.</li>
       </ul></section>
