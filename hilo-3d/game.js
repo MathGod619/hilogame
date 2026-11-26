@@ -84,15 +84,11 @@ const suitSVG = s => s === '♣'
 const S = ['♠','♥','♦','♣'], R = ['A','2','3','4','5','6','7','8','9','10','J','Q','K'];
 const ARTIFACTS=[
 {id:'compass',icon:'compass',name:'The Compass',desc:'Every fifth correct guess grants a Swap.',cost:45},
-{id:'phoenix',icon:'feather',name:'Phoenix Feather',desc:'Every third consecutive success refills an empty board slot.',cost:65},
 {id:'mirror',icon:'mirror',name:'Mirror Trick',desc:'Once each stage, a normal missed guess leaves its card intact.',cost:75},
 {id:'clover',icon:'clover',name:'Lucky Clover',desc:'Your first win at 35% odds or less each stage refills one empty slot.',cost:55},
 {id:'timekeeper',icon:'hourglass',name:'Timekeeper',desc:'Every tenth correct guess gives a Peek token.',cost:50},
 {id:'storm',icon:'lantern',name:'Storm Lantern',desc:'Each three-win streak milestone grants a Swap.',cost:55},
-{id:'anchor',icon:'anchor',name:'Iron Anchor',desc:'Begin each stage with one extra board card.',cost:60},
-{id:'salvage',icon:'wrench',name:'Salvage Kit',desc:'Your first unsaved miss per stage restores one empty slot.',cost:55},
 {id:'ember',icon:'sun',name:'Ember Engine',desc:'Reaching a five-win streak grants a Peek.',cost:65},
-{id:'collector',icon:'map',name:'Treasure Map',desc:'New completed lines grant 6 additional Pit Stop tokens.',cost:65},
 {id:'diamond',icon:'diamond',name:'Diamond Eye',desc:'Successful predictions at 35% odds or less earn 5 extra tokens.',cost:55},
 {id:'twin',icon:'waves',name:'Twin Signals',desc:'Filling all nine board slots also grants a Swap.',cost:70}
 ];
@@ -1659,7 +1655,7 @@ $('artifacts').addEventListener('click', e => { const id = e.target.closest('[da
 function hsRollOffers(stage) {
   const hs = G.hs, r = HS.makeRng([hs.seed, 'shop', stage, hs.rerolls].join(':'));
   hs.offers = HS.rollCharms(r, G.artifacts, ARTIFACTS, 3);
-  if (hs.tutorial) hs.offers = ['velvet', 'center', 'royalty'].filter(id => !G.artifacts.includes(id));
+  if (hs.tutorial) hs.offers = ['riser', 'center', 'middling'].filter(id => !G.artifacts.includes(id));
 }
 function hsShop(stage, fresh) {
   const hs = G.hs;

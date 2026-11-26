@@ -62,12 +62,6 @@ export const riskRefill = tier => tier.id === 'long' || tier.id === 'bold';
 const filled = b => b.filter(Boolean).length;
 const grow = n => +(n).toFixed(2);
 export const CHARMS = [
-  {id: 'velvet', icon: 'map', rarity: 1, cost: 35, name: 'Velvet Lining', desc: 'Hearts pay double.', x: c => c.card.s === '♥' && 2},
-  {id: 'spade', icon: 'anchor', rarity: 1, cost: 35, name: 'Gravedigger', desc: 'Spades pay double.', x: c => c.card.s === '♠' && 2},
-  {id: 'cutglass', icon: 'diamond', rarity: 1, cost: 35, name: 'Cut Glass', desc: 'Diamonds pay double.', x: c => c.card.s === '♦' && 2},
-  {id: 'backnine', icon: 'clover', rarity: 1, cost: 35, name: 'Back Nine', desc: 'Clubs pay double.', x: c => c.card.s === '♣' && 2},
-  {id: 'royalty', icon: 'trophy', rarity: 1, cost: 40, name: 'House Money', desc: 'Jacks, Queens and Kings pay double.', x: c => c.card.v >= 10 && 2},
-  {id: 'gutter', icon: 'wrench', rarity: 1, cost: 40, name: 'Gutter Luck', desc: 'Aces, 2s, 3s and 4s pay double.', x: c => c.card.v <= 3 && 2},
   {id: 'middling', icon: 'tower', rarity: 1, cost: 45, name: 'Middle Man', desc: '6s, 7s and 8s pay triple.', x: c => c.card.v >= 5 && c.card.v <= 7 && 3},
   {id: 'center', icon: 'sun', rarity: 1, cost: 40, name: 'Center Stage', desc: 'The middle position pays double.', x: c => c.slot === 4 && 2},
   {id: 'downer', icon: 'down', rarity: 1, cost: 40, name: 'Going Down', desc: 'Lower calls pay 1.5×.', x: c => c.dir === 'lower' && 1.5},
@@ -75,9 +69,6 @@ export const CHARMS = [
   {id: 'steady', icon: 'ward', rarity: 2, cost: 50, name: 'Steady Hand', desc: 'Safe calls pay double.', x: c => c.tier.id === 'safe' && 2},
   {id: 'pairs', icon: 'mirror', rarity: 2, cost: 55, name: 'Double Vision', desc: 'If another card on the table has the same rank, pays triple.', x: c => c.board.filter(x => x && x.v === c.card.v).length > 1 && 3},
   {id: 'shave', icon: 'feather', rarity: 2, cost: 55, name: 'Close Shave', desc: 'Winning by just 1 or 2 ranks pays triple.', x: c => c.drawn && Math.abs(c.drawn.v - c.card.v) <= 2 && 3},
-  {id: 'crowd', icon: 'compass', rarity: 2, cost: 50, name: 'Standing Room', desc: 'With 6 or more cards on the table, every call pays 1.5×.', x: c => filled(c.board) >= 6 && 1.5},
-  {id: 'empty', icon: 'waves', rarity: 2, cost: 50, name: 'Empty Chairs', desc: 'With 4 or fewer cards on the table, every call pays double.', x: c => filled(c.board) <= 4 && 2},
-  {id: 'lastcall', icon: 'lantern', rarity: 2, cost: 50, name: 'Last Call', desc: 'Your last 6 calls at each table pay double.', x: c => c.callsLeft <= 6 && 2},
   {id: 'flame', icon: 'flame', rarity: 3, cost: 75, name: 'Pilot Light', desc: 'Each win in your current streak adds 0.25× to every call.', x: c => c.streak && grow(1 + .25 * c.streak)},
   {id: 'daredevil', icon: 'bolt', rarity: 3, cost: 75, name: 'Daredevil', desc: 'Long shots pay triple.', x: c => c.tier.id === 'long' && 3},
   {id: 'gambler', icon: 'dice', rarity: 3, cost: 70, name: 'Nerve', desc: 'Grows: every Long shot you win adds 0.25× to every call, for the rest of the run.', x: c => c.mem.n && grow(1 + .25 * c.mem.n), after: (c, m) => { if (c.tier.id === 'long') m.n = (m.n || 0) + 1; }, show: m => '×' + grow(1 + .25 * (m.n || 0))},
