@@ -1,13 +1,14 @@
 import * as THREE from 'three';
+import * as HS from './stakes.js';
 import {makeBossMachines} from './boss-machines.js';
 import {makeRegister, makeFlexibleCard} from './tollkeeper.js';
 import {RoomEnvironment} from 'three/addons/environments/RoomEnvironment.js';
 
 /* =====================================================================
    HiLo — Midnight Table
-   Gameplay rules are unchanged from the original build. Everything in
-   this file that touches G (state) mirrors the original logic; the rest
-   is presentation: scene, cards, HUD and screens.
+   Classic rules are unchanged from the original build. High Stakes runs
+   carry their own state in G.hs and take their rules from stakes.js;
+   the rest is presentation: scene, cards, HUD and screens.
    ===================================================================== */
 
 const $ = id => document.getElementById(id);
@@ -117,9 +118,12 @@ const BOSSES=[
 {id:'elevator',name:'The Elevator Operator',desc:'The board runs as three lanes. The lowest card in each column is playable. In the left column, losing the front card opens the one behind it.',start:3,jokers:2},
 {id:'roller',name:'The High Roller',desc:'One card is the stake. Win on it to refill an empty slot. Miss and lose the stake and its marked neighbor too.',start:3,jokers:2},
 {id:'house',name:'The House',desc:'Stamp all four suits before the deck runs out. A correct guess stamps the suit of the card you played.',start:2,jokers:2},
-{id:'driver',name:'The Final Driver',desc:'Finish the deck with at least two occupied cards. Four Jokers await.',start:1,jokers:4}
+{id:'driver',name:'The Final Driver',desc:'Finish the deck with at least two occupied cards. Four Jokers await.',start:1,jokers:4},
+{id:'doorman',name:'The Doorman',desc:'Your first miss at each table is forgiven.',start:5,jokers:0} // tutorial only
 ];
-const FINAL=BOSSES.length;
+const FINAL=7, TUTORIAL_BOSS=7;
+const lastStage=()=>G?.hs?.tutorial?LESSONS.length:FINAL;
+const artOf = id => HS.charmById[id] || ARTIFACTS.find(a => a.id === id);
 const LINES=[[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0,4,8],[2,4,6]];
 const brief = {
  'Lucky Ticket':'+1 Swap each stage','Fire Ticket':'7-win streak → Peek','Risk Ticket':'Low odds → +6 tokens',
@@ -144,9 +148,11 @@ const BOSS_PRESENTATION = [
  {id:'house',mark:'♠',name:'The House',rule:'Stamp all four suits before the deck runs out.',accent:'#d4b06a',felt:'#163a25',light:0xfff0d4,notes:[87.31,130.81,174.61],
   base:0x251f15,rail:[0x6a5634,.42,.85],trim:[0xc9a35a,.3,1],band:[0xa8874a,.35,1],chips:[['#efe6d0','#163a25','chip'],['#163a25','#efe6d0','chip'],['#1a1612','#d4b06a','chip']]},
  {id:'driver',mark:'♣',name:'The Final Driver',rule:'Finish with at least two cards. Four Jokers.',accent:'#ff4a3d',felt:'#62121f',light:0xffc0b0,notes:[82.41,123.47,174.61],
-  base:0x0b0b0d,rail:[0x18181b,.22,.35],trim:[0xd8202c,.25,.6],band:[0xc4c8ce,.2,1],chips:[['#d8202c','#ffffff','chip'],['#141418','#ff4a3d','chip'],['#e8e8ea','#141418','chip']]}
+  base:0x0b0b0d,rail:[0x18181b,.22,.35],trim:[0xd8202c,.25,.6],band:[0xc4c8ce,.2,1],chips:[['#d8202c','#ffffff','chip'],['#141418','#ff4a3d','chip'],['#e8e8ea','#141418','chip']]},
+ {id:'doorman',mark:'♥',name:'The Doorman',rule:'Your first miss at each table is forgiven.',accent:'#9fd6c6',felt:'#1d5a63',light:0xfff1dc,notes:[130.81,196,261.63],
+  base:0x2b2016,rail:[0x3d5f63,.45,.2],trim:[0xd9b978,.28,1],band:[0xc9a76a,.3,1],chips:[['#9fd6c6','#1d5a63','chip'],['#d9b978','#4a3517','coin'],['#f1ead8','#1d5a63','chip']]}
 ];
-const PORTRAIT = {toll:'coin',collector:'collector',sharp:'classic',elevator:'classic',roller:'coin',house:'classic',driver:'racing'};
+const PORTRAIT = {toll:'coin',collector:'collector',sharp:'classic',elevator:'classic',roller:'coin',house:'classic',driver:'racing',doorman:'classic'};
 
 
 /* --------------------------- renderer ----------------------------- */
@@ -162,7 +168,7 @@ renderer.toneMappingExposure = 1.05;
 const scene = new THREE.Scene();
 const pmrem = new THREE.PMREMGenerator(renderer);
 scene.environment = pmrem.fromScene(new RoomEnvironment(), .04).texture;
-const camera = new THREE.PerspectiveCamera(28, 1, .1, 200);
+const camera = new THREE.PerspectiveCamera(28, 1, 2, 200);
 
 /* ---------------------------- layout ------------------------------ */
 const CW = 1.17, CH = 1.65, CT = .024, FELT_Y = .70, CARD_Y = FELT_Y + CT / 2 + .004;
@@ -337,7 +343,14 @@ function paintBack(g, id) {
     rr(g, 18, 18, 476, 680, 26); g.fillStyle = base; g.fill();
     g.strokeStyle = line; g.lineWidth = 4; rr(g, 40, 40, 432, 636, 16); g.stroke(); g.lineWidth = 1.5; rr(g, 52, 52, 408, 612, 12); g.stroke();
   };
-  if (id === 'toll') {
+  if (id === 'doorman') {
+    frame('#1d5a63', '#d9b978', '#123b41');
+    rr(g, 156, 190, 200, 340, 14); g.fillStyle = '#143f46'; g.fill(); g.lineWidth = 8; g.strokeStyle = '#d9b978'; g.stroke();
+    g.lineWidth = 4; for (const y of [218, 366]) { rr(g, 182, y, 148, 128, 8); g.stroke(); }
+    g.fillStyle = '#d9b978'; g.beginPath(); g.arc(336, 362, 13, 0, 7); g.fill();
+    g.beginPath(); g.moveTo(140, 190); g.quadraticCurveTo(256, 90, 372, 190); g.closePath(); g.fill();
+    g.font = '900 34px Cinzel, Georgia'; g.textAlign = 'center'; g.fillText('WELCOME', 256, 610);
+  } else if (id === 'toll') {
     frame('#1d4a2c', '#d8ad5a', '#14301d');
     const v = g.createRadialGradient(256, 358, 30, 256, 358, 380); v.addColorStop(0, 'rgba(255,230,160,.14)'); v.addColorStop(1, 'rgba(0,0,0,.25)'); g.fillStyle = v; g.fillRect(18, 18, 476, 680);
     g.strokeStyle = '#d8ad5a'; g.fillStyle = '#d8ad5a';
@@ -687,12 +700,12 @@ function animateBossProps(now, dt) {
   }
   const lanes = id === 'elevator' && !lesson;
   laneDeco.visible = lanes && ready;
-  bossMachines.show(!lesson && G && currentTheme === G.stage && G.phase !== 'ticket' ? id : '');
+  bossMachines.show(!lesson && G && currentTheme === tableIdx(G.stage) + 1 && G.phase !== 'ticket' ? id : '');
   if (lanes) for (let col=0;col<3;col++) frontSlots[col] = frontOfLane(col);
   const doubleDraw = id === 'sharp' && (G.phase === 'busy' ? G.stageGuesses % 4 === 0 : isDoubleNext());
   bossMachines.update(G,now,dt,reduced,sound,frontSlots,doubleDraw);
   for (let i = 0; i < 9; i++) {
-    const on = lanes && ready && playable(i);
+    const on = lanes && ready && playable(i) || !lesson && tutStep()?.select === i && G.phase === 'playing';
     brackets[i].visible = on;
     if (on) brackets[i].material.opacity = (i === G.selected ? .95 : .55) + Math.sin(now * .004 + i) * .08;
   }
@@ -848,27 +861,31 @@ function flash(kind, index = -1, msg = '') {
 /* ------------------------ bosses & music -------------------------- */
 let bossEntryTimer, pendingBoss = null, entryGeneration = 0, bossBegin = null;
 let musicOn = false, musicGain, musicVoices = [], currentTheme = -1;
+// High Stakes shuffles the boss order; Classic keeps it fixed.
+const tableIdx = stage => G?.hs ? G.hs.order[stage - 1] : stage - 1;
+const bossAt = stage => BOSSES[tableIdx(stage)];
+const lookAt = stage => BOSS_PRESENTATION[tableIdx(stage)];
 function applyBossStyle(stage) {
-  const theme = BOSS_PRESENTATION[stage - 1];
+  const theme = lookAt(stage), table = tableIdx(stage) + 1;
   document.body.dataset.boss = theme.id;
-  if (currentTheme !== stage) {
-    currentTheme = stage;
+  if (currentTheme !== table) {
+    currentTheme = table;
     walnutAmount.value = theme.id === 'toll' ? 1 : 0;
     const old = feltMat.map; feltMat.map = paintFelt(theme); feltMat.needsUpdate = true; old?.dispose();
     spot.color.setHex(theme.light); baseSpot.setHex(theme.light);
-    artBoss = theme.id; backMat.map = backTextures[stage - 1]; backMat.needsUpdate = true;
+    artBoss = theme.id; backMat.map = backTextures[table - 1]; backMat.needsUpdate = true;
     woodMat.color.setHex(theme.base);
     const [rc, rr_, rm] = theme.rail; leatherMat.color.setHex(rc); leatherMat.roughness = rr_; leatherMat.metalness = rm;
     trimMat.color.setHex(theme.trim[0]); trimMat.roughness = theme.trim[1]; trimMat.metalness = theme.trim[2];
     brassMat.color.setHex(theme.band[0]); brassMat.roughness = theme.band[1];
-    chipMats = chipMatSets[stage - 1]; chips.forEach((c, k) => c.material = chipMats[k % 3]);
+    chipMats = chipMatSets[table - 1]; chips.forEach((c, k) => c.material = chipMats[k % 3]);
   }
   $('bossName').textContent = theme.name; $('bossEmblem').innerHTML = suitSVG(theme.mark);
   tuneBossMusic(stage);
 }
 function tuneBossMusic(stage) {
   if (!audioContext) return;
-  const notes = BOSS_PRESENTATION[stage - 1].notes;
+  const notes = lookAt(stage).notes;
   musicVoices.forEach((voice, i) => voice.frequency.setTargetAtTime(notes[i], audioContext.currentTime, .3));
 }
 function startBossMusic() {
@@ -887,7 +904,7 @@ function enterBoss(stage) {
   const generation = entryGeneration;
   pendingBoss = stage;
   applyBossStyle(stage);
-  const theme = BOSS_PRESENTATION[stage - 1];
+  const theme = lookAt(stage);
   const begin = () => {
     if (generation !== entryGeneration || pendingBoss !== stage) return;
     cancelBossEntry(); hideDialog(); setupStage(stage);
@@ -896,11 +913,12 @@ function enterBoss(stage) {
   const wait = reduced ? 1800 : 4200;
   const node = html(`<div class="bossIntro" style="--wait:${wait}ms">
     <div class="biBars"><i></i><i></i></div>
-    <div class="biStage">Boss ${stage} of ${FINAL}</div>
+    <div class="biStage">${G.hs?.tutorial ? 'Tutorial table' : 'Boss'} ${stage} of ${lastStage()}</div>
     <div class="biEmblem">${suitSVG(theme.mark)}</div>
     <div class="biKicker">The house sends</div>
     <h2 class="biName">${esc(theme.name)}</h2>
-    <p class="biRule">${esc(BOSSES[stage - 1].desc)}</p>
+    <p class="biRule">${esc(bossRule(stage))}</p>
+    ${G.hs ? `<p class="biMin">Goal: <b>${minFor(stage).toLocaleString()}</b> points in ${HS.CALLS} calls</p>` : ''}
     <button class="btn primary big" data-a="deal" data-autofocus>${icon('play')} Deal the cards <kbd>Enter</kbd></button>
     <div class="biTimer"><i></i></div>
   </div>`);
@@ -912,7 +930,14 @@ function enterBoss(stage) {
 
 /* --------------------------- game logic --------------------------- */
 const has = id => G?.artifacts.includes(id);
-const bossId = () => BOSSES[(G?.stage || 1) - 1]?.id;
+const bossId = () => bossAt(G?.stage || 1)?.id;
+function bossRule(stage) {
+  const boss = bossAt(stage);
+  if (!G?.hs) return boss.desc;
+  if (boss.id === 'house') return 'Stamp all four suits and reach the goal. A correct call stamps the suit of the card you played.';
+  if (boss.id === 'driver') return 'Reach the goal and still hold two cards. Four Jokers await.';
+  return boss.desc;
+}
 function frontOfLane(col) {
   for (let i=col+6;i>=0;i-=3) if (G.board[i]) return i;
   return -1;
@@ -929,8 +954,8 @@ function pickStake() {
   const cands = [];
   for (let i = 0; i < 9; i++) if (G.board[i]) { const ns = neighbors(i).filter(j => G.board[j]); if (ns.length) cands.push([i, ns]); }
   if (!cands.length) return;
-  const [i, ns] = cands[Math.floor(Math.random() * cands.length)];
-  G.stake = i; G.stakeMate = ns[Math.floor(Math.random() * ns.length)];
+  const [i, ns] = cands[Math.floor(rng() * cands.length)];
+  G.stake = i; G.stakeMate = ns[Math.floor(rng() * ns.length)];
 }
 function ensureStake(played = -1) {
   if (bossId() !== 'roller' || lesson) { if (G) { G.stake = -1; G.stakeMate = -1; } return; }
@@ -939,17 +964,19 @@ function ensureStake(played = -1) {
 }
 const cardsLeft = () => G?.board.filter(Boolean).length || 0;
 const rank = c => c ? R[c.v] + c.s : 'empty';
-function shuffle(a){for(let i=a.length-1;i>0;i--){let j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a}
+const rng=()=>G?.hs?G.hs.rng():Math.random();
+function shuffle(a){for(let i=a.length-1;i>0;i--){let j=Math.floor(rng()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a}
 const normalDeck=()=>S.flatMap(s=>R.map((_,v)=>({v,s})));
 function draw(){let jokers=0;while(G.deck.length){const c=G.deck.pop();if(c.joker){G.deck.push(...shuffle(normalDeck()).slice(0,5));shuffle(G.deck);G.stageTotal+=5;jokers++;continue}if(jokers){revealJoker(jokers);sound(bossId()==='driver'?'rev':'joker');flash('negative');}return c}return null}
 function creditTokens(n){const paid=Math.min(n,G.tollDebt);G.tollDebt-=paid;G.credits+=n-paid;return n-paid}
 function grantTokens(n){const give=Math.max(0,Math.min(n,100-G.stageEarned));G.stageEarned+=give;return creditTokens(give)}
 function lineState(){return LINES.map(l=>l.every(i=>G.board[i]))}
-function scoreLines(before){for(let j=0;j<LINES.length;j++)if(!before[j]&&LINES[j].every(i=>G.board[i])){const pts=j<3?250:j<6?300:400;casino.lineUntil[j]=performance.now()+1100;for(const index of LINES[j])burst(index,0xffd16b,12);G.score+=pts;grantTokens(6+(has('collector')?6:0));banner('LINE COMPLETE','positive','+'+pts+' points');sound('line')}}
+function scoreLines(before){for(let j=0;j<LINES.length;j++)if(!before[j]&&LINES[j].every(i=>G.board[i])){const pts=G.hs?HS.LINE_PAY:j<3?250:j<6?300:400;if(G.hs){G.hs.table+=pts;G.hs.shownTable+=pts}casino.lineUntil[j]=performance.now()+1100;for(const index of LINES[j])burst(index,0xffd16b,12);G.score+=pts;grantTokens(6+(has('collector')?6:0));banner('LINE COMPLETE','positive','+'+pts+' points');sound('line')}}
 function refill(){const i=G.board.findIndex((c,k)=>!c&&!G.locked[k]);if(i<0)return;const before=lineState(),c=draw();if(c){G.board[i]=c;meshCard(c,i,true);scoreLines(before)}}
 
 function shop(stage,fresh=false){
  G.phase='shop';
+ if(G.hs){hsShop(stage,fresh);return}
  // A Pit Stop shows precisely four offers: two Artifacts and two board upgrades.
  // Purchased offers disappear until the player pays to reroll the whole selection.
  if(fresh||!shopOffers||!shopOffers.artifacts){
@@ -966,24 +993,26 @@ function setupStage(stage){
  applyBossStyle(stage);
  resetCasino();
  clearPile();
- G.stage=stage;G.stageCorrect=0;G.stageEarned=0;G.streak=0;G.phase='playing';G.locked=Array(9).fill(false);G.wardUsed=Array(9).fill(false);G.slotHits=Array(9).fill(0);G.mirrorUsed=false;G.salvageUsed=false;G.cloverUsed=false;G.protected=Array(9).fill(false);G.board=Array(9).fill(null);G.selected=0;G.deck=shuffle([...normalDeck(),...Array.from({length:BOSSES[stage-1].jokers},()=>({joker:true}))]);G.stageTotal=G.deck.length;G.push=0;G.stageGuesses=0;G.stamps={};G.stake=-1;G.stakeMate=-1;
+ G.stage=stage;G.stageCorrect=0;G.stageEarned=0;G.streak=0;G.phase='playing';G.locked=Array(9).fill(false);G.wardUsed=Array(9).fill(false);G.slotHits=Array(9).fill(0);G.mirrorUsed=false;G.salvageUsed=false;G.cloverUsed=false;G.protected=Array(9).fill(false);G.board=Array(9).fill(null);G.selected=0;if(G.hs)hsSetup(stage);G.deck=shuffle([...(G.hs?G.hs.deck.map(c=>({...c})):normalDeck()),...Array.from({length:bossAt(stage).jokers+(G.hs?(HS.LIMITS[G.hs.limit].joker||0):0)},()=>({joker:true}))]);G.stageTotal=G.deck.length;G.push=0;G.stageGuesses=0;G.stamps={};G.stake=-1;G.stakeMate=-1;
  G.shields=1;
  if(G.ticket==='lucky')G.swaps++;
  sound('shuffle');
  animations=[];for(let i=0;i<9;i++)meshCard(null,i);
- const openingCount = BOSSES[stage - 1].start + (has('anchor') ? 1 : 0);
+ const openingCount = bossAt(stage).start + (has('anchor') ? 1 : 0) + (G.hs ? HS.OPENING_BONUS : 0);
  // Pair the first two Elevator cards in one lane. Iron Anchor fills the third lane.
- const elevatorOpening = [0, 3, 1, 2];
- for (let deal = 0; deal < openingCount; deal++) {
+ const elevatorOpening = [0, 3, 1, 2, 4, 5, 6, 7];
+ if (G.hs?.tutorial) tutDeal(stage);
+ else for (let deal = 0; deal < openingCount; deal++) {
    const slot = bossId() === 'elevator' ? elevatorOpening[deal] : deal;
    const card = draw();
    if (card) { G.board[slot] = card; meshCard(card, slot, true); }
  }
  if (bossId() === 'elevator') G.selected = frontOfLane(0);
  ensureStake();
- G.message='Choose a card';G.detail=BOSSES[stage-1].name+' · '+BOSSES[stage-1].desc;refresh();
+ G.message='Choose a card';G.detail=bossAt(stage).name+' · '+bossRule(stage);refresh();
 }
 function finishStage(){
+ if(G.hs){hsFinish();return}
  if(cardsLeft()===0){endRun(false,'You lost every card on the board.');return}
  if(G.deck.length)return;
  if(bossId()==='house'&&Object.keys(G.stamps).length<4){endRun(false,'The House needed all four suits stamped before the deck ran out.');return}
@@ -994,12 +1023,14 @@ function finishStage(){
 }
 const bestKey='hilo-3d-rogue-best';
 function endRun(win,reason){
+ if(G.hs?.tutorial){const run=G;G.phase='ended';G.message=win?'The Doorman lets you in':'Table lost';G.detail=reason||'';refresh();setTimeout(()=>{if(G===run)win?tutDone():tutRetry(reason)},reduced?100:900);return}
  G.phase='ended';G.message=win?'THE FINAL DRIVER DEFEATED!':'END OF THE ROAD';
- G.detail=reason||'Run completed.';refresh();let prior=0;try{prior=Number(localStorage.getItem(bestKey))||0;if(G.score>prior)localStorage.setItem(bestKey,String(G.score))}catch(e){}
+ G.detail=reason||'Run completed.';refresh();let prior=0;if(G.hs)hsRecord(win);const key=G.hs?hsBestKey:bestKey;try{prior=Number(localStorage.getItem(key))||0;if(G.score>prior)localStorage.setItem(key,String(G.score))}catch(e){}
  setTimeout(()=>showRunResult(win,reason,Math.max(prior,G.score),G.score>prior),reduced?100:900);
 }
 function newRun(){
  cancelBossEntry();
+ if(G)G.hs=null;
  applyBossStyle(1);
  resetCasino();
  clearPile();
@@ -1008,20 +1039,24 @@ function newRun(){
  hud.score=0;hud.credits=G.credits;
  refresh();chooseTicket();
 }
-function chance(card,dir){const a=G.deck.filter(c=>!c.joker);return a.length?a.filter(c=>dir==='higher'?c.v>card.v:c.v<card.v).length/a.length:0}
+function chance(card,dir,ties=false){const a=G.deck.filter(c=>!c.joker);return a.length?a.filter(c=>(dir==='higher'?c.v>card.v:c.v<card.v)||ties&&c.v===card.v).length/a.length:0}
 function guess(dir){
  if(lesson){lessonGuess(dir);return}
- if(G.phase!=='playing'||!G.board[G.selected]||!playable(G.selected))return;
+ if(G.phase!=='playing'||!G.board[G.selected]||!playable(G.selected)||tutBlocks('call',dir))return;
  swapFrom=null;
  const run=G,boss=bossId();
  const dbl=isDoubleNext();
- const i=G.selected,old=G.board[i];let p=chance(old,dir);const c=draw();
+ const i=G.selected,old=G.board[i];let p=chance(old,dir);const hs=G.hs;
+ if(hs&&!p&&hsCanCall()){banner('NO CHANCE','info','Nothing left in the deck wins that call');return}
+ const c=draw();
  if(!c){finishStage();return}
+ if(hs)hs.calls--;
  // The Cardsharp: every fourth guess draws two cards; both must beat your card.
  const c2=dbl?draw():null;
  if(boss==='sharp')G.stageGuesses++;
  if(c2)p=p*p;
  const beats=x=>dir==='higher'?x.v>old.v:x.v<old.v;
+ const hsCtx=hs&&{...hsContext(i,dir,p),drawn:c2||c};
  const win=c2||c,shown=c2?rank(c)+' + '+rank(c2):rank(c);
  const isStake=boss==='roller'&&i===G.stake;
  G.phase='busy';G.message=c2?'Double Draw…':'Revealing…';refresh();G.turns++;const good=beats(c)&&(!c2||beats(c2));
@@ -1033,12 +1068,13 @@ function guess(dir){
    const streakBefore=G.streak;
    const wasFull=G.board.every(Boolean);
    G.board[i]=win;meshCard(win,i,false,{tossOld:true,from:c2?revealPos2:revealPos});if(c2)tossCard(c,revealPos);G.correct++;G.stageCorrect++;G.streak++;
-   let pts=Math.max(10,Math.round(100/Math.max(.1,p)));
-   if(G.streak>=9)pts*=3;
+   const pay=hs?hsWin(hsCtx):null;
+   let pts=pay?pay.total:Math.max(10,Math.round(100/Math.max(.1,p)));
+   if(!hs&&G.streak>=9)pts*=3;
    if(G.ticket==='risk'&&p<=.4){const earned=grantTokens(6);if(earned)info+=' · Risk +'+earned+' tokens'}
    if(has('clover')&&p<=.35&&!G.cloverUsed&&G.board.some((card,k)=>!card&&!G.locked[k])&&G.deck.length){G.cloverUsed=true;refill();info+=' · Clover refill'}
    const up=G.upgrades[i];
-   if(old.v>=4&&old.v<=8){pts+=Math.round(100/Math.max(.1,p)*.35);grantTokens(2)}
+   if(old.v>=4&&old.v<=8){if(!hs)pts+=Math.round(100/Math.max(.1,p)*.35);grantTokens(2)}
    if(up==='mint')grantTokens(3);if(up==='kindle')G.streak++;
    const fireMilestone=Math.floor(G.streak/3)>Math.floor(streakBefore/3);
    if(has('storm')&&fireMilestone){G.swaps++;info+=' · Storm +Swap'}
@@ -1049,14 +1085,15 @@ function guess(dir){
    if(up==='amp'){G.slotHits[i]++;if(G.slotHits[i]%3===0){const earned=grantTokens(12);if(earned)info+=' · Amplifier +'+earned+' tokens'}}
    if(up==='seed'){G.slotHits[i]++;if(G.slotHits[i]%3===0)refill()}
    if(up==='scout'){G.slotHits[i]++;if(G.slotHits[i]%4===0)G.peeks++}
-   grantTokens(2);G.score+=pts;floatLabel('+'+pts,i,p<=.35?'#ffb3ff':'#ffe3a1');
+   grantTokens(2);G.score+=pts;if(hs)hsPay(pay,i);else floatLabel('+'+pts,i,p<=.35?'#ffb3ff':'#ffe3a1');
+   if(hs&&HS.riskRefill(pay.tier)&&G.board.some((card,k)=>!card&&!G.locked[k])&&G.deck.length){refill();info+=' · '+pay.tier.name+': refill'}
    if(c2)banner('DOUBLE DRAW WON','positive','+'+pts+' points');
    if(boss==='house'&&!G.stamps[old.s]){G.stamps[old.s]=true;info+=' · '+old.s+' stamped';banner(old.s+' STAMPED','positive',Object.keys(G.stamps).length+' of 4 suits')}
    if(isStake){refill();bossMachines.ring(performance.now());sound('service-bell');info+=' · Stake won: refill';banner('STAKE WON','positive','A slot refills')}
    if(up==='mint'||up==='kindle'||up==='amp'&&G.slotHits[i]%3===0||up==='seed'&&G.slotHits[i]%3===0||up==='scout'&&G.slotHits[i]%4===0)upgradeTrigger(up,i);
    if(G.push===1){G.push=2;info+=' · Push 1/2: stay on this position'}
    else if(G.push===2){G.peeks++;G.push=0;info+=' · Push +Peek'}
-   if(fireMilestone){refill();if(has('phoenix'))refill();if(streakBefore<6&&G.streak>=6){G.peeks++;info+=' · Super Fire +Peek'}banner(G.streak>=9?'INFERNO':G.streak>=6?'SUPER FIRE':'ON FIRE','fire',G.streak+' in a row'+(G.streak>=9?' · 3× points':''))}
+   if(fireMilestone){refill();if(has('phoenix'))refill();if(streakBefore<6&&G.streak>=6){G.peeks++;info+=' · Super Fire +Peek'}banner(G.streak>=9?'INFERNO':G.streak>=6?'SUPER FIRE':'ON FIRE','fire',G.streak+' in a row'+(G.streak>=9&&!hs?' · 3× points':''))}
    else if(G.stage <= 2 ? G.correct % 2 === 0 : G.stageCorrect % 4 === 0)refill();
    if(!wasFull&&G.board.every(Boolean)){
     G.peeks++;
@@ -1065,15 +1102,16 @@ function guess(dir){
     pop('FULL BOARD · +1 Peek'+(has('twin')?' +1 Swap':''),null,'positive');
    }
    G.best=Math.max(G.best,G.streak);
-   G.message='✓ '+rank(old)+' → '+shown+info;sound('good');flash('positive',i);
+   G.message='✓ '+rank(old)+' → '+shown+info;if(!hs)sound('good');flash('positive',i);
   }else{
    G.streak=0;
    const up=G.upgrades[i],pushing=G.push>0;
    if(!pushing&&has('mirror')&&!G.mirrorUsed){G.mirrorUsed=true;info=' Mirror saved card';sound('shield');flash('ability',i,' MIRROR SAVED')}
    else if(!pushing&&up==='ward'&&!G.wardUsed[i]){G.wardUsed[i]=true;upgradeTrigger('ward',i);info=' Ward saved card';sound('shield');flash('ability',i,' WARD BLOCK')}
+   else if(boss==='doorman'&&!hs.forgiven){hs.forgiven=true;hsMiss(hsCtx,i);info='The Doorman lets that one go';sound('shield');flash('ability',i,' FORGIVEN')}
    else if(!pushing&&G.protected[i]){G.protected[i]=false;info='Shield used · card saved';sound('shield');flash('ability',i,' SHIELD BLOCK')}
    else{
-    G.board[i]=null;discardCard(i);info='Position lost';
+    G.board[i]=null;discardCard(i);info='Position lost';if(hs)hsMiss(hsCtx,i);
     // The High Roller: an unblocked miss on the stake also takes its marked neighbor.
     if(isStake&&G.stakeMate>=0&&G.board[G.stakeMate]){const m=G.stakeMate;if(G.protected[m]){G.protected[m]=false;info+=' · Shield saved the neighbor';flash('ability',m)}else{G.board[m]=null;discardCard(m);info+=' · Stake neighbor lost';banner('STAKE LOST','negative','Two cards gone')}}
     if(boss==='collector'&&G.locked.filter(Boolean).length<3){G.locked[i]=true;sound('lock');info+=' ·  Collector locked it'}
@@ -1081,6 +1119,7 @@ function guess(dir){
    }
    G.push=0;
    const saved=G.board[i]!==null;
+   if(hs&&saved&&!info.includes('Doorman'))hsMiss(hsCtx,i);
    if(!saved&&boss==='toll'){const paid=Math.min(10,G.credits);G.credits-=paid;G.tollDebt+=10-paid;register.collect(performance.now(),paid);sound('toll');info+=' · Tollkeeper -10 tokens'}
    G.message=saved?info:rank(old)+' → '+shown+' · Card lost'+(boss==='toll'?' · Toll -10 tokens'+(G.tollDebt?' ('+G.tollDebt+' owed)':''):'')+(info.includes('neighbor')?' · '+info.split(' · ').pop():'');
    if(!saved){sound('bad');flash('negative',i);floatLabel('MISS',i,'#ff8a7a')}
@@ -1090,16 +1129,17 @@ function guess(dir){
   if(boss==='roller')ensureStake(i);
   G.detail=info||('Streak '+G.streak+' · '+G.deck.length+' cards remaining');
   if(cardsLeft()===0){endRun(false,'All board positions lost.');return}
+  if(hs){hsSettle(run);return}
   if(!G.deck.length){finishStage();return}
   G.phase='playing';refresh();
  };
  beginDraw(c,resolve,c2);
 }
 function selectSlot(i){
- if(!G||G.phase!=='playing'||G.push===2)return;if(i<0||!G.board[i])return;
+ if(!G||G.phase!=='playing'||G.push===2)return;if(i<0||!G.board[i]||tutBlocks('select',i))return;
  if(swapFrom===null&&!playable(i)){banner('NOT THE FRONT CARD','info','Only lit cards can be played');return}
  if(swapFrom!==null){if(i!==swapFrom){[G.board[i],G.board[swapFrom]]=[G.board[swapFrom],G.board[i]];[G.protected[i],G.protected[swapFrom]]=[G.protected[swapFrom],G.protected[i]];const a=cardMeshes[i]?.position.clone(),b=cardMeshes[swapFrom]?.position.clone();meshCard(G.board[i],i,false,{from:b});meshCard(G.board[swapFrom],swapFrom,false,{from:a});G.swaps--;ensureStake();G.message='⇄ Swapped two cards';sound('swap');flash('ability',i,'⇄ SWAPPED')}swapFrom=null}
- G.selected=i;refresh();sound('select');flash('ability',i);
+ G.selected=i;refresh();sound('select');flash('ability',i);tutDid('select',i);
  if(lesson){if(lesson.step===0)lesson.step=1;renderLesson()}
 }
 
@@ -1114,21 +1154,21 @@ function tokenDelta(n) {
   host.append(d); setTimeout(() => d.remove(), 1200);
 }
 function renderLoadout() {
-  const key = G.ticket + '|' + G.artifacts.join(',');
+  const key = G.ticket + '|' + (G.hs ? 'hs' : '') + G.artifacts.map(id => id + hsCounter(id)).join(',');
   if (key === hud.loadoutKey) return; hud.loadoutKey = key;
   const t = TICKETS.find(x => x.id === G.ticket);
   $('ticketBadge').innerHTML = t ? icon(t.icon) : icon('star');
   $('ticketBadge').title = t ? t.name + ' — ' + t.desc : 'No ticket yet';
   $('ticketBadge').className = 'ticketBadge ' + (t ? 't-' + t.id : 'empty');
-  $('artifacts').innerHTML = Array.from({length: 4}, (_, k) => {
-    const a = ARTIFACTS.find(x => x.id === G.artifacts[k]);
-    return a ? `<span class="art" title="${esc(a.name + ' — ' + a.desc)}">${icon(a.icon)}</span>` : '<span class="art empty" title="Empty artifact slot"></span>';
+  $('artifacts').innerHTML = Array.from({length: G.hs ? HS.MAX_CHARMS : 4}, (_, k) => {
+    const a = artOf(G.artifacts[k]);
+    return a ? `<span class="art r${a.rarity || 0}" data-art="${a.id}" title="${esc(a.name + ' — ' + a.desc)}">${icon(a.icon)}${hsCounter(a.id) ? `<i>${hsCounter(a.id)}</i>` : ''}</span>` : '<span class="art empty" title="Empty artifact slot"></span>';
   }).join('');
 }
 function refresh(){
  if(!G)return;syncSlotEffects();if(!G.board[G.selected]||!playable(G.selected)){const k=G.board.findIndex((c,j)=>c&&playable(j));G.selected=k>=0?k:G.board.findIndex(Boolean)}
- $('stageLabel').textContent='Boss '+G.stage+' / '+FINAL;
- document.querySelectorAll('#bossChip .pips i').forEach((p,k)=>p.classList.toggle('on',k<G.stage));
+ $('stageLabel').textContent=(G.hs?.tutorial?'Tutorial ':'Boss ')+G.stage+' / '+lastStage();
+ document.querySelectorAll('#bossChip .pips i').forEach((p,k)=>{p.classList.toggle('on',k<G.stage);p.hidden=k>=lastStage()});
  if(hud.lastCredits!==null&&G.credits!==hud.lastCredits&&!lesson)tokenDelta(G.credits-hud.lastCredits);
  hud.lastCredits=G.credits;
  $('tokens').textContent=G.credits;
@@ -1138,7 +1178,7 @@ function refresh(){
  $('streak').textContent=G.streak;
  const tier=G.streak>=9?3:G.streak>=6?2:G.streak>=3?1:0;
  $('streakMeter').dataset.tier=tier;
- $('streakLabel').textContent=['Streak','On fire','Super fire','Inferno · 3×'][tier];
+ $('streakLabel').textContent=['Streak','On fire','Super fire',G.hs?'Inferno':'Inferno · 3×'][tier];
  document.querySelectorAll('#streakMeter .segs i').forEach((s,k)=>s.classList.toggle('on',k<Math.min(9,G.streak)));
  $('boardCount').textContent=cardsLeft()+'/9';
  const lockedN=G.locked?.filter(Boolean).length||0;document.querySelectorAll('#locks .lk').forEach((l,k)=>l.classList.toggle('on',k<lockedN));
@@ -1148,7 +1188,7 @@ function refresh(){
  $('message').innerHTML=fmt(G.message||((G.board[G.selected]?'Selected: '+rank(G.board[G.selected]):'Select a card')));
  $('detail').innerHTML=fmt(G.detail);
  const ready=G.phase==='playing'&&!!G.board[G.selected];$('higher').disabled=!ready;$('lower').disabled=!ready;
- for(const [id,active] of [['push',ready&&G.push===0],['shield',ready&&G.shields>0&&!G.protected[G.selected]],['peek',ready&&G.peeks>0],['swap',ready&&G.swaps>0],['cashout',ready&&G.streak>=3]])$(id).disabled=!active;
+ for(const [id,active] of [['push',ready&&G.push===0],['shield',ready&&G.shields>0&&!G.protected[G.selected]],['peek',ready&&G.peeks>0],['swap',ready&&G.swaps>0],['cashout',ready&&!G.hs&&G.streak>=3]])$(id).disabled=!active;
  const setTool=(id,label,badge)=>{$(id).querySelector('.tl').textContent=label;const b=$(id).querySelector('.badge');b.textContent=badge??'';b.hidden=badge==null};
  setTool('push',G.push===1?'Push 2/2':G.push===2?'Push 2/2':'Push',null);
  $('push').classList.toggle('armed',G.push>0);
@@ -1160,6 +1200,7 @@ function refresh(){
  $('swap').classList.toggle('armed',swapFrom!==null);
  setTool('cashout','Cash out',null);
  syncChips(Math.max(0,Math.min(30,Math.ceil(G.credits/6))));
+ hsHud();tutHud();
 }
 function renderMech(){
  const id=bossId(),el=$('mech');let h='';
@@ -1195,6 +1236,7 @@ const foley = {
  'entrance-elevator': {clips:['latch'], gain:.6, rate:1.35},
  'entrance-roller': {clips:['tokens'], gain:.6},
  'entrance-house': {clips:['register'], gain:.67, rate:.8},
+ 'entrance-doorman': {clips:['chip'], gain:.5, rate:.9},
  'entrance-driver': {clips:['ignition'], gain:.72},
  ui: {clips:['chip'], gain:.22, rate:1.5, gap:.04}
 };
@@ -1275,14 +1317,18 @@ function cardImage(card) {
 function readBest() { try { return Number(localStorage.getItem(bestKey)) || 0; } catch (e) { return 0; } }
 function showTitle() {
   const best = readBest();
-  let seen = false; try { seen = localStorage.getItem('hilo-tutorial-v1') === 'done'; } catch (e) {}
+  let seen = false; seen = !!hsMeta().taught;
   const fan = [{v: 0, s: '♠'}, {v: 12, s: '♥'}, {joker: true}, {v: 11, s: '♦'}, {v: 10, s: '♣'}];
   const node = html(`<div class="title">
     <div class="fan">${fan.map((c, i) => `<img class="fanCard f${i}" src="${cardImage(c)}" alt="">`).join('')}</div>
     <h1 class="logo"><span class="hi">HI</span><span class="mid">${suitSVG('♠')}</span><span class="lo">LO</span></h1>
     <p class="tagline">Beat the deck. Break the house.</p>
     <div class="titleBtns">
-      <button class="btn primary big" data-a="start" data-autofocus>${icon('play')} Start run</button>
+      <button class="btn primary big" data-a="stakes" data-autofocus>${icon('flame')} High Stakes</button>
+      <div class="titleRow">
+        <button class="btn ghost" data-a="daily">${icon('sun')} Daily deal</button>
+        <button class="btn ghost" data-a="start">${icon('play')} Classic run</button>
+      </div>
       <div class="titleRow">
         <button class="btn ghost" data-a="learn">${icon('book')} How to play${seen ? '' : ' <em class="new">New</em>'}</button>
         <a class="btn ghost" href="../table-battle/">${icon('vs')} Table Battle</a>
@@ -1292,8 +1338,10 @@ function showTitle() {
     ${document.body.dataset.tablePreview ? `<details class="boss-preview"><summary>Try a boss table</summary><div>${[4,3,5,6].map(stage => `<button class="btn ghost" data-preview-stage="${stage}">${esc(BOSSES[stage-1].name)}</button>`).join('')}</div></details>` : ''}
     <div class="titleFoot">Higher or lower · 7 bosses · 9 positions · Ace is low, ties lose</div>
   </div>`);
+  node.querySelector('[data-a=stakes]').onclick = () => { sound('purchase'); hsMeta().taught ? hsLobby() : hsWelcome(); };
+  node.querySelector('[data-a=daily]').onclick = () => { sound('purchase'); hsStart({limit: 0, daily: true}); };
   node.querySelector('[data-a=start]').onclick = () => { sound('purchase'); chooseTicket(); };
-  node.querySelector('[data-a=learn]').onclick = startLesson;
+  node.querySelector('[data-a=learn]').onclick = () => { sound('purchase'); hsStart({tutorial: true}); };
   node.querySelectorAll('[data-preview-stage]').forEach(button => {
     button.onclick = () => chooseTicket(Number(button.dataset.previewStage));
   });
@@ -1392,7 +1440,7 @@ function confetti() {
   }
 }
 function showRunResult(win, reason, best, isNew) {
-  const stats = [['Correct', G.correct], ['Best streak', G.best], ['Boss', G.stage + ' / ' + FINAL], ['Tokens', G.credits]];
+  const stats = [['Correct', G.correct], ['Best streak', G.best], ['Boss', G.stage + ' / ' + FINAL], ['Tokens', G.credits], ...(G.hs ? [['Best call', G.hs.bestCall.toLocaleString()], ['Seed', G.hs.seed]] : [])];
   const node = html(`<div class="sheet resultSheet ${win ? 'win' : 'lose'}">
     <div class="resultIcon">${icon(win ? 'trophy' : 'bust')}</div>
     <div class="kicker">${win ? 'The Final Driver is defeated' : 'End of the road'}</div>
@@ -1404,7 +1452,8 @@ function showRunResult(win, reason, best, isNew) {
     <div class="bestLine">${icon('trophy')} Best run ${best.toLocaleString()}</div>
     <button class="btn primary big" data-a="again" data-autofocus>${icon('restart')} Play again</button>
   </div>`);
-  node.querySelector('[data-a=again]').onclick = () => { hideDialog(); newRun(); };
+  if (G.hs) hsResult(node, win);
+  node.querySelector('[data-a=again]').onclick = () => { const again = G.hs && {limit: G.hs.limit}; hideDialog(); newRun(); if (again) hsStart(again); };
   openScreen(win ? 'victory' : 'defeat', node);
   const el = node.querySelector('.resultScore'), to = G.score, t0 = performance.now(), dur = reduced ? 1 : 1400;
   const tick = now => { const k = Math.min(1, (now - t0) / dur), e = 1 - (1 - k) ** 3; el.textContent = Math.round(to * e).toLocaleString(); if (k < 1) requestAnimationFrame(tick); };
@@ -1413,26 +1462,26 @@ function showRunResult(win, reason, best, isNew) {
   if (win) confetti();
 }
 function showRunInfo() {
-  const boss = BOSS_PRESENTATION[G.stage - 1];
+  const boss = lookAt(G.stage);
   const t = TICKETS.find(x => x.id === G.ticket);
   const upgrades = G.upgrades.map((id, i) => id ? {i, up: UPGRADES.find(u => u.id === id)} : null).filter(Boolean);
   const node = html(`<div class="sheet infoSheet">
     <button class="closeX" data-a="close" aria-label="Close">${icon('close')}</button>
-    <div class="infoBoss"><span class="emblem">${suitSVG(boss.mark)}</span><div><div class="kicker">Boss ${G.stage} of ${FINAL}</div><h2>${esc(boss.name)}</h2><p class="sub">${esc(BOSSES[G.stage - 1].desc)}</p></div></div>
+    <div class="infoBoss"><span class="emblem">${suitSVG(boss.mark)}</span><div><div class="kicker">${G.hs?.tutorial ? 'Tutorial table' : 'Boss'} ${G.stage} of ${lastStage()}</div><h2>${esc(boss.name)}</h2><p class="sub">${esc(bossRule(G.stage))}</p></div></div>
     <div class="infoGrid">
-      <section><h3>How it works</h3><ul class="rules">
+      <section><h3>How it works</h3>${G.hs ? hsRules() : `<ul class="rules">
         <li><b>Pick a card</b> on the table, then call the next card <b>Higher</b> or <b>Lower</b>.</li>
         <li><b>Ace is low. Ties lose.</b> A miss removes that position.</li>
         <li>Riskier calls pay more points. Middle cards (5–9) pay a bonus.</li>
         <li>Regular refills come every 2 correct calls in bosses 1–2, then every 4 correct calls within each boss. Every 3 wins in a row also earns a refill. When both milestones coincide, they share one refill.</li>
         <li>Each <b>Joker</b> shuffles five extra cards into the deck.</li>
         <li>Clear the deck to beat the boss. Lose every card and the run ends.</li>
-      </ul></section>
+      </ul>`}</section>
       <section><h3>Your run</h3>
         <div class="statGrid small"><div><small>Score</small><b>${G.score.toLocaleString()}</b></div><div><small>Correct</small><b>${G.correct}</b></div><div><small>Streak</small><b>${G.streak}</b></div><div><small>Board</small><b>${cardsLeft()}/9</b></div></div>
         <div class="loadList">
           ${t ? `<div class="loadItem">${icon(t.icon)}<div><b>${esc(t.name)}</b><span>${esc(t.desc)}</span></div></div>` : ''}
-          ${G.artifacts.map(id => { const a = ARTIFACTS.find(x => x.id === id); return `<div class="loadItem">${icon(a.icon)}<div><b>${esc(a.name)}</b><span>${esc(a.desc)}</span></div></div>`; }).join('')}
+          ${G.artifacts.map(id => { const a = artOf(id); return `<div class="loadItem">${icon(a.icon)}<div><b>${esc(a.name)}</b><span>${esc(a.desc)}</span></div></div>`; }).join('')}
           ${upgrades.map(({i, up}) => `<div class="loadItem" style="--c:${hex(UPGRADE_COLORS[up.id])}">${icon(up.icon)}<div><b>${esc(up.name)} · position ${i + 1}</b><span>${esc(up.desc)}</span></div></div>`).join('')}
           ${!t && !G.artifacts.length && !upgrades.length ? '<p class="sub">Nothing collected yet.</p>' : ''}
         </div>
@@ -1466,11 +1515,324 @@ function showSettings() {
 }
 function confirmRestart() {
   const node = html(`<div class="sheet confirmSheet"><div class="kicker">Restart</div><h2>Start a new run?</h2><p class="sub">Your current run will be lost.</p>
-    <div class="row"><button class="btn ghost" data-a="no" data-autofocus>Keep playing</button><button class="btn danger" data-a="yes">${icon('restart')} Restart</button></div></div>`);
+    <div class="row"><button class="btn ghost" data-a="no" data-autofocus>Keep playing</button><button class="btn danger" data-a="yes">${icon('restart')} Restart</button></div><button class="btn ghost" data-a="menu" style="margin-top:10px">Main menu</button></div>`);
+  node.querySelector('[data-a=menu]').onclick = () => { hideDialog(); newRun(); showTitle(); };
   node.querySelector('[data-a=no]').onclick = hideDialog;
-  node.querySelector('[data-a=yes]').onclick = () => { hideDialog(); newRun(); };
+  node.querySelector('[data-a=yes]').onclick = () => { const again = G.hs && {limit: G.hs.limit, daily: G.hs.daily, tutorial: !!G.hs.tutorial}; hideDialog(); newRun(); if (again) hsStart(again); };
   openScreen('confirm', node);
 }
+
+/* -------------------------- high stakes --------------------------- */
+// The light mode: a points goal, a call limit, payouts shown on the buttons,
+// and charms that multiply pay. Bosses come in the Classic order.
+const hsBestKey = 'hilo-stakes-best', hsMetaKey = 'hilo-stakes-light';
+function hsMeta() { try { return {limit: 0, wins: 0, runs: 0, ...JSON.parse(localStorage.getItem(hsMetaKey) || '{}')}; } catch (e) { return {limit: 0, wins: 0, runs: 0}; } }
+function hsSave(meta) { try { localStorage.setItem(hsMetaKey, JSON.stringify(meta)); } catch (e) {} }
+const today = () => { const d = new Date(); return [d.getFullYear(), d.getMonth() + 1, d.getDate()].map(n => String(n).padStart(2, '0')).join('-'); };
+const minFor = stage => G.hs.tutorial ? LESSONS[stage - 1].min : HS.goalFor(stage, G.hs.limit);
+const hsMin = () => minFor(G.stage);
+const hsCounter = id => { const c = HS.charmById[id]; return G?.hs && c?.show ? c.show(G.hs.mem[id] || {}) : ''; };
+const sellValue = id => Math.floor(artOf(id).cost / 2);
+
+function hsStart({limit = 0, daily = false, tutorial = false} = {}) {
+  newRun();
+  const code = tutorial ? 'DOORMAN' : daily ? 'DAILY-' + today() : HS.randomSeed();
+  G.hs = {seed: code, daily, limit, tutorial: tutorial ? {step: 0} : null, order: tutorial ? [TUTORIAL_BOSS, TUTORIAL_BOSS, TUTORIAL_BOSS] : [0, 1, 2, 3, 4, 5, 6],
+    deck: HS.freshDeck(), mem: {}, rng: HS.makeRng(code + ':deck:0'), table: 0, shownTable: 0, calls: HS.CALLS, paying: 0, rerolls: 0, offers: null, bestCall: 0, unlocked: -1, forgiven: false};
+  hud.credits = G.credits; hud.lastCredits = G.credits; hud.loadoutKey = '';
+  applyBossStyle(1); refresh();
+  if (tutorial) { G.ticket = 'lucky'; hideDialog(); enterBoss(1); } else chooseTicket();
+}
+function hsSetup(stage) {
+  Object.assign(G.hs, {rng: HS.makeRng(G.hs.seed + ':deck:' + stage), table: 0, shownTable: 0, calls: HS.CALLS, paying: 0, forgiven: false});
+}
+function hsContext(i, dir, p, spent = 1) {
+  return {card: G.board[i], drawn: null, dir, slot: i, p, tier: HS.tierOf(p), streak: G.streak, board: [...G.board], callsLeft: G.hs.calls + spent};
+}
+const hsCanCall = () => G.board.some((c, i) => c && playable(i) && ['higher', 'lower'].some(d => chance(c, d) > 0));
+function hsForecast(i, dir) {
+  const card = G.board[i]; if (!card) return null;
+  let p = chance(card, dir); if (!p) return {none: true};
+  if (isDoubleNext()) p *= p;
+  return HS.payout(hsContext(i, dir, p, 0), G.artifacts, G.hs.mem);
+}
+function hsWin(ctx) {
+  const hs = G.hs, pay = HS.payout(ctx, G.artifacts, hs.mem);
+  HS.afterWin(ctx, G.artifacts, hs.mem);
+  hs.table += pay.total; hs.bestCall = Math.max(hs.bestCall, pay.total);
+  return pay;
+}
+// A miss also costs part of what the call would have paid.
+function hsMiss(ctx, slot) {
+  const hs = G.hs, cost = Math.min(hs.table, Math.round(HS.payout(ctx, G.artifacts, hs.mem).total * HS.MISS_COST));
+  hs.table -= cost; hs.shownTable = hs.table;
+  if (cost) floatLabel('−' + cost, slot, '#ff8a7a');
+  return cost;
+}
+// Each charm fires in turn, pitch climbing, then the total lands.
+function hsPay(pay, slot) {
+  const hs = G.hs, run = G, gap = reduced ? 0 : 150;
+  const step = k => {
+    if (G !== run || lesson) return;
+    const s = pay.steps[k];
+    if (s) {
+      const chip = document.querySelector(`#artifacts [data-art="${s.id}"]`);
+      if (chip) { chip.classList.remove('fire'); void chip.offsetWidth; chip.classList.add('fire'); }
+      floatLabel(artOf(s.id).name + ' ×' + s.x, slot, '#ffc27a', true);
+      hsTone(k); setTimeout(step, gap, k + 1); return;
+    }
+    hs.shownTable = hs.table;
+    floatLabel('+' + pay.total.toLocaleString(), slot, pay.tier.id === 'long' ? '#ffb3ff' : pay.tier.id === 'bold' ? '#ffc04d' : '#ffe3a1');
+    sound('good'); if (pay.total >= hsMin() * .2) { sound('cashout'); kick(.12); burst(slot, 0xffd16b, 40); }
+    if (pay.tier.id === 'long' || pay.tier.id === 'bold') banner(pay.tier.name, pay.tier.id === 'long' ? 'joker' : 'fire', 'pays ×' + pay.odds);
+    hsHud(true);
+  };
+  if (reduced) { hs.paying = 0; step(pay.steps.length); return; }
+  hs.paying = gap * pay.steps.length + 260; setTimeout(step, 60, 0);
+}
+function hsTone(k) { try { if (openAudio()) { const f = 392 * Math.pow(2, Math.min(14, k * 2) / 12); playTone(audioContext.currentTime, f, f * 1.01, .12, .07); } } catch (e) {} }
+function hsBossCondition() {
+  if (bossId() === 'house' && Object.keys(G.stamps).length < 4) return 'The House still needed ' + (4 - Object.keys(G.stamps).length) + ' more suit' + (Object.keys(G.stamps).length === 3 ? '' : 's') + ' stamped.';
+  if (bossId() === 'driver' && cardsLeft() < 2) return 'The Final Driver required two remaining cards.';
+  return '';
+}
+const hsDone = () => G.hs.table >= hsMin() && !hsBossCondition();
+function hsSettle(run) {
+  const hs = G.hs; refresh();
+  setTimeout(() => {
+    if (G !== run) return;
+    hs.paying = 0; hs.shownTable = hs.table;
+    if (hsDone()) { hsClear(); return; }
+    if (hs.calls <= 0 || !G.deck.length) { hsFinish(); return; }
+    G.phase = 'playing';
+    if (tutStep()?.call) tutNext();
+    refresh();
+  }, hs.paying);
+}
+function hsFinish() {
+  const min = hsMin(), short = min - G.hs.table;
+  if (cardsLeft() === 0) { endRun(false, 'You lost every card on the board.'); return; }
+  if (short > 0) { endRun(false, 'Out of calls, ' + short.toLocaleString() + ' points short of ' + min.toLocaleString() + '.'); return; }
+  const why = hsBossCondition(); if (why) { endRun(false, why); return; }
+  hsClear();
+}
+function hsClear() {
+  const hs = G.hs, cleared = G.stage, won = cleared === lastStage();
+  const rows = [['Table beaten', HS.CLEAR_TOKENS], [hs.calls + ' call' + (hs.calls === 1 ? '' : 's') + ' to spare', hs.calls * HS.SPARE_CALL_TOKENS]].filter(r => r[1]);
+  const total = rows.reduce((n, r) => n + r[1], 0);
+  creditTokens(total); HS.afterTable(G.artifacts, hs.mem);
+  G.phase = 'shop'; refresh(); sound('cashout'); banner('GOAL REACHED', 'positive', '+' + total + ' tokens');
+  if (won) { endRun(true, ''); return; }
+  const run = G;
+  setTimeout(() => {
+    if (G !== run || G.phase !== 'shop' || G.stage !== cleared) return;
+    const node = html(`<div class="sheet confirmSheet cashSheet"><div class="kicker">${hs.tutorial ? 'Table ' + cleared + ' of ' + lastStage() : esc(bossAt(cleared).name) + ' beaten'}</div><h2>Goal reached</h2>
+      <div class="cashScore">${hs.table.toLocaleString()} <small>of ${minFor(cleared).toLocaleString()}</small></div>
+      <div class="cashRows">${rows.map(([k, v], n) => `<div style="--n:${n}"><span>${esc(k)}</span><b>+${v} tokens</b></div>`).join('')}</div>
+      ${G.tollDebt ? `<p class="sub">${G.tollDebt} tokens still owed in tolls.</p>` : ''}
+      <button class="btn primary big" data-a="go" data-autofocus>To the shop ${icon('arrow')}</button></div>`);
+    node.querySelector('[data-a=go]').onclick = () => { sound('purchase'); shop(cleared + 1, true); };
+    openScreen('cash', node);
+  }, reduced ? 200 : 1300);
+}
+function hsHud(force) {
+  const bar = $('hsBar'), on = !!G?.hs && !lesson;
+  bar.hidden = !on; document.body.dataset.mode = on ? 'stakes' : 'classic';
+  for (const dir of ['higher', 'lower']) $(dir).querySelector('.fc').textContent = '';
+  if (!on) return;
+  const hs = G.hs, min = hsMin(), shown = hs.paying && !force ? hs.shownTable : hs.table;
+  $('hsScore').textContent = shown.toLocaleString(); $('hsMin').textContent = min.toLocaleString();
+  $('hsFill').style.width = Math.min(100, shown / min * 100) + '%'; bar.classList.toggle('made', shown >= min);
+  const why = shown >= min ? hsBossCondition() : '';
+  $('hsCalls').textContent = (why ? (bossId() === 'house' ? 'Stamp every suit · ' : 'Hold two cards · ') : '') + hs.calls + (hs.calls === 1 ? ' call' : ' calls') + ' left';
+  $('hsCalls').classList.toggle('low', hs.calls <= 3);
+  if (G.phase !== 'playing' || !G.board[G.selected]) return;
+  for (const dir of ['higher', 'lower']) {
+    const q = hsForecast(G.selected, dir), el = $(dir).querySelector('.fc'); if (!q) continue;
+    el.textContent = q.none ? 'No chance' : q.tier.name + ' · pays ' + q.total.toLocaleString(); el.dataset.tier = q.none ? 'none' : q.tier.id;
+    if (q.none && hsCanCall()) $(dir).disabled = true;
+  }
+}
+// Charms explain themselves on tap, since phones have no tooltips.
+$('artifacts').addEventListener('click', e => { const id = e.target.closest('[data-art]')?.dataset.art, a = id && artOf(id); if (!a || !G?.hs || G.phase !== 'playing') return; G.message = a.name; G.detail = a.desc; refresh(); sound('ui'); });
+
+function hsRollOffers(stage) {
+  const hs = G.hs, r = HS.makeRng([hs.seed, 'shop', stage, hs.rerolls].join(':'));
+  hs.offers = HS.rollCharms(r, G.artifacts, ARTIFACTS, 3);
+  if (hs.tutorial) hs.offers = ['velvet', 'center', 'royalty'].filter(id => !G.artifacts.includes(id));
+}
+function hsShop(stage, fresh) {
+  const hs = G.hs;
+  if (fresh) { hs.rerolls = 0; hsRollOffers(stage); }
+  refresh();
+  const look = lookAt(stage), full = G.artifacts.length >= HS.MAX_CHARMS, rerollCost = 10 + 5 * hs.rerolls, poor = n => G.credits < n;
+  const kind = a => a.rarity ? ['', 'Charm', 'Charm · uncommon', 'Charm · rare'][a.rarity] : 'Helper';
+  const offer = id => { const a = artOf(id), why = full ? 'Sell one first' : poor(a.cost) ? 'Need ' + (a.cost - G.credits) + ' more' : '';
+    return `<button class="offer hsOffer r${a.rarity || 0}" data-charm="${id}" ${why ? 'disabled' : ''}><span class="medal">${icon(a.icon)}</span><span class="otext"><span class="otype">${kind(a)}</span><b>${esc(a.name)}</b><small>${esc(a.desc)}</small></span><span class="price">${icon('chip')} ${a.cost}</span>${why ? `<span class="why">${esc(why)}</span>` : ''}</button>`; };
+  const node = html(`<div class="sheet shopSheet hsShop">
+    <div class="shopHead"><div><div class="kicker">${hs.tutorial ? 'Tutorial' : 'Before boss ' + stage + ' of ' + FINAL}</div><h2>The Pit Stop</h2></div>
+      <div class="wallet">${icon('chip')}<b>${G.credits}</b><small>tokens${G.tollDebt ? ' · ' + G.tollDebt + ' owed' : ''}</small></div></div>
+    ${tutShopHTML(stage)}
+    <section><h3>Charms <small>${G.artifacts.length} of ${HS.MAX_CHARMS} slots used</small></h3><div class="hsGrid">${hs.offers.map(offer).join('')}${'<div class="offer sold hsOffer"><span>Sold</span></div>'.repeat(3 - hs.offers.length)}</div></section>
+    <div class="owned"><span class="ownedLabel">Yours</span>${G.artifacts.map(id => `<button class="chipTag sell" data-sell="${id}" title="${esc(artOf(id).desc)}">${icon(artOf(id).icon)} ${esc(artOf(id).name)}${hsCounter(id) ? ' <i>' + hsCounter(id) + '</i>' : ''} <em>Sell ${sellValue(id)}</em></button>`).join('') || '<span class="none">No charms yet</span>'}</div>
+    <div class="shopFoot"><button class="btn ghost reroll" data-a="reroll" ${poor(rerollCost) ? 'disabled' : ''}>${icon('reroll')} New charms <span class="price">${icon('chip')} ${rerollCost}</span></button>
+      <div class="nextBoss"><span class="emblem">${suitSVG(look.mark)}</span><div><small>Next · goal ${minFor(stage).toLocaleString()} in ${HS.CALLS} calls</small><b>${esc(look.name)}</b><span>${esc(bossRule(stage))}</span></div></div>
+      <button class="btn primary big" data-a="go" data-autofocus>Sit down ${icon('arrow')}</button></div></div>`);
+  node.querySelectorAll('[data-charm]').forEach(b => b.onclick = () => { const id = b.dataset.charm, n = artOf(id).cost; if (G.credits < n || G.artifacts.length >= HS.MAX_CHARMS) return; sound('purchase'); G.credits -= n; G.artifacts.push(id); hs.mem[id] = {}; hs.offers = hs.offers.filter(x => x !== id); hsShop(stage); });
+  node.querySelectorAll('[data-sell]').forEach(b => b.onclick = () => { const id = b.dataset.sell; sound('cashout'); G.credits += sellValue(id); G.artifacts = G.artifacts.filter(x => x !== id); delete hs.mem[id]; hsShop(stage); });
+  node.querySelector('[data-a=reroll]').onclick = () => { if (G.credits < rerollCost) return; sound('shuffle'); G.credits -= rerollCost; hs.rerolls++; hsRollOffers(stage); hsShop(stage); };
+  node.querySelector('[data-a=go]').onclick = () => enterBoss(stage);
+  tutShop(stage, node);
+  const top = screenName === 'shop' ? $('screen').scrollTop : 0;
+  openScreen('shop', node); $('screen').scrollTop = top;
+}
+function hsWelcome() {
+  const node = html(`<div class="sheet confirmSheet"><div class="kicker">High Stakes</div><h2>First time here?</h2><p class="sub">The tutorial is a short playthrough: three easy tables against the Doorman. You can't lose your run.</p>
+    <div class="titleBtns"><button class="btn primary big" data-a="learn" data-autofocus>${icon('book')} Play the tutorial</button><button class="btn ghost" data-a="skip">Skip it, deal me in</button></div></div>`);
+  node.querySelector('[data-a=learn]').onclick = () => { sound('purchase'); hsStart({tutorial: true}); };
+  node.querySelector('[data-a=skip]').onclick = () => { const m = hsMeta(); m.taught = true; hsSave(m); hsLobby(); };
+  openScreen('welcome', node);
+}
+function hsLobby() {
+  const meta = hsMeta(); let limit = meta.limit;
+  const node = html(`<div class="sheet slotSheet hsLobby"><div class="kicker">High Stakes</div><h2>Pick your table</h2>
+    <p class="sub">Reach each boss's points goal in ${HS.CALLS} calls. Riskier calls pay more, but a miss costs a card and half of what it would have paid.</p>
+    <div class="limits">${HS.LIMITS.map((l, k) => `<button class="bet" data-l="${k}" ${k > meta.limit ? 'disabled' : ''}>${icon(k > meta.limit ? 'lock' : 'chip')}<span><b>${esc(l.name)}</b><small>${k > meta.limit ? 'Win a run on ' + esc(HS.LIMITS[k - 1].name) + ' to unlock' : esc(l.desc)}</small></span></button>`).join('')}</div>
+    <p class="sub">${meta.wins} win${meta.wins === 1 ? '' : 's'} in ${meta.runs} run${meta.runs === 1 ? '' : 's'}</p>
+    <div class="row"><button class="btn ghost" data-a="back">${icon('back')} Back</button><button class="btn ghost" data-a="learn">${icon('book')} Tutorial</button><button class="btn primary big" data-a="go" data-autofocus>${icon('play')} Deal me in</button></div></div>`);
+  const mark = () => node.querySelectorAll('[data-l]').forEach(b => b.classList.toggle('mine', +b.dataset.l === limit)); mark();
+  node.querySelectorAll('[data-l]').forEach(b => b.onclick = () => { limit = +b.dataset.l; mark(); });
+  node.querySelector('[data-a=back]').onclick = showTitle;
+  node.querySelector('[data-a=learn]').onclick = () => { sound('purchase'); hsStart({tutorial: true}); };
+  node.querySelector('[data-a=go]').onclick = () => { sound('purchase'); hsStart({limit}); };
+  openScreen('lobby', node);
+}
+function hsRecord(win) {
+  const hs = G.hs, meta = hsMeta(); meta.runs++;
+  if (win) { meta.wins++; if (!hs.daily && hs.limit === meta.limit && meta.limit < HS.LIMITS.length - 1) { meta.limit++; hs.unlocked = meta.limit; } }
+  if (hs.daily) { const date = hs.seed.slice(6); meta.daily = {date, score: Math.max(G.score, meta.daily?.date === date ? meta.daily.score : 0)}; }
+  hsSave(meta);
+}
+function hsResult(node, win) {
+  const hs = G.hs;
+  if (!win) node.querySelector('h2').textContent = hs.table >= hsMin() * .8 && hs.table < hsMin() ? 'So close' : 'Run over';
+  if (hs.unlocked >= 0) node.querySelector('.bestLine').insertAdjacentHTML('beforebegin', `<div class="bestLine unlock">${icon('lock')} Unlocked: ${esc(HS.LIMITS[hs.unlocked].name)}</div>`);
+  const menu = html(`<button class="btn ghost" data-a="menu">Main menu</button>`); menu.onclick = () => { hideDialog(); newRun(); showTitle(); }; node.append(menu);
+}
+function hsRules() {
+  return `<ul class="rules">
+    <li>Reach the <b>points goal</b> in ${HS.CALLS} calls. Each button shows what a correct call pays.</li>
+    <li>Riskier calls pay more: ${HS.TIERS.map(t => `<b>${t.name}</b> ×${t.odds}`).join(', ')}. Bold and Long shot wins also add a card.</li>
+    <li>A miss loses the card and <b>half of what the call would have paid</b>.</li>
+    <li>Charms multiply your pay. Buy them between tables.</li>
+    <li>Peeking doesn't lower the pay. Peek, then take the Long shot.</li>
+    <li><b>Ace is low. Ties lose.</b> Each boss adds its own rule.</li></ul><p class="sub">Want a refresher? Choose How to play on the title screen.</p>`;
+}
+
+/* ---------------------- high stakes tutorial ---------------------- */
+// A complete three-table run against the Doorman. Scripted steps stack the
+// next cards, then each table opens up for free play.
+const c_ = text => ({v: R.indexOf(text.slice(0, -1)), s: text.slice(-1)});
+const LESSONS = [
+  {min: 300, board: ['K♠', '5♥', '8♦', 'J♣', '4♠'], steps: [
+    {t: 'Welcome. Beat each table by reaching its points goal before your calls run out. This one is 300 points in 14 calls.', next: 1},
+    {t: 'Pick a card, then guess if the next card is higher or lower. Tap the King in the top left.', select: 0},
+    {t: 'Nearly everything is lower than a King, so this call is Safe. The button shows it pays 20. Press Lower.', call: 'lower', draw: ['9♣']},
+    {t: 'Correct! The new card takes the King’s place. Safe calls are easy, but 20 at a time is slow.', next: 1},
+    {t: 'Unlikely calls pay far more. Let’s cheat a little: press Peek to see the next card.', tool: 'peek', draw: ['Q♦', '2♥', '10♠']},
+    {t: 'The next card is a Queen. Tap the Jack: almost nothing beats a Jack, so Higher is a Long shot that pays 160.', select: 3},
+    {t: 'You know the Queen is coming. Press Higher.', call: 'higher'},
+    {t: '160 points from one call! Long shots also add a card to the table.', next: 1},
+    {t: 'Now see a miss. Tap the 8.', select: 2},
+    {t: 'Press Higher. This one won’t go your way.', call: 'higher', draw: ['3♦']},
+    {t: 'A miss costs half of what the call would have paid, and normally the card too. The Doorman forgives your first miss at each table, so you keep it this time.', next: 1},
+    {t: 'A Shield blocks one miss on the card you pick. Press Shield to protect the 8.', tool: 'shield'},
+    {t: 'Your turn. Get to 300. Big pays are tempting, but every miss costs points and a card.', free: 1}
+  ]},
+  {min: 350, board: ['7♣', 'Q♥', '5♦', null, 'K♥', '10♠'], steps: [
+    {t: 'You bought Center Stage. Calls on the middle position now pay double.', next: 1},
+    {t: 'Let’s move a riskier card into the middle. Tap the 7.', select: 0},
+    {t: 'Press Swap.', tool: 'swap'},
+    {t: 'Tap the King in the middle to trade places.', select: 4},
+    {t: 'Lower on a 7 is a Bold call, and the middle pays double. The button shows 160. Press Lower.', call: 'lower', draw: ['3♦', '9♥']},
+    {t: 'Bold pays 80, and Center Stage doubled it. Bold wins add a card too.', next: 1},
+    {t: 'Keep going to 350. Three wins in a row also add a card, so streaks are worth protecting.', free: 1}
+  ]},
+  {min: 450, board: ['2♠', 'J♥', '9♣', '5♥', '8♦', 'K♦'], steps: [
+    {t: 'Last table. Real bosses each add a rule that makes things harder. The Doorman’s rule helps you instead.', next: 1},
+    {t: 'Get to 450 your way. Look for calls your charms pay extra for.', free: 1}
+  ]}
+];
+const SHOP_LESSONS = {
+  2: 'Spend tokens here between tables. Charms stay with you all run and make certain calls pay more. Buy Center Stage.',
+  3: 'Buy a charm that fits the cards you like to play, or save tokens for a better one later.'
+};
+const tut = () => G?.hs?.tutorial && !lesson ? G.hs.tutorial : null;
+const tutStep = () => { const t = tut(); return t && G.phase !== 'shop' && G.phase !== 'ended' ? LESSONS[G.stage - 1]?.steps[t.step] : null; };
+function tutStack(cards) {
+  const list = cards.map(c_);
+  for (const c of list) { const k = G.deck.findIndex(x => x.v === c.v && x.s === c.s); if (k >= 0) G.deck.splice(k, 1); }
+  G.deck.push(...list.reverse());
+}
+function tutDeal(stage) {
+  const board = LESSONS[stage - 1].board.map(x => x && c_(x));
+  G.hs.tutorial.step = 0;
+  if (stage === 1) G.peeks = Math.max(1, G.peeks);
+  board.forEach((c, i) => {
+    if (!c) return;
+    const k = G.deck.findIndex(x => x.v === c.v && x.s === c.s); if (k >= 0) G.deck.splice(k, 1);
+    G.board[i] = c; meshCard(c, i, true);
+  });
+  G.selected = board[4] ? 4 : 1;
+}
+function tutNext() {
+  const t = tut(); if (!t) return;
+  t.step++; const s = tutStep(); if (s?.draw) tutStack(s.draw);
+  refresh();
+}
+function tutDid(kind, value) { const s = tutStep(); if (s && s[kind] === value) tutNext(); }
+function tutBlocks(kind, value) { const s = tutStep(); return !!s && !s.free && s[kind] !== value; }
+function tutHud() {
+  const s = tutStep(), box = $('coach');
+  box.hidden = !s; document.body.dataset.tutorial = tut() ? 'on' : '';
+  for (const id of ['higher', 'lower', 'peek', 'shield', 'swap']) $(id).classList.remove('lessonTarget');
+  if (!s) return;
+  $('coachText').textContent = s.t; $('coachStep').textContent = 'Tutorial ' + G.stage + ' of ' + LESSONS.length;
+  $('coachNext').hidden = !s.next;
+  if (s.free) return;
+  for (const id of ['higher', 'lower']) if (s.call !== id) $(id).disabled = true;
+  for (const id of ['peek', 'shield', 'swap']) if (s.tool !== id) $(id).disabled = true;
+  const target = s.call || s.tool; if (target && G.phase === 'playing') { $(target).classList.add('lessonTarget'); $(target).scrollIntoView({block: 'nearest'}); }
+}
+function tutShopHTML(stage) { return tut() && SHOP_LESSONS[stage] ? `<div class="coachNote">${esc(SHOP_LESSONS[stage])}</div>` : ''; }
+function tutShop(stage, node) {
+  if (!tut()) return;
+  node.querySelector('.reroll').remove();
+  node.querySelectorAll('[data-sell]').forEach(b => b.disabled = true);
+  if (stage !== 2) return;
+  node.querySelectorAll('[data-charm]').forEach(b => b.disabled = b.dataset.charm !== 'center');
+  const ready = G.artifacts.includes('center'), go = node.querySelector('[data-a=go]'); go.disabled = !ready;
+  (ready ? go : node.querySelector('[data-charm=center]'))?.classList.add('lessonTarget');
+}
+function tutRetry(reason) {
+  const node = html(`<div class="sheet confirmSheet"><div class="kicker">Tutorial</div><h2>No harm done</h2><p class="sub">${esc(reason)} In a real run that would be the end. Here you can try the table again.</p>
+    <div class="row"><button class="btn ghost" data-a="menu">Main menu</button><button class="btn primary" data-a="again" data-autofocus>${icon('restart')} Try again</button></div></div>`);
+  node.querySelector('[data-a=again]').onclick = () => { hideDialog(); setupStage(G.stage); };
+  node.querySelector('[data-a=menu]').onclick = () => { hideDialog(); newRun(); showTitle(); };
+  openScreen('retry', node); sound('defeat');
+}
+function tutDone() {
+  const meta = hsMeta(); meta.taught = true; hsSave(meta);
+  const node = html(`<div class="sheet resultSheet win"><div class="resultIcon">${icon('trophy')}</div><div class="kicker">Tutorial complete</div><h2>The Doorman lets you in</h2>
+    <div class="recap">${[['Reach the goal', 'before your calls run out.'], ['Safe calls keep your cards.', 'Riskier calls pay more and add cards.'], ['A miss costs points and a card,', 'so pick your risks.'], ['Peek, then take the Long shot.', 'Peeking doesn’t lower the pay.'], ['Buy charms that suit your cards.', 'Each boss adds its own rule.']].map(([a, b]) => `<p><b>${a}</b> ${b}</p>`).join('')}</div>
+    <button class="btn primary big" data-a="play" data-autofocus>${icon('play')} Start a real run</button>
+    <button class="btn ghost" data-a="menu">Main menu</button></div>`);
+  node.querySelector('[data-a=play]').onclick = () => { hideDialog(); hsStart({limit: 0}); };
+  node.querySelector('[data-a=menu]').onclick = () => { hideDialog(); newRun(); showTitle(); };
+  openScreen('victory', node); sound('victory'); confetti();
+}
+$('coachNext').onclick = () => { if (tutStep()?.next) { sound('ui'); tutNext(); } };
+$('coachSkip').onclick = () => { if (!tut()) return; const meta = hsMeta(); meta.taught = true; hsSave(meta); hideDialog(); newRun(); showTitle(); };
 
 /* ---------------------------- lesson ------------------------------ */
 let lesson=null;
@@ -1524,9 +1886,10 @@ $('push').onclick=()=>{if(G.phase!=='playing'||G.push)return;G.push=1;G.message=
 $('shield').onclick=()=>{if(lesson){if(lesson.step!==2)return;G.shields=0;G.protected[0]=true;lesson.step=3;refresh();sound('shield');flash('ability',0);renderLesson();return}if(!G.shields||G.phase!=='playing'||!G.board[G.selected]||G.protected[G.selected])return;G.shields--;G.protected[G.selected]=true;G.message=rank(G.board[G.selected])+' protected · one miss';sound('shield');flash('ability',G.selected,'PROTECTED');refresh()};
 $('peek').onclick=()=>{if(!G.peeks||G.phase!=='playing')return;G.peeks--;const c=[...G.deck].reverse().find(x=>!x.joker);G.message=c?'Next regular card: '+rank(c):'No regular card left';sound('peek');flash('ability',G.selected,c?'NEXT: '+rank(c):'NO REGULAR CARD');refresh()};
 $('swap').onclick=()=>{if(!G.swaps||G.phase!=='playing')return;swapFrom=G.selected;G.message='⇄ Select another occupied card to swap';sound('swap');flash('ability',G.selected,'⇄ SELECT SECOND CARD');refresh()};
-$('cashout').onclick=()=>{if(G.phase!=='playing'||G.streak<3)return;G.streak=0;const earned=grantTokens(8);G.message='Streak cashed out · '+(earned?'+'+earned+' tokens':'No spendable tokens gained');sound('cashout');flash('ability',G.selected,'STREAK CASHED OUT');refresh()};
+$('cashout').onclick=()=>{if(G.hs)return;if(G.phase!=='playing'||G.streak<3)return;G.streak=0;const earned=grantTokens(8);G.message='Streak cashed out · '+(earned?'+'+earned+' tokens':'No spendable tokens gained');sound('cashout');flash('ability',G.selected,'STREAK CASHED OUT');refresh()};
 $('runInfo').onclick=showRunInfo; $('bossChip').onclick=()=>{if(!lesson)showRunInfo()};
 $('settings').onclick=showSettings;
+for(const id of ['push','shield','peek','swap','cashout']){const run=$(id).onclick;$(id).onclick=e=>{const s=tutStep();if(s&&!s.free&&s.tool!==id)return;run.call($(id),e);if(s?.tool===id)tutDid('tool',id)}}
 const ray = new THREE.Raycaster(), pointer = new THREE.Vector2();
 function hitCard(e) {
   pointer.x = e.clientX / innerWidth * 2 - 1; pointer.y = 1 - e.clientY / innerHeight * 2;
@@ -1706,6 +2069,6 @@ $('gaugeTicks').innerHTML = Array.from({length: 10}, (_, k) => { const a = (-110
 resizeScene();
 newRun();
 showTitle();
-if (/[?&]debug/.test(location.search)) window.hilo = {enterBoss, setupStage, state: () => G, setBoard: b => { G.board = b; b.forEach((c, i) => meshCard(c, i)); ensureStake(); refresh(); }, face: (card, id) => { const prev = artBoss; artBoss = id; const c = document.createElement('canvas'); c.width = CARD_W; c.height = CARD_H; cardFace(c.getContext('2d'), card); artBoss = prev; return c.toDataURL(); }, back: id => backTextures[BOSS_PRESENTATION.findIndex(t => t.id === id)].image.toDataURL()};
+if (/[?&]debug/.test(location.search)) window.hilo = {selectSlot, tutStep, hsStart, hsClear, guess, HS, chance, playable, hsForecast, enterBoss, setupStage, state: () => G, setBoard: b => { G.board = b; b.forEach((c, i) => meshCard(c, i)); ensureStake(); refresh(); }, face: (card, id) => { const prev = artBoss; artBoss = id; const c = document.createElement('canvas'); c.width = CARD_W; c.height = CARD_H; cardFace(c.getContext('2d'), card); artBoss = prev; return c.toDataURL(); }, back: id => backTextures[BOSS_PRESENTATION.findIndex(t => t.id === id)].image.toDataURL()};
 requestAnimationFrame(animate);
 requestAnimationFrame(() => { positionCamera(); $('loading').classList.add('hidden'); });
