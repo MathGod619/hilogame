@@ -90,7 +90,20 @@ export function afterWin(ctx, ids, memory) { for (const id of ids) charmById[id]
 export function afterTable(ids, memory) { for (const id of ids) charmById[id]?.cleared?.(memory[id] ||= {}); }
 
 /* ------------------------------ goals ----------------------------- */
-export const GOALS = [350, 500, 700, 900, 1150, 1450, 1800];
+// Either third table leads to the High Roller. Both routes use the same goals.
+export const ROUTES = {
+  sharp: ['toll', 'collector', 'sharp', 'roller', 'house', 'driver'],
+  elevator: ['toll', 'collector', 'elevator', 'roller', 'house', 'driver']
+};
+export const GOALS = [350, 500, 700, 900, 1150, 1450];
+export const TROPHY_TOKENS = 30;
+export const TROPHIES = {
+  sharp: {name: 'Cardsharp’s Tray', action: 'Double Draw', desc: 'Declare a Double Draw once per table. Both cards must beat your call. The payout follows the new odds.'},
+  elevator: {name: 'Lift Key', action: 'Move a card', desc: 'Once per table, move your selected card into any open square. Its shield travels with it.'},
+  roller: {name: 'Stake Marker', action: 'Mark a stake', desc: 'Once per table, stake your next call. A win refills a square. An unblocked miss also risks the marked neighbor.'}
+};
+// Regular cards are drawn without replacement. Jokers only affect the clock.
+export const doubleChance = (wins, total) => wins < 2 || total < 2 ? 0 : wins / total * (wins - 1) / (total - 1);
 export const LIMITS = [
   {name: 'Normal', desc: 'Start here.', k: 1},
   {name: 'Hard', desc: 'Goals are 40% higher.', k: 1.4},

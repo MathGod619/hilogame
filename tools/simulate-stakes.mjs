@@ -4,26 +4,35 @@
 import * as K from '../hilo-3d/stakes.js';
 const N = +process.argv[2] || 1500;
 const START = {toll:3, collector:2, sharp:2, elevator:3, roller:3, house:2, driver:1};
-const ORDER = ['toll','collector','sharp','elevator','roller','house','driver'];
+// The bot takes the token alternative at trophy tables and aims at the most completed lines.
+const TABLES = K.GOALS.length;
 const LINES=[[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0,4,8],[2,4,6]];
 const nb = i => [i>2&&i-3, i<6&&i+3, i%3>0&&i-1, i%3<2&&i+1].filter(x => x!==false);
 function runOne(seed, policy, buyer, limit=0, gift=null) {
   const rng = K.makeRng(seed), deck = K.freshDeck();
   let tokens = 65, charms = gift ? [gift] : [], mem = {}; const log = [];
-  for (let stage=1; stage<=7; stage++) {
+  const order = K.hashSeed(seed) % 2 ? K.ROUTES.sharp : K.ROUTES.elevator;
+  for (let stage=1; stage<=TABLES; stage++) {
     if (buyer) for (let pass=0; pass<3; pass++) {
       for (const id of K.rollCharms(rng, charms, [])) { const c=K.charmById[id]; if (charms.length<5 && tokens>=c.cost) { tokens-=c.cost; charms.push(id); } }
       if (charms.length<5 && tokens>=70) tokens-=10; else break;
     }
-    const boss=ORDER[stage-1], goal=K.goalFor(stage,limit); let pool=deck.map(c=>({...c}));
+    const boss=order[stage-1], goal=K.goalFor(stage,limit); let pool=deck.map(c=>({...c}));
     for (let j=0;j<(boss==='driver'?4:2)+(K.LIMITS[limit].joker||0);j++) pool.push({joker:true}); K.shuffleWith(rng,pool);
     const draw=()=>{ while(pool.length){const c=pool.pop(); if(c.joker){guesses++;continue} return c;} return null; }; // a Joker costs a call
-    let guesses=0;
+    let guesses=0, actualCalls=0, aimed=false;
     const b=Array(9).fill(null), locked=Array(9).fill(false); const os=boss==='elevator'?[0,3,1,2,4,5]:[0,1,2,3,4,5];
     for(let k=0;k<START[boss]+K.OPENING_BONUS;k++) b[os[k]]=draw();
     let score=0,streak=0,right=0,earned=0,shield=1,stamps=new Set(),stake=-1,mate=-1,passed=0;
     const grant=n=>{const g=Math.max(0,Math.min(n,100-earned));earned+=g;tokens+=g;};
-    const refill=()=>{const i=b.findIndex((c,k)=>!c&&!locked[k]); if(i>=0){const before=LINES.map(l=>l.every(k=>b[k])),c=draw(); if(c){b[i]=c;LINES.forEach((l,j)=>{if(!before[j]&&l.every(k=>b[k])){score+=K.LINE_PAY;grant(6)}})}}};
+    const refill=(risk=false)=>{
+      const open = b.flatMap((c,k)=>!c&&!locked[k]?[k]:[]);
+      let i = open[0] ?? -1;
+      if (risk && !aimed && open.length > 1) {
+        i = best(open,k=>LINES.filter(line=>line.includes(k)&&line.every(j=>j===k||b[j])).length);
+        aimed = true;
+      }
+       if(i>=0){const before=LINES.map(l=>l.every(k=>b[k])),c=draw(); if(c){b[i]=c;LINES.forEach((l,j)=>{if(!before[j]&&l.every(k=>b[k])){score+=K.LINE_PAY;grant(6)}})}}};
     const pickStake=()=>{stake=mate=-1;const cs=[];b.forEach((c,i)=>{if(c){const n=nb(i).filter(j=>b[j]);if(n.length)cs.push([i,n])}});if(cs.length){const[i,n]=cs[Math.floor(rng()*cs.length)];stake=i;mate=n[Math.floor(rng()*n.length)]}};
     const done=()=>score>=goal&&(boss!=='house'||stamps.size===4)&&(boss!=='driver'||b.filter(Boolean).length>=2);
     let ok=null;
@@ -33,9 +42,9 @@ function runOne(seed, policy, buyer, limit=0, gift=null) {
       if(!pool.length||guesses>=K.CALLS){ok=false;break}
       if(boss==='roller'&&(stake<0||!b[stake]||!b[mate]))pickStake();
       const reg=pool.filter(c=>!c.joker);
-      const opts=[]; const n=b.filter(Boolean).length; const dbl=boss==='sharp'&&(guesses+1)%4===0;
+      const opts=[]; const n=b.filter(Boolean).length; const dbl=boss==='sharp'&&(actualCalls+1)%4===0;
       b.forEach((c,i)=>{ if(!c||(boss==='elevator'&&((i+3<9&&b[i+3])||(i+6<9&&b[i+6]))))return;
-        for(const dir of ['higher','lower']){ const w=reg.filter(x=>dir==='higher'?x.v>c.v:x.v<c.v).length/Math.max(1,reg.length); if(w<=0)continue; const p=dbl?w*w:w;
+        for(const dir of ['higher','lower']){ const wins=reg.filter(x=>dir==='higher'?x.v>c.v:x.v<c.v).length; const p=dbl?K.doubleChance(wins,reg.length):wins/Math.max(1,reg.length); if(p<=0)continue;
           const ctx={card:c,drawn:null,dir,slot:i,p,streak,board:b,callsLeft:K.CALLS-guesses};
           opts.push({i,dir,p,win:p,pay:K.payout(ctx,charms,mem),ctx,c,n}); } });
       if(!opts.length){ok=false;break}
@@ -43,9 +52,9 @@ function runOne(seed, policy, buyer, limit=0, gift=null) {
       if(o.win<Math.max(...opts.map(x=>x.win))-.001)passed++;
       const d=draw(); if(!d){ok=false;break} const d2=dbl?draw():null;
       const bt=x=>o.dir==='higher'?x.v>o.c.v:x.v<o.c.v;
-      guesses++;
+      guesses++; actualCalls++;
       if(bt(d)&&(!d2||bt(d2))){ const ctx={...o.ctx,drawn:d2||d,tier:K.tierOf(o.p)}; const pay=K.payout(ctx,charms,mem); score+=pay.total; K.afterWin(ctx,charms,mem); b[o.i]=d2||d; streak++; right++; grant(2);
-        if(K.riskRefill(ctx.tier))refill(); stamps.add(o.c.s); if(boss==='roller'&&o.i===stake){refill();pickStake();}
+        if(K.riskRefill(ctx.tier))refill(true); stamps.add(o.c.s); if(boss==='roller'&&o.i===stake){refill();pickStake();}
         if(streak%3===0)refill(); else if(stage<=2?right%2===0:right%4===0)refill();
       } else { streak=0; score=Math.max(0,score-Math.round(K.MISS_COST*o.pay.total));
         if(shield&&n<=2){shield=0}
@@ -54,9 +63,9 @@ function runOne(seed, policy, buyer, limit=0, gift=null) {
     }
     log.push({boss,ok,score,goal,guesses,passed,n:b.filter(Boolean).length});
     if(!ok)return{won:false,stage,log,why:b.some(Boolean)?'short':'bust'};
-    tokens+=K.CLEAR_TOKENS+K.SPARE_CALL_TOKENS*(K.CALLS-guesses); K.afterTable(charms,mem);
+    tokens+=K.CLEAR_TOKENS+K.SPARE_CALL_TOKENS*Math.max(0,K.CALLS-guesses) + (K.TROPHIES[boss] ? K.TROPHY_TOKENS : 0); K.afterTable(charms,mem);
   }
-  return{won:true,stage:8,log};
+  return{won:true,stage:TABLES+1,log};
 }
 const best=(a,f)=>a.reduce((m,o)=>f(o)>f(m)?o:m);
 const house=(s,o)=>s.boss==='house'&&!s.stamps.has(o.c.s)?.4:0;
@@ -78,6 +87,6 @@ console.log('limit policy  won%  avgBoss  boss1clear  passedSafest%');
 for(const limit of [0,1,2])for(const[name,pol]of Object.entries(P)){
   const R=Array.from({length:N},(_,k)=>runOne('s'+k,pol,true,limit)),L=R.flatMap(r=>r.log),g=L.reduce((a,l)=>a+l.guesses,0);
   const b1=R.filter(r=>r.log[0]?.ok).length/N;
-  console.log(String(limit).padEnd(5),name.padEnd(8),(100*R.filter(r=>r.won).length/N).toFixed(1).padStart(5),(R.reduce((a,r)=>a+Math.min(7,r.stage),0)/N).toFixed(2).padStart(7),(100*b1).toFixed(0).padStart(9)+'%',(100*L.reduce((a,l)=>a+l.passed,0)/g).toFixed(0).padStart(10));
-  if(limit===0&&name==='smart')for(let s=1;s<=7;s++){const L=R.map(r=>r.log[s-1]).filter(Boolean);console.log('        boss',s,'goal',L[0].goal,'clear',(100*L.filter(l=>l.ok).length/L.length).toFixed(0)+'%','calls',(L.reduce((a,l)=>a+l.guesses,0)/L.length).toFixed(1))}
+  console.log(String(limit).padEnd(5),name.padEnd(8),(100*R.filter(r=>r.won).length/N).toFixed(1).padStart(5),(R.reduce((a,r)=>a+Math.min(TABLES,r.stage),0)/N).toFixed(2).padStart(7),(100*b1).toFixed(0).padStart(9)+'%',(100*L.reduce((a,l)=>a+l.passed,0)/g).toFixed(0).padStart(10));
+  if(limit===0&&name==='smart')for(let s=1;s<=TABLES;s++){const L=R.map(r=>r.log[s-1]).filter(Boolean);if(!L.length)continue;console.log('        boss',s,'goal',L[0].goal,'clear',(100*L.filter(l=>l.ok).length/L.length).toFixed(0)+'%','calls',(L.reduce((a,l)=>a+l.guesses,0)/L.length).toFixed(1))}
 }
