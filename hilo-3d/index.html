@@ -7,7 +7,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Anton&family=Cinzel:wght@700;900&family=Outfit:wght@400;500;600;700;800&family=Playfair+Display:wght@900&family=Racing+Sans+One&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="style.css?v=8">
-<link rel="stylesheet" href="stakes.css?v=3">
+<link rel="stylesheet" href="stakes.css?v=5">
 <script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.1/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.1/examples/jsm/"}}</script>
 </head>
 <body data-boss="1">
@@ -71,6 +71,8 @@
     <button id="shield" class="tool" data-icon="shield"><span class="tl">Shield</span><b class="badge"></b></button>
     <button id="peek" class="tool" title="Peek at the next regular card" data-icon="eye"><span class="tl">Peek</span><b class="badge"></b></button>
     <button id="swap" class="tool" title="Swap two cards on the board" data-icon="swap"><span class="tl">Swap</span><b class="badge"></b></button>
+    <button id="dealerTool" class="tool" hidden></button>
+    <button id="trophyTool" class="tool" hidden></button>
     <button id="cashout" class="tool" title="Cash out a 3+ streak for tokens" data-icon="coins"><span class="tl">Cash out</span><b class="badge" hidden></b></button>
   </div>
 </section>
@@ -84,5 +86,5 @@
 </aside>
 <div id="screen" class="screen hidden" role="dialog" aria-modal="true"></div>
 <div id="loading"><div class="ldLogo">HI<span>·</span>LO</div><div class="ldBar"><i></i></div><small>Shuffling the midnight deck…</small></div>
-<script type="module" src="game.js?v=11"></script>
+<script type="module" src="game.js?v=13"></script>
 </body></html>

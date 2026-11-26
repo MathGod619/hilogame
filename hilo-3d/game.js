@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import * as HS from './stakes.js';
+import * as HS from './stakes.js?v=3';
 import {makeBossMachines} from './boss-machines.js';
 import {makeRegister, makeFlexibleCard} from './tollkeeper.js';
 import {RoomEnvironment} from 'three/addons/environments/RoomEnvironment.js';
@@ -118,7 +118,7 @@ const BOSSES=[
 {id:'doorman',name:'The Doorman',desc:'Your first miss at each table is forgiven.',start:5,jokers:0} // tutorial only
 ];
 const FINAL=7, TUTORIAL_BOSS=7;
-const lastStage=()=>G?.hs?.tutorial?LESSONS.length:FINAL;
+const lastStage=()=>G?.hs ? G.hs.order.length : FINAL;
 const artOf = id => HS.charmById[id] || ARTIFACTS.find(a => a.id === id);
 const LINES=[[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0,4,8],[2,4,6]];
 const brief = {
@@ -710,13 +710,16 @@ function animateBossProps(now, dt) {
     const lamp = lamps[col]; lamp.visible = front >= 0 && ready;
     if (front >= 0) { const p = slots[front]; lamp.position.set(p.x, CARD_Y + .5, p.z - CH / 2 - .18); lamp.material.opacity = .75 + Math.sin(now * .006 + col) * .15; }
   }
-  const stake = id === 'roller' && ready && !lesson && G.stake >= 0 && G.board[G.stake];
+  const marking = G?.hs?.armed === 'roller';
+  const st = marking ? G.selected : G?.stake;
+  const mate = marking ? markerMate(st) : G?.stakeMate;
+  const stake = (id === 'roller' || marking) && ready && !lesson && st >= 0 && G.board[st];
   for (const m of [stakeRing, stakeLabel]) m.visible = !!stake;
-  for (const m of [mateRing, mateLabel]) m.visible = !!stake && G.stakeMate >= 0 && !!G.board[G.stakeMate];
+  for (const m of [mateRing, mateLabel]) m.visible = !!stake && mate >= 0 && !!G.board[mate];
   if (stake) {
-    const a = slots[G.stake]; stakeRing.position.x = stakeLabel.position.x = a.x; stakeRing.position.z = a.z; stakeLabel.position.z = a.z - CH / 2 - .125; stakeLabel.position.y = .765;
+    const a = slots[st]; stakeRing.position.x = stakeLabel.position.x = a.x; stakeRing.position.z = a.z; stakeLabel.position.z = a.z - CH / 2 - .125; stakeLabel.position.y = .765;
     stakeRing.material.opacity = .8 + Math.sin(now * .008) * .2; stakeRing.scale.setScalar(1 + Math.sin(now * .004) * .02);
-    if (G.stakeMate >= 0) { const b = slots[G.stakeMate]; mateRing.position.x = mateLabel.position.x = b.x; mateRing.position.z = b.z; mateLabel.position.z = b.z - CH / 2 - .125; mateRing.material.opacity = .55 + Math.sin(now * .008 + 2) * .25; }
+    if (mate >= 0) { const b = slots[mate]; mateRing.position.x = mateLabel.position.x = b.x; mateRing.position.z = b.z; mateLabel.position.z = b.z - CH / 2 - .125; mateRing.material.opacity = .55 + Math.sin(now * .008 + 2) * .25; }
   }
   // back-lane cards sit in shadow behind the cage
   for (const m of cardMeshes) if (m) { const f = m.userData.face, target = lanes && !playable(m.userData.index) ? .72 : 1; const v = reduced ? target : THREE.MathUtils.damp(f.color.r, target, 8, dt); f.color.setScalar(v); }
@@ -858,7 +861,7 @@ function flash(kind, index = -1, msg = '') {
 /* ------------------------ bosses & music -------------------------- */
 let bossEntryTimer, pendingBoss = null, entryGeneration = 0, bossBegin = null;
 let musicOn = false, musicGain, musicVoices = [], currentTheme = -1;
-// High Stakes shuffles the boss order; Classic keeps it fixed.
+// The presentation and rules use the boss chosen for this table.
 const tableIdx = stage => G?.hs ? G.hs.order[stage - 1] : stage - 1;
 const bossAt = stage => BOSSES[tableIdx(stage)];
 const lookAt = stage => BOSS_PRESENTATION[tableIdx(stage)];
@@ -944,7 +947,7 @@ function playable(i) {
   if (bossId() !== 'elevator' || lesson) return true;
   return i === frontOfLane(i % 3);
 }
-const isDoubleNext = () => bossId() === 'sharp' && !lesson && (G.stageGuesses + 1) % 4 === 0;
+const isDoubleNext = () => G?.hs?.armed === 'sharp' || bossId() === 'sharp' && !lesson && (G.stageGuesses + 1) % 4 === 0;
 function neighbors(i) { const r = Math.floor(i / 3), c = i % 3, n = []; if (r > 0) n.push(i - 3); if (r < 2) n.push(i + 3); if (c > 0) n.push(i - 1); if (c < 2) n.push(i + 1); return n; }
 function pickStake() {
   G.stake = -1; G.stakeMate = -1;
@@ -970,7 +973,7 @@ function creditTokens(n){const paid=Math.min(n,G.tollDebt);G.tollDebt-=paid;G.cr
 function grantTokens(n){const give=Math.max(0,Math.min(n,100-G.stageEarned));G.stageEarned+=give;return creditTokens(give)}
 function lineState(){return LINES.map(l=>l.every(i=>G.board[i]))}
 function scoreLines(before){for(let j=0;j<LINES.length;j++)if(!before[j]&&LINES[j].every(i=>G.board[i])){const pts=G.hs?HS.LINE_PAY:j<3?250:j<6?300:400;if(G.hs){G.hs.table+=pts;G.hs.shownTable+=pts}casino.lineUntil[j]=performance.now()+1100;for(const index of LINES[j])burst(index,0xffd16b,12);G.score+=pts;grantTokens(6+(has('collector')?6:0));banner('LINE COMPLETE','positive','+'+pts+' points');sound('line')}}
-function refill(){const i=G.board.findIndex((c,k)=>!c&&!G.locked[k]);if(i<0)return;const before=lineState(),c=draw();if(c){G.board[i]=c;meshCard(c,i,true);scoreLines(before)}}
+function refill(i = G.board.findIndex((card, k) => !card && !G.locked[k])){if(i<0 || G.board[i] || G.locked[i])return;const before=lineState(),c=draw();if(c){G.board[i]=c;meshCard(c,i,true);scoreLines(before)}}
 
 function shop(stage,fresh=false){
  G.phase='shop';
@@ -1005,6 +1008,7 @@ function setupStage(stage){
    const card = draw();
    if (card) { G.board[slot] = card; meshCard(card, slot, true); }
  }
+ if (G.hs && HS.LIMITS[G.hs.limit].dealer && !G.hs.tutorial) G.hs.dealerCard = HS.reserveDealerCard(G.deck);
  if (bossId() === 'elevator') G.selected = frontOfLane(0);
  ensureStake();
  G.message='Choose a card';G.detail=bossAt(stage).name+' · '+bossRule(stage);refresh();
@@ -1044,22 +1048,33 @@ function guess(dir){
  swapFrom=null;
  const run=G,boss=bossId();
  const dbl=isDoubleNext();
- const i=G.selected,old=G.board[i];let p=chance(old,dir);const hs=G.hs;
+ const i=G.selected,old=G.board[i];const hs=G.hs; let p=hs ? callChance(old,dir,false) : chance(old,dir);
+ if (hs?.dealerArmed && (!dealerCanWin(old,dir,dbl) || hs.calls < 2)) return;
  if(hs&&!p&&hsCanCall()){banner('NO CHANCE','info','Nothing left in the deck wins that call');return}
+ const doubleP = hs && dbl ? callChance(old, dir, true) : null;
+ const trophy = hs?.armed;
+ const mate = trophy === 'roller' ? markerMate(i) : G.stakeMate;
+ if (trophy === 'roller' && mate < 0) return;
+ if (hs && dbl && !doubleP && hsCanCall()) return;
+ if (hs?.dealerArmed) {
+  HS.returnDealerCard(G.deck, hs.dealerCard);
+  hs.dealerCard = null; hs.dealerArmed = false; hs.calls--;
+ }
  const c=draw();
  if(!c){finishStage();return}
  if(hs)hs.calls=Math.max(0,hs.calls-1);
  // The Cardsharp: every fourth guess draws two cards; both must beat your card.
  const c2=dbl?draw():null;
  if(boss==='sharp')G.stageGuesses++;
- if(c2)p=p*p;
+ if(c2)p=hs ? doubleP : p*p;
+ if(trophy){hs.armed=null;hs.trophyUsed=true}
  const beats=x=>dir==='higher'?x.v>old.v:x.v<old.v;
  const hsCtx=hs&&{...hsContext(i,dir,p),drawn:c2||c};
  const win=c2||c,shown=c2?rank(c)+' + '+rank(c2):rank(c);
- const isStake=boss==='roller'&&i===G.stake;
+ const isStake=(boss==='roller'&&i===G.stake)||trophy==='roller';
  G.phase='busy';G.message=c2?'Double Draw…':'Revealing…';refresh();G.turns++;const good=beats(c)&&(!c2||beats(c2));
  pressGuess(dir);
- const resolve=()=>{
+ const resolve=async()=>{
   if(G!==run)return;
   let info='';
   if(good){
@@ -1084,7 +1099,18 @@ function guess(dir){
    if(up==='seed'){G.slotHits[i]++;if(G.slotHits[i]%3===0)refill()}
    if(up==='scout'){G.slotHits[i]++;if(G.slotHits[i]%4===0)G.peeks++}
    grantTokens(2);G.score+=pts;if(hs)hsPay(pay,i);else floatLabel('+'+pts,i,p<=.35?'#ffb3ff':'#ffe3a1');
-   if(hs&&HS.riskRefill(pay.tier)&&G.board.some((card,k)=>!card&&!G.locked[k])&&G.deck.length){refill();info+=' · '+pay.tier.name+': refill'}
+   if (hs && HS.riskRefill(pay.tier) && G.deck.length) {
+    const open = openSlots();
+    if (open.length) {
+     let target = open[0];
+     if (!hs.tutorial && !hs.aimUsed && open.length > 1) {
+      target = await chooseOpenSquare('Aim your refill', pay.tier.name + ' win · Choose where the next card lands.');
+      if (G !== run) return;
+      hs.aimUsed = true;
+     }
+     refill(target); info += ' · ' + pay.tier.name + ': refill';
+    }
+   }
    if(c2)banner('DOUBLE DRAW WON','positive','+'+pts+' points');
    if(boss==='house'&&!G.stamps[old.s]){G.stamps[old.s]=true;info+=' · '+old.s+' stamped';banner(old.s+' STAMPED','positive',Object.keys(G.stamps).length+' of 4 suits')}
    if(isStake){refill();bossMachines.ring(performance.now());sound('service-bell');info+=' · Stake won: refill';banner('STAKE WON','positive','A slot refills')}
@@ -1111,7 +1137,7 @@ function guess(dir){
    else{
     G.board[i]=null;discardCard(i);info='Position lost';if(hs)hsMiss(hsCtx,i);
     // The High Roller: an unblocked miss on the stake also takes its marked neighbor.
-    if(isStake&&G.stakeMate>=0&&G.board[G.stakeMate]){const m=G.stakeMate;if(G.protected[m]){G.protected[m]=false;info+=' · Shield saved the neighbor';flash('ability',m)}else{G.board[m]=null;discardCard(m);info+=' · Stake neighbor lost';banner('STAKE LOST','negative','Two cards gone')}}
+    if(isStake&&mate>=0&&G.board[mate]){const m=mate;if(G.protected[m]){G.protected[m]=false;info+=' · Shield saved the neighbor';flash('ability',m)}else{G.board[m]=null;discardCard(m);info+=' · Stake neighbor lost';banner('STAKE LOST','negative','Two cards gone')}}
     if(boss==='collector'&&G.locked.filter(Boolean).length<3){G.locked[i]=true;sound('lock');info+=' ·  Collector locked it'}
     if(has('salvage')&&!G.salvageUsed){G.salvageUsed=true;refill()}
    }
@@ -1302,11 +1328,12 @@ function playTone(at, from, to, duration, volume) {
 let screenName = '';
 function openScreen(name, node) {
   const s = $('screen'); s.dataset.screen = name; s.className = 'screen' + (reduced ? ' still' : '');
+  $('topbar').inert = $('panel').inert = true;
   s.replaceChildren(node); s.scrollTop = 0; screenName = name; document.body.dataset.screen = name;
   s.querySelectorAll('button:not([data-silent])').forEach(b => b.addEventListener('pointerdown', () => sound('ui')));
   requestAnimationFrame(() => (node.querySelector('[data-autofocus]') || node.querySelector('button:not(:disabled)'))?.focus({preventScroll: true}));
 }
-function hideDialog() { const s = $('screen'); s.className = 'screen hidden'; s.replaceChildren(); screenName = ''; document.body.dataset.screen = ''; }
+function hideDialog() { $('topbar').inert = $('panel').inert = false; const s = $('screen'); s.className = 'screen hidden'; s.replaceChildren(); screenName = ''; document.body.dataset.screen = ''; }
 const cardImgCache = new Map();
 function cardImage(card) {
   const key = card.joker ? 'J' : artBoss + ':' + card.v + card.s;
@@ -1350,7 +1377,7 @@ function chooseTicket(firstStage = 1) {
   const node = html(`<div class="sheet ticketSheet">
     <div class="kicker">New run · Choose a perk</div>
     <h2>Pick your ticket</h2>
-    <p class="sub">Your ticket rides with you for all seven bosses.</p>
+    <p class="sub">Your ticket rides with you through all ${lastStage()} tables.</p>
     <div class="tickets">${TICKETS.map(t => `<button class="ticket t-${t.id}" data-id="${t.id}">
       <span class="stub">${icon(t.icon)}<small>No. ${t.id === 'lucky' ? '007' : t.id === 'fire' ? '333' : '040'}</small></span>
       <span class="tbody"><span class="tname">${esc(t.name)}</span><span class="tbrief">${esc(brief[t.name])}</span><span class="tdesc">${esc(t.desc)}</span><span class="tfoot">Admit one · Midnight Table</span></span>
@@ -1439,7 +1466,7 @@ function confetti() {
   }
 }
 function showRunResult(win, reason, best, isNew) {
-  const stats = [['Correct', G.correct], ['Best streak', G.best], ['Boss', G.stage + ' / ' + FINAL], ['Tokens', G.credits], ...(G.hs ? [['Best call', G.hs.bestCall.toLocaleString()], ['Seed', G.hs.seed]] : [])];
+  const stats = [['Correct', G.correct], ['Best streak', G.best], ['Boss', G.stage + ' / ' + lastStage()], ['Tokens', G.credits], ...(G.hs ? [['Best call', G.hs.bestCall.toLocaleString()], ['Seed', G.hs.seed]] : [])];
   const node = html(`<div class="sheet resultSheet ${win ? 'win' : 'lose'}">
     <div class="resultIcon">${icon(win ? 'trophy' : 'bust')}</div>
     <div class="kicker">${win ? 'The Final Driver is defeated' : 'End of the road'}</div>
@@ -1449,10 +1476,13 @@ function showRunResult(win, reason, best, isNew) {
     <div class="resultCaption">points${isNew && G.score > 0 ? ' <em class="newBest">New best</em>' : ''}</div>
     <div class="statGrid">${stats.map(([k, v]) => `<div><small>${k}</small><b>${v}</b></div>`).join('')}</div>
     <div class="bestLine">${icon('trophy')} Best run ${best.toLocaleString()}</div>
-    <button class="btn primary big" data-a="again" data-autofocus>${icon('restart')} Play again</button>
+    ${G.hs ? `<p class="sub runMoment">${esc(runMoment(win))}</p>
+      <div class="resultDeals"><button class="btn primary big" data-a="replay" data-autofocus>Replay this deal</button>
+      <button class="btn ghost" data-a="again">New deal</button></div>`
+      : `<button class="btn primary big" data-a="again" data-autofocus>${icon('restart')} Play again</button>`}
   </div>`);
   if (G.hs) hsResult(node, win);
-  node.querySelector('[data-a=again]').onclick = () => { const again = G.hs && {limit: G.hs.limit}; hideDialog(); newRun(); if (again) hsStart(again); };
+  node.querySelector('[data-a=again]').onclick = () => { if (G.hs) hsStart({limit: G.hs.limit}); else newRun(); };
   openScreen(win ? 'victory' : 'defeat', node);
   const el = node.querySelector('.resultScore'), to = G.score, t0 = performance.now(), dur = reduced ? 1 : 1400;
   const tick = now => { const k = Math.min(1, (now - t0) / dur), e = 1 - (1 - k) ** 3; el.textContent = Math.round(to * e).toLocaleString(); if (k < 1) requestAnimationFrame(tick); };
@@ -1480,6 +1510,7 @@ function showRunInfo() {
         <div class="statGrid small"><div><small>Score</small><b>${G.score.toLocaleString()}</b></div><div><small>Correct</small><b>${G.correct}</b></div><div><small>Streak</small><b>${G.streak}</b></div><div><small>Board</small><b>${cardsLeft()}/9</b></div></div>
         <div class="loadList">
           ${t ? `<div class="loadItem">${icon(t.icon)}<div><b>${esc(t.name)}</b><span>${esc(t.desc)}</span></div></div>` : ''}
+          ${G.hs?.trophy ? `<div class="loadItem">${icon('trophy')}<div><b>${esc(HS.TROPHIES[G.hs.trophy].name)}</b><span>${esc(HS.TROPHIES[G.hs.trophy].desc)}</span></div></div>` : ''}
           ${G.artifacts.map(id => { const a = artOf(id); return `<div class="loadItem">${icon(a.icon)}<div><b>${esc(a.name)}</b><span>${esc(a.desc)}</span></div></div>`; }).join('')}
           ${upgrades.map(({i, up}) => `<div class="loadItem" style="--c:${hex(UPGRADE_COLORS[up.id])}">${icon(up.icon)}<div><b>${esc(up.name)} · position ${i + 1}</b><span>${esc(up.desc)}</span></div></div>`).join('')}
           ${!t && !G.artifacts.length && !upgrades.length ? '<p class="sub">Nothing collected yet.</p>' : ''}
@@ -1523,47 +1554,140 @@ function confirmRestart() {
 
 /* -------------------------- high stakes --------------------------- */
 // The light mode: a points goal, a call limit, payouts shown on the buttons,
-// and charms that multiply pay. Bosses come in the Classic order.
+// and charms that multiply pay. The third table is a route choice.
 const hsBestKey = 'hilo-stakes-best', hsMetaKey = 'hilo-stakes-light';
 function hsMeta() { try { return {limit: 0, wins: 0, runs: 0, ...JSON.parse(localStorage.getItem(hsMetaKey) || '{}')}; } catch (e) { return {limit: 0, wins: 0, runs: 0}; } }
 function hsSave(meta) { try { localStorage.setItem(hsMetaKey, JSON.stringify(meta)); } catch (e) {} }
 const today = () => { const d = new Date(); return [d.getFullYear(), d.getMonth() + 1, d.getDate()].map(n => String(n).padStart(2, '0')).join('-'); };
 const minFor = stage => G.hs.tutorial ? LESSONS[stage - 1].min : HS.goalFor(stage, G.hs.limit);
 const hsMin = () => minFor(G.stage);
+const routeOrder = door => HS.ROUTES[door].map(id => BOSSES.findIndex(b => b.id === id));
+function chooseRoute(stage) {
+  const node = html(`<div class="sheet confirmSheet"><div class="kicker">Beyond the Collector</div><h2>Choose your door</h2>
+    <p class="sub">Both doors lead to the High Roller. Beat this table for its trophy or ${HS.TROPHY_TOKENS} extra tokens.</p>
+    <div class="limits">${Object.keys(HS.ROUTES).map(id => {
+      const boss = BOSSES.find(b => b.id === id), prize = HS.TROPHIES[id];
+      return `<button class="bet routeDoor" data-door="${id}"><span><b>${esc(boss.name)}</b><small>${esc(boss.desc)}</small><strong>${esc(prize.name)}</strong><small>${esc(prize.desc)}</small></span></button>`;
+    }).join('')}</div></div>`);
+  node.querySelectorAll('[data-door]').forEach(button => button.onclick = () => {
+    G.hs.order = routeOrder(button.dataset.door);
+    shop(stage, true);
+  });
+  openScreen('route', node);
+}
+
+function openSlots() {
+  return G.board.flatMap((card, i) => !card && !G.locked[i] ? [i] : []);
+}
+function chooseOpenSquare(title, prompt, allowCancel = false) {
+  const open = openSlots();
+  const node = html(`<div class="sheet slotSheet"><h2>${esc(title)}</h2><p class="sub">${esc(prompt)}</p>
+    <div class="miniBoard">${G.board.map((card, i) => {
+      const free = open.includes(i), label = free ? 'Place here' : card ? rank(card) : 'Locked';
+      return `<button class="mini" data-square="${i}" aria-label="Square ${i+1}, ${esc(label)}" ${free ? '' : 'disabled'}><span class="n">${i+1}</span><small>${esc(label)}</small></button>`;
+    }).join('')}</div>${allowCancel ? '<button class="btn ghost" data-cancel>Cancel</button>' : ''}</div>`);
+  openScreen('placement', node);
+  return new Promise(resolve => {
+    const finish = i => { hideDialog(); resolve(i); };
+    node.querySelectorAll('[data-square]:enabled').forEach(b => b.onclick = () => finish(Number(b.dataset.square)));
+    if (allowCancel) node.querySelector('[data-cancel]').onclick = () => finish(-1);
+  });
+}
+
+const markerMate = i => neighbors(i).find(j => G.board[j]) ?? -1;
+function trophyHud(on) {
+  const button = $('trophyTool'), hs = G.hs, id = on && hs.trophy;
+  button.hidden = !id;
+  if (!id) return;
+  const trophy = HS.TROPHIES[id], armed = hs.armed === id;
+  let label = trophy.action;
+  if (armed) label = id === 'sharp' ? 'Cancel Double Draw' : 'Cancel stake';
+  button.textContent = hs.trophyUsed ? trophy.name + ' · Used' : label;
+  button.title = trophy.name + ' · ' + trophy.desc;
+  button.setAttribute('aria-pressed', String(armed));
+  button.disabled = G.phase !== 'playing' || hs.trophyUsed || !armed && (
+    id === 'elevator' && !openSlots().length || id === 'roller' && markerMate(G.selected) < 0 ||
+    id === 'sharp' && G.deck.filter(c => !c.joker).length < 2);
+  if (armed && id === 'roller' && markerMate(G.selected) < 0) {
+    $('higher').disabled = $('lower').disabled = true;
+    button.textContent = 'No neighbor · Cancel stake';
+  }
+}
+async function useTrophy() {
+  const run = G, hs = G.hs;
+  if (!hs?.trophy || hs.trophyUsed || G.phase !== 'playing' || $('trophyTool').disabled || screenName) return;
+  swapFrom = null;
+  if (hs.trophy === 'elevator') {
+    const from = G.selected;
+    G.phase = 'placing'; refresh();
+    const to = await chooseOpenSquare('Lift Key', 'Move ' + rank(G.board[from]) + ' to an open square.', true);
+    if (G !== run) return;
+    if (to < 0) { G.phase = 'playing'; refresh(); return; }
+    const before = lineState(), origin = cardMeshes[from]?.position.clone();
+    G.board[to] = G.board[from]; G.board[from] = null;
+    G.protected[to] = G.protected[from]; G.protected[from] = false;
+    meshCard(null, from); meshCard(G.board[to], to, false, {from: origin});
+    G.selected = to; hs.trophyUsed = true;
+    scoreLines(before); ensureStake(); G.phase = 'busy';
+    G.message = 'Lift Key · ' + rank(G.board[to]) + ' moved'; hsSettle(run);
+  } else {
+    hs.armed = hs.armed ? null : hs.trophy;
+    G.message = !hs.armed ? 'Choose a card' : hs.armed === 'sharp' ? 'Double Draw · both cards must win' : 'Stake armed · the marked neighbor is at risk';
+    refresh();
+  }
+}
 const hsCounter = id => { const c = HS.charmById[id]; return G?.hs && c?.show ? c.show(G.hs.mem[id] || {}) : ''; };
 const sellValue = id => Math.floor(artOf(id).cost / 2);
 
-function hsStart({limit = 0, daily = false, tutorial = false} = {}) {
+function hsStart({limit = 0, daily = false, tutorial = false, seed} = {}) {
   newRun();
-  const code = tutorial ? 'DOORMAN' : daily ? 'DAILY-' + today() : HS.randomSeed();
-  G.hs = {seed: code, daily, limit, tutorial: tutorial ? {step: 0} : null, order: tutorial ? [TUTORIAL_BOSS, TUTORIAL_BOSS, TUTORIAL_BOSS] : [0, 1, 2, 3, 4, 5, 6],
-    deck: HS.freshDeck(), mem: {}, rng: HS.makeRng(code + ':deck:0'), table: 0, shownTable: 0, calls: HS.CALLS, paying: 0, rerolls: 0, offers: null, bestCall: 0, unlocked: -1, forgiven: false};
+  const code = seed ?? (tutorial ? 'DOORMAN' : daily ? 'DAILY-' + today() : HS.randomSeed());
+  G.hs = {seed: code, daily, limit, tutorial: tutorial ? {step: 0} : null, order: tutorial ? [TUTORIAL_BOSS, TUTORIAL_BOSS, TUTORIAL_BOSS] : routeOrder('sharp'), trophy: null,
+    deck: HS.freshDeck(), mem: {}, rng: HS.makeRng(code + ':deck:0'), table: 0, shownTable: 0, calls: HS.CALLS, paying: 0, rerolls: 0, offers: null, bestCall: 0, bestPlay: '', unlocked: -1, forgiven: false};
   hud.credits = G.credits; hud.lastCredits = G.credits; hud.loadoutKey = '';
   applyBossStyle(1); refresh();
   if (tutorial) { G.ticket = 'lucky'; hideDialog(); enterBoss(1); } else chooseTicket();
 }
 function hsSetup(stage) {
-  Object.assign(G.hs, {rng: HS.makeRng(G.hs.seed + ':deck:' + stage), table: 0, shownTable: 0, calls: HS.CALLS, paying: 0, forgiven: false});
+  Object.assign(G.hs, {rng: HS.makeRng(G.hs.seed + ':deck:' + stage), table: 0, shownTable: 0, calls: HS.CALLS, paying: 0, forgiven: false, aimUsed: false, trophyUsed: false, armed: null, dealerCard: null, dealerArmed: false, biggestLoss: 0, lossPlay: ''});
 }
 function hsContext(i, dir, p, spent = 1) {
   return {card: G.board[i], drawn: null, dir, slot: i, p, tier: HS.tierOf(p), streak: G.streak, board: [...G.board], callsLeft: G.hs.calls + spent};
 }
-const hsCanCall = () => G.board.some((c, i) => c && playable(i) && ['higher', 'lower'].some(d => chance(c, d) > 0));
+function callChance(card, dir, double = isDoubleNext()) {
+  if (!double && !G.hs?.dealerArmed) return chance(card, dir);
+  const deck = G.deck.filter(c => !c.joker);
+  if (G.hs?.dealerArmed) deck.push(G.hs.dealerCard);
+  const wins = deck.filter(c => dir === 'higher' ? c.v > card.v : c.v < card.v).length;
+  return double ? HS.doubleChance(wins, deck.length) : wins / Math.max(1, deck.length);
+}
+function dealerCanWin(card, dir, double) {
+  const beats = c => dir === 'higher' ? c.v > card.v : c.v < card.v;
+  return beats(G.hs.dealerCard) && (!double || G.deck.some(c => !c.joker && beats(c)));
+}
+const hsCanCall = () => G.board.some((c, i) => c && playable(i) && ['higher', 'lower'].some(d => callChance(c, d) > 0));
 function hsForecast(i, dir) {
   const card = G.board[i]; if (!card) return null;
-  let p = chance(card, dir); if (!p) return {none: true};
-  if (isDoubleNext()) p *= p;
+  if (G.hs.dealerArmed && !dealerCanWin(card, dir, isDoubleNext())) return {none: true};
+  const p = callChance(card, dir); if (!p) return {none: true};
   return HS.payout(hsContext(i, dir, p, 0), G.artifacts, G.hs.mem);
 }
 function hsWin(ctx) {
   const hs = G.hs, pay = HS.payout(ctx, G.artifacts, hs.mem);
   HS.afterWin(ctx, G.artifacts, hs.mem);
-  hs.table += pay.total; hs.bestCall = Math.max(hs.bestCall, pay.total);
+  hs.table += pay.total; if (pay.total > hs.bestCall) {
+    hs.bestCall = pay.total;
+    hs.bestPlay = pay.tier.name + ' ' + ctx.dir + ' on ' + rank(ctx.card) + ' at ' + bossAt(G.stage).name;
+  }
   return pay;
 }
 // A miss also costs part of what the call would have paid.
 function hsMiss(ctx, slot) {
   const hs = G.hs, cost = Math.min(hs.table, Math.round(HS.payout(ctx, G.artifacts, hs.mem).total * HS.MISS_COST));
+  if (cost > hs.biggestLoss) {
+    hs.biggestLoss = cost;
+    hs.lossPlay = ctx.dir + ' on ' + rank(ctx.card);
+  }
   hs.table -= cost; hs.shownTable = hs.table; G.score = Math.max(0, G.score - cost);
   if (cost) floatLabel('−' + cost, slot, '#ff8a7a');
   return cost;
@@ -1622,15 +1746,27 @@ function hsClear() {
   creditTokens(total); HS.afterTable(G.artifacts, hs.mem);
   G.phase = 'shop'; refresh(); sound('cashout'); banner('GOAL REACHED', 'positive', '+' + total + ' tokens');
   if (won) { endRun(true, ''); return; }
-  const run = G;
+  const run = G, id = bossId(), prize = !hs.tutorial && HS.TROPHIES[id], fork = id === 'collector' && !hs.tutorial;
   setTimeout(() => {
     if (G !== run || G.phase !== 'shop' || G.stage !== cleared) return;
     const node = html(`<div class="sheet confirmSheet cashSheet"><div class="kicker">${hs.tutorial ? 'Table ' + cleared + ' of ' + lastStage() : esc(bossAt(cleared).name) + ' beaten'}</div><h2>Goal reached</h2>
       <div class="cashScore">${hs.table.toLocaleString()} <small>of ${minFor(cleared).toLocaleString()}</small></div>
       <div class="cashRows">${rows.map(([k, v], n) => `<div style="--n:${n}"><span>${esc(k)}</span><b>+${v} tokens</b></div>`).join('')}</div>
       ${G.tollDebt ? `<p class="sub">${G.tollDebt} tokens still owed in tolls.</p>` : ''}
-      <button class="btn primary big" data-a="go" data-autofocus>To the shop ${icon('arrow')}</button></div>`);
-    node.querySelector('[data-a=go]').onclick = () => { sound('purchase'); shop(cleared + 1, true); };
+      ${prize ? `<p class="sub">${esc(prize.desc)}</p><button class="btn primary big" data-prize data-autofocus>Take ${esc(prize.name)}</button>
+        <p class="sub">${hs.trophy ? 'Replaces ' + esc(HS.TROPHIES[hs.trophy].name) : 'Uses your trophy slot'}</p>
+        <button class="btn ghost" data-a="go">Take ${HS.TROPHY_TOKENS} tokens${hs.trophy ? ' and keep your trophy' : ''}</button>`
+        : `<button class="btn primary big" data-a="go" data-autofocus>${fork ? 'Choose your door' : 'To the shop'} ${icon('arrow')}</button>`}</div>`);
+    const next = takePrize => {
+      if (!node.isConnected || G !== run) return;
+      if (takePrize) hs.trophy = id;
+      else if (prize) creditTokens(HS.TROPHY_TOKENS);
+      sound('purchase');
+      if (fork) chooseRoute(cleared + 1);
+      else shop(cleared + 1, true);
+    };
+    if (prize) node.querySelector('[data-prize]').onclick = () => next(true);
+    node.querySelector('[data-a=go]').onclick = () => next(false);
     openScreen('cash', node);
   }, reduced ? 200 : 1300);
 }
@@ -1638,6 +1774,20 @@ function hsHud(force) {
   const bar = $('hsBar'), on = !!G?.hs && !lesson;
   bar.hidden = !on; document.body.dataset.mode = on ? 'stakes' : 'classic';
   for (const dir of ['higher', 'lower']) $(dir).querySelector('.fc').textContent = '';
+  trophyHud(on);
+  const dealer = $('dealerTool'), showDealer = on && !!G.hs.dealerCard;
+  dealer.hidden = !showDealer;
+  if (showDealer) {
+    const hs = G.hs;
+    dealer.textContent = (hs.dealerArmed ? 'Cancel dealer ' : 'Dealer ') + rank(hs.dealerCard) + ' · 2 calls';
+    dealer.setAttribute('aria-pressed', String(hs.dealerArmed));
+    dealer.disabled = G.phase !== 'playing' || hs.calls < 2;
+    dealer.title = 'Use the face-up card as the first draw. Normal payouts apply.';
+    if (hs.dealerArmed) {
+      $('peek').disabled ||= !isDoubleNext();
+      if (isDoubleNext()) $('peek').querySelector('.tl').textContent = 'Peek at second';
+    }
+  }
   if (!on) return;
   const hs = G.hs, min = hsMin(), shown = hs.paying && !force ? hs.shownTable : hs.table;
   $('hsScore').textContent = shown.toLocaleString(); $('hsMin').textContent = min.toLocaleString();
@@ -1649,7 +1799,7 @@ function hsHud(force) {
   for (const dir of ['higher', 'lower']) {
     const q = hsForecast(G.selected, dir), el = $(dir).querySelector('.fc'); if (!q) continue;
     el.textContent = q.none ? 'No chance' : q.tier.name + ' · pays ' + q.total.toLocaleString(); el.dataset.tier = q.none ? 'none' : q.tier.id;
-    if (q.none && hsCanCall()) $(dir).disabled = true;
+    if (q.none && (hs.dealerArmed || hsCanCall())) $(dir).disabled = true;
   }
 }
 // Charms explain themselves on tap, since phones have no tooltips.
@@ -1657,7 +1807,9 @@ $('artifacts').addEventListener('click', e => { const id = e.target.closest('[da
 
 function hsRollOffers(stage) {
   const hs = G.hs, r = HS.makeRng([hs.seed, 'shop', stage, hs.rerolls].join(':'));
-  hs.offers = HS.rollCharms(r, G.artifacts, ARTIFACTS, 3);
+  hs.offers = stage === 1 && hs.rerolls === 0
+    ? HS.openingOffers(r, G.artifacts, ARTIFACTS)
+    : HS.rollCharms(r, G.artifacts, ARTIFACTS);
   if (hs.tutorial) hs.offers = ['riser', 'center', 'middling'].filter(id => !G.artifacts.includes(id));
 }
 function hsShop(stage, fresh) {
@@ -1669,7 +1821,7 @@ function hsShop(stage, fresh) {
   const offer = id => { const a = artOf(id), why = full ? 'Sell one first' : poor(a.cost) ? 'Need ' + (a.cost - G.credits) + ' more' : '';
     return `<button class="offer hsOffer r${a.rarity || 0}" data-charm="${id}" ${why ? 'disabled' : ''}><span class="medal">${icon(a.icon)}</span><span class="otext"><span class="otype">${kind(a)}</span><b>${esc(a.name)}</b><small>${esc(a.desc)}</small></span><span class="price">${icon('chip')} ${a.cost}</span>${why ? `<span class="why">${esc(why)}</span>` : ''}</button>`; };
   const node = html(`<div class="sheet shopSheet hsShop">
-    <div class="shopHead"><div><div class="kicker">${hs.tutorial ? 'Tutorial' : 'Before boss ' + stage + ' of ' + FINAL}</div><h2>The Pit Stop</h2></div>
+    <div class="shopHead"><div><div class="kicker">${hs.tutorial ? 'Tutorial' : 'Before boss ' + stage + ' of ' + lastStage()}</div><h2>The Pit Stop</h2></div>
       <div class="wallet">${icon('chip')}<b>${G.credits}</b><small>tokens${G.tollDebt ? ' · ' + G.tollDebt + ' owed' : ''}</small></div></div>
     ${tutShopHTML(stage)}
     <section><h3>Charms <small>${G.artifacts.length} of ${HS.MAX_CHARMS} slots used</small></h3><div class="hsGrid">${hs.offers.map(offer).join('')}${'<div class="offer sold hsOffer"><span>Sold</span></div>'.repeat(3 - hs.offers.length)}</div></section>
@@ -1709,11 +1861,22 @@ function hsLobby() {
 function hsRecord(win) {
   const hs = G.hs, meta = hsMeta(); meta.runs++;
   if (win) { meta.wins++; if (!hs.daily && hs.limit === meta.limit && meta.limit < HS.LIMITS.length - 1) { meta.limit++; hs.unlocked = meta.limit; } }
-  if (hs.daily) { const date = hs.seed.slice(6); meta.daily = {date, score: Math.max(G.score, meta.daily?.date === date ? meta.daily.score : 0)}; }
+  if (hs.daily) { const date = hs.seed.slice(6); if (!meta.daily || date >= meta.daily.date) meta.daily = {date, score: Math.max(G.score, meta.daily?.date === date ? meta.daily.score : 0)}; }
   hsSave(meta);
+}
+function runMoment(win) {
+  const hs = G.hs, short = Math.max(0, hsMin() - hs.table);
+  if (!win && G.peeks > 0) {
+    const peeks = G.peeks + (G.peeks === 1 ? ' Peek' : ' Peeks');
+    return (short ? short.toLocaleString() + ' points short with ' : 'You finished with ') + peeks + ' unused.';
+  }
+  if (!win && hs.biggestLoss) return 'On this table, ' + hs.lossPlay + ' cost you ' + hs.biggestLoss.toLocaleString() + ' points.';
+  if (hs.bestPlay) return 'Your best call was ' + hs.bestPlay + ' for ' + hs.bestCall.toLocaleString() + ' points.';
+  return 'You made ' + G.turns + (G.turns === 1 ? ' call' : ' calls') + ' on this deal.';
 }
 function hsResult(node, win) {
   const hs = G.hs;
+  node.querySelector('[data-a=replay]').onclick = () => hsStart({seed: hs.seed, daily: hs.daily, limit: hs.limit});
   if (!win) node.querySelector('h2').textContent = hs.table >= hsMin() * .8 && hs.table < hsMin() ? 'So close' : 'Run over';
   if (hs.unlocked >= 0) node.querySelector('.bestLine').insertAdjacentHTML('beforebegin', `<div class="bestLine unlock">${icon('lock')} Unlocked: ${esc(HS.LIMITS[hs.unlocked].name)}</div>`);
   const menu = html(`<button class="btn ghost" data-a="menu">Main menu</button>`); menu.onclick = () => { hideDialog(); newRun(); showTitle(); }; node.append(menu);
@@ -1721,9 +1884,11 @@ function hsResult(node, win) {
 function hsRules() {
   return `<ul class="rules">
     <li>Reach the <b>points goal</b> in ${HS.CALLS} calls. Each button shows what a correct call pays.</li>
-    <li>Riskier calls pay more: ${HS.TIERS.map(t => `<b>${t.name}</b> ×${t.odds}`).join(', ')}. Bold and Long shot wins also add a card.</li>
+    <li>Riskier calls pay more: ${HS.TIERS.map(t => `<b>${t.name}</b> ×${t.odds}`).join(', ')}. Bold and Long shot wins also refill a square. Once per table, choose its position when multiple squares are open.</li>
     <li>A miss loses the card and <b>half of what the call would have paid</b>.</li>
+    <li>After the Collector, pick a door. Its boss offers a trophy or 30 extra tokens. Carry one trophy and use it once per table.</li>
     <li>Charms multiply your pay. Buy them between tables.</li>
+    ${HS.LIMITS[G.hs.limit].dealer ? '<li>Hard deals one face-up card per table. Play it as your first draw for two calls total. Double Draw still needs a winning second card.</li>' : ''}
     <li>Peeking doesn't lower the pay. Peek, then take the Long shot.</li>
     <li>Each deck hides Jokers. Drawing one costs you a call.</li>
     <li><b>Ace is low. Ties lose.</b> Each boss adds its own rule.</li></ul><p class="sub">Want a refresher? Choose How to play on the title screen.</p>`;
@@ -1882,9 +2047,17 @@ $('lessonSkip').onclick=finishLesson;$('lessonNext').onclick=finishLesson;
 /* ----------------------------- input ------------------------------ */
 $('higher').onclick=()=>guess('higher');$('lower').onclick=()=>guess('lower');
 $('restart').onclick=confirmRestart;
+$('trophyTool').onclick=useTrophy;
+$('dealerTool').onclick=()=>{
+ const hs = G?.hs;
+ if (screenName || G.phase !== 'playing' || !hs?.dealerCard || hs.calls < 2) return;
+ hs.dealerArmed = !hs.dealerArmed;
+ G.message = hs.dealerArmed ? rank(hs.dealerCard) + ' is your first draw. Choose a card and call.' : 'Choose a card';
+ refresh();
+};
 $('push').onclick=()=>{if(G.phase!=='playing'||G.push)return;G.push=1;G.message='Push: win twice on this card for a Peek · misses bypass protection';sound('push');flash('ability',G.selected,'PUSH YOUR LUCK');refresh()};
 $('shield').onclick=()=>{if(lesson){if(lesson.step!==2)return;G.shields=0;G.protected[0]=true;lesson.step=3;refresh();sound('shield');flash('ability',0);renderLesson();return}if(!G.shields||G.phase!=='playing'||!G.board[G.selected]||G.protected[G.selected])return;G.shields--;G.protected[G.selected]=true;G.message=rank(G.board[G.selected])+' protected · one miss';sound('shield');flash('ability',G.selected,'PROTECTED');refresh()};
-$('peek').onclick=()=>{if(!G.peeks||G.phase!=='playing')return;G.peeks--;const c=[...G.deck].reverse().find(x=>!x.joker);G.message=c?'Next regular card: '+rank(c):'No regular card left';sound('peek');flash('ability',G.selected,c?'NEXT: '+rank(c):'NO REGULAR CARD');refresh()};
+$('peek').onclick=()=>{if(!G.peeks||G.phase!=='playing'||(G.hs?.dealerArmed&&!isDoubleNext()))return;G.peeks--;const c=[...G.deck].reverse().find(x=>!x.joker);G.message=c?(G.hs?.dealerArmed?'Second draw: ':'Next regular card: ')+rank(c):'No regular card left';sound('peek');flash('ability',G.selected,c?'NEXT: '+rank(c):'NO REGULAR CARD');refresh()};
 $('swap').onclick=()=>{if(!G.swaps||G.phase!=='playing')return;swapFrom=G.selected;G.message='⇄ Select another occupied card to swap';sound('swap');flash('ability',G.selected,'⇄ SELECT SECOND CARD');refresh()};
 $('cashout').onclick=()=>{if(G.hs)return;if(G.phase!=='playing'||G.streak<3)return;G.streak=0;const earned=grantTokens(8);G.message='Streak cashed out · '+(earned?'+'+earned+' tokens':'No spendable tokens gained');sound('cashout');flash('ability',G.selected,'STREAK CASHED OUT');refresh()};
 $('runInfo').onclick=showRunInfo; $('bossChip').onclick=()=>{if(!lesson)showRunInfo()};
@@ -1904,6 +2077,9 @@ $('scene').addEventListener('click', e => { if (G.phase !== 'playing' || G.push 
 document.addEventListener('keydown', e => {
   if (e.key === 'Escape' && ['settings', 'info', 'confirm'].includes(screenName)) { hideDialog(); return; }
   if (pendingBoss !== null && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); bossBegin?.(); return; }
+  if (screenName === 'placement' && /^[1-9]$/.test(e.key) && !e.metaKey && !e.ctrlKey && !e.altKey) {
+    e.preventDefault(); $('screen').querySelector(`[data-square="${Number(e.key)-1}"]:enabled`)?.click(); return;
+  }
   if (screenName || e.metaKey || e.ctrlKey || e.altKey) return;
   const k = e.key.toLowerCase();
   if (k === 'h' || k === 'arrowup') { e.preventDefault(); guess('higher'); }

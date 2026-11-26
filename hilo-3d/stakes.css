@@ -67,3 +67,11 @@ body[data-mode=stakes] #scoreStat small { font-size: inherit; }
 body[data-mode=stakes] #push, body[data-mode=stakes] #cashout { display: none; }
 body[data-mode=stakes] .tools { grid-template-columns: repeat(3, 1fr); }
 @media (min-width: 900px) and (min-aspect-ratio: 5/4) { body[data-mode=stakes] .tools { grid-template-columns: 1fr; } body[data-mode=stakes] .tool:last-child { grid-column: auto; justify-content: flex-start; } }
+
+#dealerTool[hidden], #trophyTool[hidden] { display: none; }
+#dealerTool, #trophyTool { color: var(--accent2); border-color: var(--accent); grid-column: 1 / -1; }
+#dealerTool[aria-pressed=true], #trophyTool[aria-pressed=true] { box-shadow: inset 0 0 0 2px var(--accent); }
+.routeDoor strong { margin-top: 6px; color: var(--accent2); }
+
+.resultDeals { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; }
+.resultSheet .runMoment { margin: 8px 0 12px; }
