@@ -818,9 +818,10 @@ function beginDraw(card, resolve, card2 = null) {
 }
 function revealJoker(count) {
   casino.jokerUntil = performance.now() + (reduced ? 650 : 1500);
-  burst(-1, 0xc58aff, 40); floatLabel('JOKER  +' + count * 5, -1, '#dfb5ff');
+  const lost = G?.hs ? count + (count === 1 ? ' call' : ' calls') : '';
+  burst(-1, 0xc58aff, 40); floatLabel(lost ? 'JOKER  −' + lost : 'JOKER  +' + count * 5, -1, '#dfb5ff');
   casino.dealerUntil = performance.now() + 650;
-  banner('JOKER!', 'joker', '+' + (count * 5) + ' cards shuffled in');
+  banner('JOKER!', 'joker', lost ? 'Takes ' + lost : '+' + (count * 5) + ' cards shuffled in');
 }
 function resetCasino() {
   swapFrom = null;
@@ -931,7 +932,7 @@ function bossRule(stage) {
   const boss = bossAt(stage);
   if (!G?.hs) return boss.desc;
   if (boss.id === 'house') return 'Stamp all four suits and reach the goal. A correct call stamps the suit of the card you played.';
-  if (boss.id === 'driver') return 'Reach the goal and still hold two cards. Four Jokers await.';
+  if (boss.id === 'driver') return 'Reach the goal and still hold two cards. Four Jokers in the deck, and each one costs a call.';
   return boss.desc;
 }
 function frontOfLane(col) {
@@ -963,7 +964,8 @@ const rank = c => c ? R[c.v] + c.s : 'empty';
 const rng=()=>G?.hs?G.hs.rng():Math.random();
 function shuffle(a){for(let i=a.length-1;i>0;i--){let j=Math.floor(rng()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a}
 const normalDeck=()=>S.flatMap(s=>R.map((_,v)=>({v,s})));
-function draw(){let jokers=0;while(G.deck.length){const c=G.deck.pop();if(c.joker){G.deck.push(...shuffle(normalDeck()).slice(0,5));shuffle(G.deck);G.stageTotal+=5;jokers++;continue}if(jokers){revealJoker(jokers);sound(bossId()==='driver'?'rev':'joker');flash('negative');}return c}return null}
+// Classic: a Joker shuffles in five cards. High Stakes: a Joker costs a call, since calls are the clock there.
+function draw(){let jokers=0;while(G.deck.length){const c=G.deck.pop();if(c.joker){if(G.hs)G.hs.calls=Math.max(0,G.hs.calls-1);else{G.deck.push(...shuffle(normalDeck()).slice(0,5));shuffle(G.deck);G.stageTotal+=5}jokers++;continue}if(jokers){revealJoker(jokers);sound(bossId()==='driver'?'rev':'joker');flash('negative');}return c}return null}
 function creditTokens(n){const paid=Math.min(n,G.tollDebt);G.tollDebt-=paid;G.credits+=n-paid;return n-paid}
 function grantTokens(n){const give=Math.max(0,Math.min(n,100-G.stageEarned));G.stageEarned+=give;return creditTokens(give)}
 function lineState(){return LINES.map(l=>l.every(i=>G.board[i]))}
@@ -1046,7 +1048,7 @@ function guess(dir){
  if(hs&&!p&&hsCanCall()){banner('NO CHANCE','info','Nothing left in the deck wins that call');return}
  const c=draw();
  if(!c){finishStage();return}
- if(hs)hs.calls--;
+ if(hs)hs.calls=Math.max(0,hs.calls-1);
  // The Cardsharp: every fourth guess draws two cards; both must beat your card.
  const c2=dbl?draw():null;
  if(boss==='sharp')G.stageGuesses++;
@@ -1070,7 +1072,7 @@ function guess(dir){
    if(G.ticket==='risk'&&p<=.4){const earned=grantTokens(6);if(earned)info+=' · Risk +'+earned+' tokens'}
    if(has('clover')&&p<=.35&&!G.cloverUsed&&G.board.some((card,k)=>!card&&!G.locked[k])&&G.deck.length){G.cloverUsed=true;refill();info+=' · Clover refill'}
    const up=G.upgrades[i];
-   if(old.v>=4&&old.v<=8){if(!hs)pts+=Math.round(100/Math.max(.1,p)*.35);grantTokens(2)}
+   if(!hs&&old.v>=4&&old.v<=8){pts+=Math.round(100/Math.max(.1,p)*.35);grantTokens(2)}
    if(up==='mint')grantTokens(3);if(up==='kindle')G.streak++;
    const fireMilestone=Math.floor(G.streak/3)>Math.floor(streakBefore/3);
    if(has('storm')&&fireMilestone){G.swaps++;info+=' · Storm +Swap'}
@@ -1169,8 +1171,9 @@ function refresh(){
  hud.lastCredits=G.credits;
  $('tokens').textContent=G.credits;
  $('debt').textContent=G.tollDebt?G.tollDebt+' owed':'';
- $('deck').textContent=G.deck.length;
- $('deckBar').style.width=Math.max(0,Math.min(100,G.deck.length/Math.max(1,G.stageTotal)*100))+'%';
+ $('deckLabel').textContent=G.hs?'Calls':'Deck';
+ $('deck').textContent=G.hs?G.hs.calls:G.deck.length;
+ $('deckBar').style.width=Math.max(0,Math.min(100,G.hs?G.hs.calls/HS.CALLS*100:G.deck.length/Math.max(1,G.stageTotal)*100))+'%';
  $('streak').textContent=G.streak;
  const tier=G.streak>=9?3:G.streak>=6?2:G.streak>=3?1:0;
  $('streakMeter').dataset.tier=tier;
@@ -1561,7 +1564,7 @@ function hsWin(ctx) {
 // A miss also costs part of what the call would have paid.
 function hsMiss(ctx, slot) {
   const hs = G.hs, cost = Math.min(hs.table, Math.round(HS.payout(ctx, G.artifacts, hs.mem).total * HS.MISS_COST));
-  hs.table -= cost; hs.shownTable = hs.table;
+  hs.table -= cost; hs.shownTable = hs.table; G.score = Math.max(0, G.score - cost);
   if (cost) floatLabel('−' + cost, slot, '#ff8a7a');
   return cost;
 }
@@ -1722,6 +1725,7 @@ function hsRules() {
     <li>A miss loses the card and <b>half of what the call would have paid</b>.</li>
     <li>Charms multiply your pay. Buy them between tables.</li>
     <li>Peeking doesn't lower the pay. Peek, then take the Long shot.</li>
+    <li>Each deck hides Jokers. Drawing one costs you a call.</li>
     <li><b>Ace is low. Ties lose.</b> Each boss adds its own rule.</li></ul><p class="sub">Want a refresher? Choose How to play on the title screen.</p>`;
 }
 

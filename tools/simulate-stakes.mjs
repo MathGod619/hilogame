@@ -17,10 +17,11 @@ function runOne(seed, policy, buyer, limit=0, gift=null) {
     }
     const boss=ORDER[stage-1], goal=K.goalFor(stage,limit); let pool=deck.map(c=>({...c}));
     for (let j=0;j<(boss==='driver'?4:2)+(K.LIMITS[limit].joker||0);j++) pool.push({joker:true}); K.shuffleWith(rng,pool);
-    const draw=()=>{ while(pool.length){const c=pool.pop(); if(c.joker){pool.push(...K.shuffleWith(rng,K.freshDeck()).slice(0,5));K.shuffleWith(rng,pool);continue} return c;} return null; };
+    const draw=()=>{ while(pool.length){const c=pool.pop(); if(c.joker){guesses++;continue} return c;} return null; }; // a Joker costs a call
+    let guesses=0;
     const b=Array(9).fill(null), locked=Array(9).fill(false); const os=boss==='elevator'?[0,3,1,2,4,5]:[0,1,2,3,4,5];
     for(let k=0;k<START[boss]+K.OPENING_BONUS;k++) b[os[k]]=draw();
-    let score=0,streak=0,right=0,guesses=0,earned=0,shield=1,stamps=new Set(),stake=-1,mate=-1,passed=0;
+    let score=0,streak=0,right=0,earned=0,shield=1,stamps=new Set(),stake=-1,mate=-1,passed=0;
     const grant=n=>{const g=Math.max(0,Math.min(n,100-earned));earned+=g;tokens+=g;};
     const refill=()=>{const i=b.findIndex((c,k)=>!c&&!locked[k]); if(i>=0){const before=LINES.map(l=>l.every(k=>b[k])),c=draw(); if(c){b[i]=c;LINES.forEach((l,j)=>{if(!before[j]&&l.every(k=>b[k])){score+=K.LINE_PAY;grant(6)}})}}};
     const pickStake=()=>{stake=mate=-1;const cs=[];b.forEach((c,i)=>{if(c){const n=nb(i).filter(j=>b[j]);if(n.length)cs.push([i,n])}});if(cs.length){const[i,n]=cs[Math.floor(rng()*cs.length)];stake=i;mate=n[Math.floor(rng()*n.length)]}};
