@@ -14,7 +14,8 @@ function runOne(seed, policy, buyer, limit=0, gift=null) {
   const order = K.hashSeed(seed) % 2 ? K.ROUTES.sharp : K.ROUTES.elevator;
   for (let stage=1; stage<=TABLES; stage++) {
     if (buyer) for (let pass=0; pass<3; pass++) {
-      for (const id of K.rollCharms(rng, charms, [])) { const c=K.charmById[id]; if (charms.length<5 && tokens>=c.cost) { tokens-=c.cost; charms.push(id); } }
+      const offers = stage === 1 && pass === 0 ? K.openingOffers(rng, charms, []) : K.rollCharms(rng, charms, []);
+      for (const id of offers) { const c=K.charmById[id]; if (charms.length<5 && tokens>=c.cost) { tokens-=c.cost; charms.push(id); } }
       if (charms.length<5 && tokens>=70) tokens-=10; else break;
     }
     const boss=order[stage-1], goal=K.goalFor(stage,limit); let pool=deck.map(c=>({...c}));
@@ -23,6 +24,8 @@ function runOne(seed, policy, buyer, limit=0, gift=null) {
     let guesses=0, actualCalls=0, aimed=false;
     const b=Array(9).fill(null), locked=Array(9).fill(false); const os=boss==='elevator'?[0,3,1,2,4,5]:[0,1,2,3,4,5];
     for(let k=0;k<START[boss]+K.OPENING_BONUS;k++) b[os[k]]=draw();
+    // Policies use regular calls only, leaving the optional dealer card on the table.
+    if (K.LIMITS[limit].dealer) K.reserveDealerCard(pool);
     let score=0,streak=0,right=0,earned=0,shield=1,stamps=new Set(),stake=-1,mate=-1,passed=0;
     const grant=n=>{const g=Math.max(0,Math.min(n,100-earned));earned+=g;tokens+=g;};
     const refill=(risk=false)=>{

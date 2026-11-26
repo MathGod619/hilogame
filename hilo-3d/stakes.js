@@ -106,7 +106,7 @@ export const TROPHIES = {
 export const doubleChance = (wins, total) => wins < 2 || total < 2 ? 0 : wins / total * (wins - 1) / (total - 1);
 export const LIMITS = [
   {name: 'Normal', desc: 'Start here.', k: 1},
-  {name: 'Hard', desc: 'Goals are 40% higher.', k: 1.4},
+  {name: 'Hard', desc: 'Goals are 40% higher. A face-up dealer card costs an extra call to play.', k: 1.4, dealer: true},
   {name: 'No limit', desc: 'Goals are 80% higher, and every deck has an extra Joker.', k: 1.8, joker: 1}
 ];
 export const goalFor = (stage, limit = 0) => Math.round(GOALS[stage - 1] * LIMITS[limit].k / 10) * 10;
@@ -122,4 +122,24 @@ export function rollCharms(rng, owned, utility, count = 3) {
     out.push(pool.splice(k, 1)[0].id);
   }
   return out;
+}
+
+// Every first shop has two distinct, individually affordable ways to play.
+const openers = [
+  ['center', 'middling'], ['steady', 'pairs'], ['center', 'downer'],
+  ['middling', 'riser'], ['pairs', 'middling'], ['center', 'steady']
+];
+export function openingOffers(rng, owned, utility) {
+  const pairs = openers.filter(pair => pair.every(id => !owned.includes(id)));
+  if (!pairs.length) return rollCharms(rng, owned, utility);
+  const pair = pairs[Math.floor(rng() * pairs.length)];
+  return [...pair, ...rollCharms(rng, [...owned, ...pair], utility, 1)];
+}
+export function reserveDealerCard(deck) {
+  const i = deck.findLastIndex(card => !card.joker);
+  return i < 0 ? null : deck.splice(i, 1)[0];
+}
+export function returnDealerCard(deck, card) {
+  // Any Jokers on top still resolve before the face-up card.
+  deck.splice(deck.findLastIndex(c => !c.joker) + 1, 0, card);
 }
